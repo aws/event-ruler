@@ -1,0 +1,39 @@
+{
+  "source": "aws.cloudwatch",
+  "detail-type": "CloudWatch Alarm State Change",
+  "detail": {
+    "alarmName": "CPUAlarm",
+    "state": {
+      "value": "ALARM"
+    },
+    "previousState": {
+      "value": "OK"
+    },
+    "configuration": {
+      "evaluationPeriods": 3,
+      "datapointsToAlarm": 3,
+      "description": "CPU utilization of EC2 instance 1 has gone above 90%",
+      "metrics" : [
+        {
+          "id": "M1",
+          "label": "CPU",
+          "metricStat" : {
+            "metric": {
+              "dimensions": {
+                "instanceId": "1"
+              },
+              "metricName": "CPUUtilization",
+              "namespace": "AWS/EC2"
+            },
+            "period" : 60,
+            "stat" : "avg",
+            "unit": null
+          }
+        }
+      ],
+      "timestamp": "2017-06-21T12:04:03.125Z",
+      "threshold": 90,
+      "treatMissingData": "ignore"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "metrics": [
+    {
+      "metricName": "CPUUtilization",
+      "namespace": "AWS/EC2"
+    },
+    {
+      "metricName": "RequestCount",
+      "namespace":  "AWS/ES"
+    }
+  ]
+}

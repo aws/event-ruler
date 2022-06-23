@@ -1,0 +1,32 @@
+{
+  "detail": {
+    "eventName": [
+      "ChangeResourceRecordSets"
+    ],
+    "eventSource": [
+      "route53.amazonaws.com"
+    ],
+    "requestParameters": {
+      "changeBatch": {
+        "changes": {
+          "action": [
+            { "prefix" : "CREATE" },
+            { "prefix" : "DELETE" },
+            { "prefix" : "UPSERT" }
+          ],
+          "resourceRecordSet": {
+            "type": [
+              { "prefix" : "A" }
+            ]
+          }
+        }
+      },
+      "hostedZoneId": [
+        ""
+      ]
+    }
+  },
+  "source": [
+    "aws.route53"
+  ]
+}

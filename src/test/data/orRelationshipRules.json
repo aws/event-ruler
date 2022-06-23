@@ -1,0 +1,78 @@
+[
+  {
+    "$or": [
+      { "metricName": [ "CPUUtilization", "ReadLatency" ] },
+      { "namespace": [ "AWS/EC2", "AWS/ES" ] }
+    ]
+  },
+
+  {
+    "$or": [
+      { "metricName": [ "CPUUtilization", "ReadLatency" ] },
+      { "namespace": [ "AWS/EC2", "AWS/ES" ] }
+    ],
+    "detail" : {
+      "$or": [
+        { "source": [ "aws.cloudwatch" ] },
+        { "detail-type": [ "CloudWatch Alarm State Change"] }
+      ]
+    }
+  },
+
+  {
+    "source": [ "aws.cloudwatch" ],
+    "$or": [
+      { "metricName": [ "CPUUtilization", "ReadLatency" ] },
+      {
+        "metricType": [ "MetricType" ] ,
+        "namespace": [ "AWS/EC2", "AWS/ES" ]
+      },
+      { "scope": [ "Service" ] }
+    ]
+  },
+
+  {
+    "source": [ "aws.cloudwatch" ],
+    "$or": [
+      { "metricName": [ "CPUUtilization", "ReadLatency" ] },
+      {
+        "metricType": [ "MetricType" ] ,
+        "namespace": [ "AWS/EC2", "AWS/ES" ],
+        "$or" : [
+          { "metricId": [ 1234 ] },
+          { "spaceId": [ 1000 ] }
+        ]
+      },
+      { "scope": [ "Service" ] }
+    ]
+  },
+
+  {
+    "source": [ "aws.cloudwatch" ],
+    "detail": {
+      "state": {
+        "value": [ "ALARM" ]
+      }
+    },
+    "$or": [
+      {
+        "withConfiguration": {
+          "metrics": {
+            "metricStat": {
+              "metric": {
+                "namespace": [ "AWS/EC2" ]
+              }
+            }
+          }
+        }
+      },
+      {
+        "withoutConfiguration": {
+          "metric": {
+            "name": [ "AWS/Default" ]
+          }
+        }
+      }
+    ]
+  }
+]

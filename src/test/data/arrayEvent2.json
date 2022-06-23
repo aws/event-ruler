@@ -1,0 +1,54 @@
+{
+  "source": "aws.cloudwatch",
+  "detail-type": "CloudWatch Alarm State Change",
+  "detail": {
+    "alarmName": "DynamoCapacityPercentage",
+    "state": {
+      "value": "ALARM"
+    },
+    "previousState": {
+      "value": "OK"
+    },
+    "configuration": {
+      "evaluationPeriods": 3,
+      "datapointsToAlarm": 3,
+      "description": "There is less than 10% of DynamoDB capacity remaining",
+      "metrics" : [
+        {
+          "id" : "M1",
+          "label" : "UsedDynamoCapacity",
+          "metricStat" : {
+            "metric": {
+              "metricName": "ConsumedReadCapacityUnits",
+              "namespace": "AWS/DynamoDB"
+            },
+            "period" : 60,
+            "stat" : "avg",
+            "unit": null
+          }
+        },
+        {
+          "id": "M2",
+          "label": "TotalDynamoCapacity",
+          "metricStat": {
+            "metric": {
+              "metricName": "ProvisionedReadCapacityUnits",
+              "namespace": "AWS/DynamoDB"
+            },
+            "period" : 60,
+            "stat" : "avg",
+            "unit": null
+          }
+        },
+        {
+          "id": "E1",
+          "label": "PercentageCapacityUsed",
+          "expression": "(M1 / M2) * 100"
+        }
+      ],
+      "timestamp": "2017-06-21T12:04:03.125Z",
+      "threshold": 90,
+      "treatMissingData": "ignore"
+    }
+  }
+}
