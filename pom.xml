@@ -17,9 +17,8 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>software.amazon</groupId>
+  <groupId>software.amazon.event.ruler</groupId>
   <artifactId>amazon-event-ruler</artifactId>
-  <packaging>bundle</packaging>
   <name>Amazon Event Ruler</name>
   <version>1.0.0</version>
   <description>Amazon Event Ruler is a Java library that allows matching Rules to Events. An event is a list of fields,
