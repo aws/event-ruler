@@ -631,11 +631,11 @@ We measured Ruler's performance in two modes:
 
 A benchmark which processes 213,068 JSON events with average size about 900 bytes against 5 each
 exact-match, prefix-match, suffix-match, equals-ignore-case-match, numeric-match, and anything-but-match rules and
-counts the matches, using the three modes above, yields the following on a 2015 MacBook:
+counts the matches, using the three modes above, yields the following on a 2019 MacBook Pro:
 
-1. Events are processed at over 175K/second except for anything-but matches, which are processed at over 80K/second.
-2. Events are processed at over 200K/second
-3. Events are processed at between 5.5K and 6K/second.
+1. Events are processed at over 175K/second except for anything-but matches, which are processed at over 125K/second.
+2. Events are processed at over 400K/second
+3. Events are processed at over 8K/second.
 
 ### Suggestions for better performance
 

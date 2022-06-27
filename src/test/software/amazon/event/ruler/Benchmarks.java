@@ -7,8 +7,11 @@ import software.amazon.event.ruler.Ruler;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -16,6 +19,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.GZIPInputStream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -27,17 +31,17 @@ import static org.junit.Assert.assertNull;
  *  numbers given in README.md to ensure there hasn't been a performance regression.
  *
  * Several of the benchmarks operate on a large file containing 213068 JSON records averaging about 900 bytes in size.
- *  There are two slightly varying versions, citylots.json and citylots2.json.  Between the two of them they
+ *  There are two slightly varying versions, citylots.json.gz and citylots2.json.gz.  Between the two of them they
  *  total ~400Mbytes, which makes Ruler a little slow to check out from git.
  */
 
 public class Benchmarks {
 
     // original citylots
-    private static final String CITYLOTS_JSON = "src/test/data/citylots.json";
+    private static final String CITYLOTS_JSON = "src/test/data/citylots.json.gz";
 
     // revised citylots with structured arrays
-    private static final String CITYLOTS_2 = "src/test/data/citylots2.json";
+    private static final String CITYLOTS_2 = "src/test/data/citylots2.json.gz";
 
     private final String[] EXACT_RULES = {
             "{\n" +
@@ -500,7 +504,9 @@ public class Benchmarks {
     private void readCityLots2() {
         try {
             System.out.println("Reading citylots2");
-            BufferedReader cl2Reader = new BufferedReader(new FileReader(CITYLOTS_2));
+            final FileInputStream fileInputStream = new FileInputStream(CITYLOTS_2);
+            final GZIPInputStream gzipInputStream = new GZIPInputStream(fileInputStream);
+            BufferedReader cl2Reader = new BufferedReader(new InputStreamReader(gzipInputStream));
             String line = cl2Reader.readLine();
             while (line != null) {
                 citylots2.add(line);
@@ -683,8 +689,10 @@ public class Benchmarks {
 
     private void openInput() {
         try {
-            cityLotsReader = new BufferedReader(new FileReader(CITYLOTS_JSON));
-        } catch (FileNotFoundException e) {
+            final FileInputStream fileInputStream = new FileInputStream(CITYLOTS_JSON);
+            final GZIPInputStream gzipInputStream = new GZIPInputStream(fileInputStream);
+            cityLotsReader = new BufferedReader(new InputStreamReader(gzipInputStream));
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
