@@ -1,4 +1,3 @@
-# List of Maintainers
+# Technical Steering Committee Members
 
-* baldawar@amazon.com [github](https://github.com/baldawar)
-* 
+* Rishi Baldawa ([@baldwar](https://github.com/baldawar))
