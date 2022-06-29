@@ -31,7 +31,7 @@
 
   <properties>
     <jackson.version>2.12.7</jackson.version>
-    <jsr.version>3.0.0</jsr.version>
+    <jsr.version>3.0.2</jsr.version>
     <junit.version>4.13.1</junit.version>
     <compiler.plugin.version>3.10.1</compiler.plugin.version>
     <javadoc.plugin.version>3.0.1</javadoc.plugin.version>
