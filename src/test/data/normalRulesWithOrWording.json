@@ -1,0 +1,27 @@
+[
+  {
+    "$or": [ { "cidr": "10.0.0.0/24" } ]
+  },
+
+  {
+    "source": [ "aws.cloudwatch" ],
+    "$or": {
+      "metricType": [ "MetricType" ] ,
+      "namespace": [ "AWS/EC2", "AWS/ES" ]
+    }
+  },
+
+  {
+    "time": [ { "prefix": "2017-10-02" } ],
+    "detail": {
+      "$or": [ { "numeric": [ ">", 0, "<=", 5 ] } , { "cidr": "10.0.0.0/8" } ]
+    }
+  },
+
+  {
+    "detail": {
+      "$or": [ { "numeric": [ ">", 0, "<=", 5 ] }, { "numeric": [ ">", 10 ] }  ]
+    }
+  }
+
+]

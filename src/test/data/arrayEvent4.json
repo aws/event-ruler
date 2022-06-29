@@ -1,0 +1,8 @@
+{
+  "metrics": [
+    {
+      "metricName": "CPUUtilization",
+      "namespace": "AWS/ES"
+    }
+  ]
+}

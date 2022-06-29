@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+"-//Puppy Crawl//DTD Check Configuration 1.2//EN"
+"http://www.puppycrawl.com/dtds/configuration_1_2.dtd">
+
+<module name="Checker">
+  <module name="FileTabCharacter"/>
+  <module name="TreeWalker">
+    <module name="UnusedImports"/>
+    <module name="NeedBraces"/>
+    <module name="EqualsHashCode"/>
+    <module name="EmptyStatement"/>
+    <module name="EqualsAvoidNull"/>
+    <module name="HideUtilityClassConstructor"/>
+    <module name="InterfaceIsType"/>
+    <module name="MissingSwitchDefault"/>
+    <module name="MultipleVariableDeclarations"/>
+    <module name="OneStatementPerLine"/>
+    <module name="NoClone"/>
+    <module name="NoFinalizer"/>
+    <module name="RedundantImport"/>
+    <module name="DefaultComesLast"/>
+    <module name="SuppressWarningsHolder" />
+  </module>
+
+  <module name="SuppressWarningsFilter" />
+</module>

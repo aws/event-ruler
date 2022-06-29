@@ -1,0 +1,6 @@
+{
+  "metrics": {
+    "metricName": [ "CPUUtilization", "ReadLatency" ],
+    "namespace": [ "AWS/EC2", "AWS/ES" ]
+  }
+}

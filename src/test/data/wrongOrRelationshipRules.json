@@ -1,0 +1,20 @@
+[
+  {
+    "$or": [
+      { "metricName": [ "CPUUtilization", "ReadLatency" ] }
+    ]
+  },
+
+  {
+    "detail" : {
+      "$or": [
+        { "source": [ "aws.cloudwatch" ] },
+        { "detail-type": [ "CloudWatch Alarm State Change"] },
+        [
+          { "foo": [ "wrong" ] }
+        ]
+      ]
+    }
+  }
+
+]

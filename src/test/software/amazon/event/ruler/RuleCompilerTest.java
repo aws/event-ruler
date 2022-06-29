@@ -1,0 +1,549 @@
+package software.amazon.event.ruler;
+
+import org.junit.Test;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+public class RuleCompilerTest {
+
+    @Test
+    public void testBigNumbers() throws Exception {
+        Machine m = new Machine();
+        String rule = "{\n" +
+                "  \"account\": [ 123456789012 ]\n" +
+                "}";
+        String event = "{\"account\": 123456789012 }";
+        m.addRule("r1", rule);
+        assertEquals(1, m.rulesForJSONEvent(event).size());
+    }
+
+    @Test
+    public void testVariantForms() throws Exception {
+        Machine m = new Machine();
+        String r1 = "{\n" +
+                "  \"a\": [ 133.3 ]\n" +
+                "}";
+        String r2 = "{\n" +
+                "  \"a\": [ { \"numeric\": [ \">\", 120, \"<=\", 140 ] } ]\n" +
+                "}";
+        String r3 = "{\n" +
+                "  \"b\": [ \"192.0.2.0\" ]\n" +
+                "}\n";
+        String r4 = "{\n" +
+                "  \"b\": [ { \"cidr\": \"192.0.2.0/24\" } ]\n" +
+                "}";
+        String event = "{\n" +
+                "  \"a\": 133.3,\n" +
+                "  \"b\": \"192.0.2.0\"\n" +
+                "}";
+        m.addRule("r1", r1);
+        m.addRule("r2", r2);
+        m.addRule("r3", r3);
+        m.addRule("r4", r4);
+        List<String> nr = m.rulesForJSONEvent(event);
+        assertEquals(4, nr.size());
+    }
+
+    @Test
+    public void testCompile() throws Exception {
+        String j = "[1,2,3]";
+        assertNotNull("Top level must be an object", RuleCompiler.check(j));
+
+        InputStream is = new ByteArrayInputStream(j.getBytes(StandardCharsets.UTF_8));
+        assertNotNull("Top level must be an object (bytes)", RuleCompiler.check(is));
+
+        j = "{\"a\":1}";
+        assertNotNull("Values must be in an array", RuleCompiler.check(j.getBytes(StandardCharsets.UTF_8)));
+
+        j = "{\"a\":[ { \"x\":2 } ]}";
+        assertNotNull("Array values must be primitives", RuleCompiler.check(new StringReader(j)));
+
+        j = "{ \"foo\": {}}";
+        assertNotNull("Objects must not be empty", RuleCompiler.check(new StringReader(j)));
+
+        j = "{ \"foo\": []}";
+        assertNotNull("Arrays must not be empty", RuleCompiler.check(new StringReader(j)));
+
+        j = "{\"a\":[1]}";
+        assertNull(RuleCompiler.check(j));
+
+        Map<String, List<Patterns>> m = RuleCompiler.compile(new ByteArrayInputStream(j.getBytes(StandardCharsets.UTF_8)));
+        List<Patterns> l = m.get("a");
+        assertEquals(2, l.size());
+        for (Patterns p : l) {
+            ValuePatterns vp = (ValuePatterns) p;
+            if (p.type() == MatchType.NUMERIC_EQ) {
+                assertEquals(ComparableNumber.generate(1.0), vp.pattern());
+            } else {
+                assertEquals("1", vp.pattern());
+            }
+        }
+
+        j = "{\"a\": [ { \"prefix\": \"child\" } ] }";
+        assertNull("Good prefix should parse", RuleCompiler.check(j));
+
+        j = "{\"a\": [ { \"anything-but\": \"child\" } ] }";
+        assertNull("Good anything-but should parse", RuleCompiler.check(j));
+
+        j = "{\"a\": [ { \"anything-but\": [\"child0\",\"child1\",\"child2\"] } ] }";
+        assertNull("Good anything-but should parse", RuleCompiler.check(j));
+
+        j = "{\"a\": [ { \"anything-but\": [111,222,333] } ] }";
+        assertNull("Good anything-but should parse", RuleCompiler.check(j));
+
+        j = "{\"a\": [ { \"anything-but\": \"child0\" } ] }";
+        assertNull("Good anything-but should parse", RuleCompiler.check(j));
+
+        j = "{\"a\": [ { \"anything-but\": 111 } ] }";
+        assertNull("Good anything-but should parse", RuleCompiler.check(j));
+
+        j = "{\"a\": [ { \"anything-but\": { \"prefix\": \"foo\" } } ] }";
+        assertNull("Good anything-but should parse", RuleCompiler.check(j));
+
+        j = "{\"a\": [ { \"exactly\": \"child\" } ] }";
+        assertNull("Good exact-match should parse", RuleCompiler.check(j));
+
+        j = "{\"a\": [ { \"exists\": true } ] }";
+        assertNull("Good exists true should parse", RuleCompiler.check(j));
+
+        j = "{\"a\": [ { \"exists\": false } ] }";
+        assertNull("Good exists false should parse", RuleCompiler.check(j));
+
+        j = "{\"a\": [ { \"cidr\": \"10.0.0.0/8\" } ] }";
+        assertNull("Good CIDR should parse", RuleCompiler.check(j));
+
+        String[] badPatternTypes = {
+                "{\"a\": [ { \"exactly\": 33 } ] }",
+                "{\"a\": [ { \"prefix\": \"child\", \"foo\": [] } ] }",
+                "{\"a\": [ { \"foo\": \"child\" } ] }",
+                "{\"a\": [ { \"cidr\": \"foo\" } ] }",
+                "{\"a\": [ { \"prefix\": 3 } ] }",
+                "{\"a\": [ { \"prefix\": [1, 2 3] } ] }",
+                "{\"a\": [ { \"anything-but\": \"child\", \"foo\": [] } ] }",
+                "{\"a\": [ { \"anything-but\": [1, 2 3] } ] }",
+                "{\"a\": [ { \"anything-but\": \"child\", \"foo\": [] } ] }",
+                "{\"a\": [ { \"anything-but\": [\"child0\",111,\"child2\"] } ] }",
+                "{\"a\": [ { \"anything-but\": [1, 2 3] } ] }",
+                "{\"a\": [ { \"anything-but\": { \"foo\": 3 } ] }",
+                "{\"a\": [ { \"anything-but\": { \"prefix\": 27 } } ] }",
+                "{\"a\": [ { \"anything-but\": { \"prefix\": \"\" } } ] }",
+                "{\"a\": [ { \"anything-but\": { \"prefix\": \"foo\", \"a\":1 } } ] }",
+                "{\"a\": [ { \"anything-but\": { \"prefix\": \"foo\" }, \"x\": 1 } ] }"
+        };
+        for (String badPattern : badPatternTypes) {
+            assertNotNull("bad pattern shouldn't parse", RuleCompiler.check(badPattern));
+        }
+
+        j = "{\n"
+                + "  \"resources\": [\n"
+                + "    \"r1\",\n"
+                + "    \"r2\"\n"
+                + "  ]\n"
+                + "}";
+        m = RuleCompiler.compile(j);
+        l = m.get("resources");
+        assertEquals(2, l.size());
+        ValuePatterns vp1 = (ValuePatterns) l.get(0);
+        ValuePatterns vp2 = (ValuePatterns) l.get(1);
+        assertEquals("\"r1\"", vp1.pattern());
+        assertEquals("\"r2\"", vp2.pattern());
+
+        /*
+        {
+          "detail-getType": [ "ec2/spot-bid-matched" ],
+          "detail" : {
+            "state": [ "in-service" ]
+           }
+         }
+         */
+        j = "{\n"
+                + "  \"detail-getType\": [ \"ec2/spot-bid-matched\" ],\n"
+                + "  \"detail\" : { \n"
+                + "   \"state\": [ \"in-service\", \"dead\" ]\n"
+                + "  }\n"
+                + "}\n";
+        m = RuleCompiler.compile(j);
+        assertEquals(2, m.size());
+        l = m.get("detail-getType");
+        vp1 = (ValuePatterns) l.get(0);
+        assertEquals("\"ec2/spot-bid-matched\"", vp1.pattern());
+        l = m.get("detail.state");
+        assertEquals(2, l.size());
+        vp1 = (ValuePatterns) l.get(0);
+        vp2 = (ValuePatterns) l.get(1);
+        assertEquals("\"in-service\"", vp1.pattern());
+        assertEquals("\"dead\"", vp2.pattern());
+    }
+
+    @Test
+    public void testNumericExpressions() {
+        String[] goods = {
+                "[\"=\", 3.8]", "[\"=\", 0.00000033]", "[\"=\", -4e-8]", "[\"=\", 55555]",
+                "[\"<\", 3.8]", "[\"<\", 0.00000033]", "[\"<\", -4e-8]", "[\"<\", 55555]",
+                "[\">\", 3.8]", "[\">\", 0.00000033]", "[\">\", -4e-8]", "[\">\", 55555]",
+                "[\"<=\", 3.8]", "[\"<=\", 0.00000033]", "[\"<=\", -4e-8]", "[\"<=\", 55555]",
+                "[\">=\", 3.8]", "[\">=\", 0.00000033]", "[\">=\", -4e-8]", "[\">=\", 55555]",
+                "[\">\", 0, \"<\", 1]", "[\">=\", 0, \"<\", 1]",
+                "[\">\", 0, \"<=\", 1]", "[\">=\", 0, \"<=\", 1]"
+        };
+
+        String[] bads = {
+                "[\"=\", true]", "[\"=\", 2.0e22]", "[\"=\", \"-4e-8\"]", "[\"=\"]",
+                "[\"<\", true]", "[\"<\", 2.0e22]", "[\"<\", \"-4e-8\"]", "[\"<\"]",
+                "[\">=\", true]", "[\">=\", 2.0e22]", "[\">=\", \"-4e-8\"]", "[\">=\"]",
+                "[\"<=\", true]", "[\"<=\", 2.0e22]", "[\"<=\", \"-4e-8\"]", "[\"<=\"]",
+                "[\"<>\", 1, \">\", 0]", "[\"==\", 1, \">\", 0]",
+                "[\"<\", 1, \">\", 0]", "[\">\", 1, \"<\", 1]",
+                "[\">\", 30, \"<\", 1]", "[\">\", 1, \"<\", 30, false]"
+        };
+
+        for (String good : goods) {
+            String json = "{\"x\": [{\"numeric\": " + good + "}]}";
+            String m = RuleCompiler.check(json);
+            assertNull(json + " => " + m, m);
+        }
+
+        for (String bad : bads) {
+            String json = "{\"x\": [{\"numeric\": " + bad + "}]}";
+            String m = RuleCompiler.check(json);
+            assertNotNull("Bad: " + json, m);
+        }
+    }
+
+    @Test
+    public void testExistsExpression() {
+        String[] goods = {
+                "true ",
+                " false "
+        };
+
+        String[] bads = {
+                "\"badString\"",
+                "\"= abc\"",
+                "true, \"extraKey\": \"extraValue\" "
+        };
+
+        for (String good : goods) {
+            String json = "{\"x\": [{\"exists\": " + good + "}]}";
+            String m = RuleCompiler.check(json);
+            assertNull(json + " => " + m, m);
+        }
+
+        for (String bad : bads) {
+            String json = "{\"x\": [{\"exists\": " + bad + "}]}";
+            String m = RuleCompiler.check(json);
+            assertNotNull("Bad: " + json, m);
+        }
+    }
+
+    @Test
+    public void testMachineWithNoRules() {
+        Machine machine = new Machine();
+        List<String> found = machine.rulesForEvent(Arrays.asList("foo", "bar"));
+        assertNotNull(found);
+        assertEquals(0, found.size());
+    }
+
+    @Test
+    public void testEnd2End() throws Exception {
+        Machine machine = new Machine();
+        String[] event = {
+                "account", "\"012345678901\"",
+                "detail-getType", "\"ec2/spot-bid-matched\"",
+                "detail.instanceId", "arn:aws:ec2:us-east-1::image/ami-1a2b3c4d\"",
+                "detail.spotInstanceRequestId", "\"eaa472d8-8422-a9bb-8888-4919fd99310\"",
+                "detail.state", "\"in-service\"",
+                "detail.requestParameters.zone", "\"us-east-1a\"",
+                "id", "\"cdc73f9d-aea9-11e3-9d5a-835b769c0d9c\"",
+                "region", "\"us-west-2\"",
+                "resources", "\"arn:aws:ec2:us-east-1::image/ami-1a2b3c4d\"",
+                "source", "\"aws.ec2\"",
+                "tags", "\"2015Q1",
+                "tags", "\"Euro-fleet\"",
+                "time", "\"2014-03-18T14:30:07Z\"",
+                "version", "\"0\"",
+        };
+        String rule1 = "{\n"
+                + "  \"resources\": [\n"
+                + "    \"arn:aws:ec2:us-east-1::image/ami-1a2b3c4d\",\n"
+                + "    \"arn:aws:ec2:us-east-1::image/ami-98765432\"\n"
+                + "  ]\n"
+                + "}\n";
+        String rule2 = "{\n"
+                + "  \"detail-getType\": [ \"ec2/spot-bid-matched\" ],\n"
+                + "  \"detail\" : { \n"
+                + "    \"state\": [ \"in-service\" ]\n"
+                + "  }\n"
+                + "}\n";
+
+        String rule3 = "{\n"
+                + "  \"tags\": [ \"Euro-fleet\", \"Asia-fleet\" ]\n"
+                + "}\n";
+
+        String rule4 = "{\n"
+                + "  \"resources\": [\n"
+                + "    \"arn:aws:ec2:us-east-1::image/ami-1a2b3c4d\",\n"
+                + "    \"arn:aws:ec2:us-east-1::image/ami-98765432\"\n"
+                + "  ],\n"
+                + "  \"detail.state\": [ \"halted\", \"pending\"]\n"
+                + "}\n";
+
+        String rule5 = "{\n"
+                + "  \"resources\": [\n"
+                + "    \"arn:aws:ec2:us-east-1::image/ami-1a2b3c4d\",\n"
+                + "    \"arn:aws:ec2:us-east-1::image/ami-98765432\"\n"
+                + "  ],\n"
+                + "  \"detail.request-level\": [ \"urgent\"]\n"
+                + "}\n";
+
+        String rule6 = "{\n"
+                + "  \"detail-getType\": [ \"ec2/spot-bid-matched\" ],\n"
+                + "  \"detail\" : { \n"
+                + "    \"requestParameters\": {\n"
+                + "      \"zone\": [\n"
+                + "        \"us-east-1a\"\n"
+                + "      ]\n"
+                + "    }\n"
+                + "  }\n"
+                + "}\n";
+
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+        machine.addRule("rule3", rule3);
+        machine.addRule("rule4", rule4);
+        machine.addRule("rule5", rule5);
+        machine.addRule("rule6", rule6);
+        List<String> found = machine.rulesForEvent(event);
+        assertEquals(4, found.size());
+        assertTrue(found.contains("rule1"));
+        assertTrue(found.contains("rule2"));
+        assertTrue(found.contains("rule3"));
+        assertTrue(found.contains("rule6"));
+    }
+
+    @Test
+    public void testEndtoEndinParallel() throws Exception {
+
+        int numRules = 1000; // Number of matching rules
+
+        String rule1 = "{\n"
+                + "  \"source\":[\"aws.events\"],\n"
+                + "  \"resources\": [\n"
+                + "    \"arn:aws:events:ap-northeast-1:123456789012:event\"\n"
+                + "  ],\n"
+                + "   \"detail-getType\":[\"Scheduled Event\"]\n"
+                + "}\n";
+
+        String rule2 = "{\n"
+                + "  \"resources\": [\n"
+                + "    \"arn:aws:ec2:us-east-1::image/ami-1a2b3c4d\",\n"
+                + "    \"arn:aws:ec2:us-east-1::image/ami-98765432\"\n"
+                + "  ],\n"
+                + "  \"detail.state\": [ \"halted\", \"pending\"]\n"
+                + "}\n";
+
+        String[] event = {
+                "account", "\"123456789012\"",
+                "detail-getType", "\"Scheduled Event\"",
+                "detail.instanceId", "arn:aws:events:ap-northeast-1:123456789012:event\"",
+                "detail.spotInstanceRequestId", "\"eaa472d8-8422-a9bb-8888-4919fd99310\"",
+                "detail.state", "\"in-service\"",
+                "detail.requestParameters.zone", "\"us-east-1a\"",
+                "id", "\"cdc73f9d-aea9-11e3-9d5a-835b769c0d9c\"",
+                "region", "\"us-west-2\"",
+                "resources", "\"arn:aws:events:ap-northeast-1:123456789012:event\"",
+                "source", "\"aws.events\"",
+                "tags", "\"2015Q1",
+                "tags", "\"Euro-fleet\"",
+                "time", "\"2014-03-18T14:30:07Z\"",
+                "version", "\"0\"",
+        };
+
+        List<String> rules = new ArrayList<>();
+
+        // Add all rules to the machine
+        for (int i = 0; i < numRules; i++) {
+
+            rules.add(rule1);
+        }
+
+        rules.add(rule2);
+
+        List<String[]> events = new ArrayList<>();
+
+        for (int i = 0; i < numRules; i++) {
+
+            events.add(event);
+        }
+
+        multiThreadedTestHelper(rules, events, numRules);
+
+    }
+
+    @Test
+    public void testEndToEndInParallelWithDifferentEvents() throws Exception {
+
+        int numRules = 1000; // Number of matching rules
+
+        String rule1 = "{\n"
+                + "  \"source\":[\"aws.events\"],\n"
+                + "  \"resources\": [\n"
+                + "    \"arn:aws:events:ap-northeast-1:123456789012:event-%d\"\n"
+                + "  ],\n"
+                + "   \"detail-getType\":[\"Scheduled Event\"]\n"
+                + "}\n";
+
+        String rule2 = "{\n"
+                + "  \"resources\": [\n"
+                + "    \"arn:aws:ec2:us-east-1::image/ami-1a2b3c4d\",\n"
+                + "    \"arn:aws:ec2:us-east-1::image/ami-98765432\"\n"
+                + "  ],\n"
+                + "  \"detail.state\": [ \"halted\", \"pending\"]\n"
+                + "}\n";
+
+        String[] event = {
+                "account", "\"123456789012\"",
+                "detail-getType", "\"Scheduled Event\"",
+                "detail.instanceId", "arn:aws:events:ap-northeast-1:123456789012:event\"",
+                "detail.spotInstanceRequestId", "\"eaa472d8-8422-a9bb-8888-4919fd99310\"",
+                "detail.state", "\"in-service\"",
+                "detail.requestParameters.zone", "\"us-east-1a\"",
+                "id", "\"cdc73f9d-aea9-11e3-9d5a-835b769c0d9c\"",
+                "region", "\"us-west-2\"",
+                "resources", "\"arn:aws:events:ap-northeast-1:123456789012:event-%d\"",
+                "source", "\"aws.events\"",
+                "tags", "\"2015Q1",
+                "tags", "\"Euro-fleet\"",
+                "time", "\"2014-03-18T14:30:07Z\"",
+                "version", "\"0\"",
+        };
+
+        List<String> rules = new ArrayList<>();
+
+        // Add all rules to the machine
+        for (int i = 0; i < numRules; i++) {
+
+            rules.add(String.format(rule1, i));
+        }
+
+        rules.add(rule2);
+
+        List<String[]> events = new ArrayList<>();
+
+        for (int i = 0; i < numRules; i++) {
+
+            event[17] = String.format(event[17], i);
+            events.add(event);
+        }
+
+        multiThreadedTestHelper(rules, events, 1);
+
+    }
+
+    private void multiThreadedTestHelper(List<String> rules,
+                                         List<String[]> events, int numMatchesPerEvent) throws Exception {
+
+        int numTries = 30; // Run the test several times as the race condition may be intermittent
+        int numThreads = 1000;
+
+        for (int j = 0; j < numTries; j++) {
+
+            Machine machine = new Machine();
+            CountDownLatch countDownLatch = new CountDownLatch(1);
+            EventMatcherThreadPool eventMatcherThreadPool = new EventMatcherThreadPool(numThreads, countDownLatch);
+
+            int i = 0;
+
+            // Add all rules to the machine
+            for (String rule : rules) {
+
+                String ruleName = "rule" + i++;
+
+                machine.addRule(ruleName, rule);
+            }
+
+            List<Future<List<String>>> futures =
+                    events.stream().map(event -> eventMatcherThreadPool.addEventsToMatch(machine, event)).collect(Collectors.toList());
+
+            countDownLatch.countDown();
+
+            for (Future<List<String>> f : futures) {
+
+                if (f.get().size() != numMatchesPerEvent) {
+                    fail();
+                }
+            }
+
+            eventMatcherThreadPool.close();
+        }
+    }
+
+    static class EventMatcherThreadPool {
+
+        private final ExecutorService executorService;
+        private final CountDownLatch countDownLatch;
+
+        EventMatcherThreadPool(int numThreads, CountDownLatch latch) {
+
+            executorService = Executors.newFixedThreadPool(numThreads);
+            countDownLatch = latch;
+        }
+
+        Future<List<String>> addEventsToMatch(Machine m, String[] event) {
+
+
+            return executorService.submit(new MachineRunner(m, event, countDownLatch));
+
+        }
+
+        void close() {
+            this.executorService.shutdown();
+        }
+
+        private static class MachineRunner implements Callable<List<String>> {
+
+            private final Machine machine;
+            private final String[] events;
+            private final CountDownLatch latch;
+
+            MachineRunner(Machine machine, String[] events, CountDownLatch latch) {
+                this.machine = machine;
+                this.events = events;
+                this.latch = latch;
+            }
+
+            @Override
+            public List<String> call() {
+
+                try {
+                    latch.await();
+                } catch (InterruptedException ie) {
+                    //
+                } //Latch released
+
+                return machine.rulesForEvent(events);
+
+            }
+        }
+
+    }
+}
