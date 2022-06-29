@@ -64,7 +64,7 @@ as name/value pairs:
 Events in the JSON form may be provided in the form of a raw JSON String,
 or a parsed [Jackson JsonNode](https://fasterxml.github.io/jackson-databind/javadoc/2.12/com/fasterxml/jackson/databind/JsonNode.html).
 
-###Simple matching
+### Simple matching
 
 The rules in this section all match the sample event above:
 
@@ -87,7 +87,7 @@ event is one of the values provided in the array.  The reference to `resources`
 shows that if the value in the event is also an array, the rule matches if the
 intersection between the event array and rule-array is non-empty.
 
-###Prefix matching
+### Prefix matching
 
 ```javascript
 {
@@ -96,7 +96,7 @@ intersection between the event array and rule-array is non-empty.
 ```
 Prefix matches only work on string-valued fields.
 
-###Suffix matching
+### Suffix matching
 
 ```javascript
 {
@@ -105,7 +105,7 @@ Prefix matches only work on string-valued fields.
 ```
 Suffix matches only work on string-valued fields.
 
-###Equals-ignore-case matching
+### Equals-ignore-case matching
 
 ```javascript
 {
@@ -114,7 +114,7 @@ Suffix matches only work on string-valued fields.
 ```
 Equals-ignore-case matches only work on string-valued fields.
 
-###Anything-but matching
+### Anything-but matching
 
 Anything-but matching does what the name says: matches anything *except* what's provided in the rule.
 
@@ -161,7 +161,7 @@ Anything-but prefix:
   }
 }
 ```
-###Numeric matching
+### Numeric matching
 ```javascript
 {
   "detail": {
@@ -178,7 +178,7 @@ work with values that are JSON numbers.  Numeric matching is limited to value be
 -5.0e9 and +5.0e9 inclusive, with 15 digits of precision, that is to say 6 digits
 to the right of the decimal point.
 
-###IP Address Matching
+### IP Address Matching
 ```javascript
 {
   "detail": {
@@ -189,7 +189,7 @@ to the right of the decimal point.
 
 This also works with IPv6 addresses.
 
-###Exists matching
+### Exists matching
 
 Exists matching works on the presence or absence of a field in the JSON event.
 
@@ -243,7 +243,7 @@ but would also match the event below because ```c-count``` is not a leaf node:
 ```
 
 
-###Complex example
+### Complex example
 
 ```javascript
 {
