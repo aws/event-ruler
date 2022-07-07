@@ -69,6 +69,18 @@ public class RulerTest {
             "  \"detail.state\": \"running\"\n" +
             "}\n";
 
+    private static final String JSON_WITH_COMPLEX_ARRAYS = "{\n" +
+            "  \"employees\":[\n" +
+            "    [\n" +
+            "      { \"firstName\":\"John\", \"lastName\":\"Doe\" , \"ids\" : [ 1234, 1000, 9999 ] },\n" +
+            "      { \"firstName\":\"Anna\", \"lastName\":\"Smith\" }\n" +
+            "    ],\n" +
+            "    [\n" +
+            "      { \"firstName\":\"Peter\", \"lastName\":\"Jones\", \"ids\" : [ ]  }\n" +
+            "    ]\n" +
+            "  ]\n" +
+            "}";
+
     @Test
     public void WHEN_RulesFromReadmeAreTried_THEN_TheyWork() throws Exception {
         String[] rules = {
@@ -263,6 +275,66 @@ public class RulerTest {
         assertNull(n);
         n = Ruler.tryToRetrievePath(json, Arrays.asList("Thumbnail","foo"));
         assertNull(n);
+    }
+
+    @Test
+    public void WHEN_JSONContainsArrays_THEN_RulerNoCompileMatchesWork() throws Exception {
+        String[] matchingRules = new String[] {
+                "{\n" +
+                        "    \"employees\": {\n" +
+                        "        \"firstName\": [\"Anna\"]\n" +
+                        "    }\n" +
+                        "}",
+                "{\n" + // Not desired but existing behaviour. See JSON Array Matching in README
+                        "    \"employees\": {\n" +
+                        "        \"firstName\": [\"Anna\"],\n" +
+                        "        \"lastName\": [\"Jones\"]\n" +
+                        "    }\n" +
+                        "}",
+                "{\n" +
+                        "    \"employees\": {\n" +
+                        "        \"firstName\": [\"Anna\"],\n" +
+                        "        \"ids\": [ 1000 ]\n" +
+                        "    }\n" +
+                        "}",
+                "{\n" +
+                        "    \"employees\": {\n" +
+                        "        \"firstName\": [\"Anna\"],\n" +
+                        "        \"ids\": [ { \"exists\": true  } ]\n" +
+                        "    }\n" +
+                        "}"
+        };
+        String[] nonMatchingRules = new String[] {
+                "{\n" +
+                        "    \"employees\": {\n" +
+                        "        \"firstName\": [\"Alice\"]\n" +
+                        "    }\n" +
+                        "}",
+                "{\n" +
+                        "    \"employees\": {\n" +
+                        "        \"firstName\": [\"Alice\"],\n" +
+                        "        \"lastName\": [\"Bob\"]\n" +
+                        "    }\n" +
+                        "}",
+                "{\n" +
+                        "    \"employees\": {\n" +
+                        "        \"firstName\": [\"Anna\"],\n" +
+                        "        \"ids\": [ { \"exists\": false  } ]\n" +
+                        "    }\n" +
+                        "}",
+                "{\n" +
+                        "    \"a\": [ \"b\" ]\n" +
+                        "}",
+                "{\n" +
+                        "    \"employees\": [ \"b\" ]\n" +
+                        "}"
+        };
+        for(String rule : matchingRules) {
+            assertTrue(Ruler.matches(JSON_WITH_COMPLEX_ARRAYS, rule));
+        }
+        for(String rule : nonMatchingRules) {
+            assertFalse(Ruler.matches(JSON_WITH_COMPLEX_ARRAYS, rule));
+        }
     }
 
     @Test

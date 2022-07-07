@@ -2,11 +2,13 @@ package software.amazon.event.ruler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import javax.annotation.concurrent.Immutable;
 import javax.annotation.concurrent.ThreadSafe;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -39,7 +41,6 @@ public class Ruler {
     }
 
     private static boolean matchesAllFields(final JsonNode event, final Map<List<String>, List<Patterns>> rule) {
-
         for (Map.Entry<List<String>, List<Patterns>> entry : rule.entrySet()) {
             final JsonNode fieldValue = tryToRetrievePath(event, entry.getKey());
             if (!matchesOneOf(fieldValue, entry.getValue())) {
@@ -140,13 +141,47 @@ public class Ruler {
     }
 
     static JsonNode tryToRetrievePath(JsonNode node, final List<String> path) {
-        for (final String step : path) {
-            if ((node == null) || !node.isObject()) {
+        final String[] pathsArray = path.toArray(new String[]{});
+        final int startingIndex = 0;
+        return tryToRetrievePathFromIndex(node, pathsArray, startingIndex);
+    }
+
+    private static JsonNode tryToRetrievePathFromIndex(JsonNode node, String[] pathsArray, int startingIndex) {
+        for (int i = startingIndex; i < pathsArray.length; i++) {
+            if (node instanceof ArrayNode) {
+                final ArrayNode jsonNodes =
+                        tryToRetrievePathFromArray((ArrayNode) node, pathsArray, i);
+                if(!jsonNodes.isEmpty()) {
+                    return jsonNodes;
+                } // else keep looking.
+            }
+            if ((node == null) || !(node.isObject() || node.isArray())) {
                 return null;
             }
+            String step = pathsArray[i];
             node = node.get(step);
         }
         return node;
+    }
+
+    private static ArrayNode tryToRetrievePathFromArray(ArrayNode arrayNode, String[] pathsArray, int startingIndex) {
+        Iterator<JsonNode> it = arrayNode.elements();
+        final ArrayNode nodes = OBJECT_MAPPER.createArrayNode();
+        while (it.hasNext()) {
+            JsonNode nextNode = it.next();
+            JsonNode retrievedNode = tryToRetrievePathFromIndex(nextNode, pathsArray, startingIndex);
+            if(retrievedNode != null) {
+                if(retrievedNode instanceof ArrayNode) {
+                    // flattening values for response, otherwise you can get nodes shaped like [[],[]]
+                    // which makes the subsequent `matchesAllFields` function more complicated.
+                    nodes.addAll((ArrayNode) retrievedNode);
+                } else {
+                    nodes.add(retrievedNode);
+                }
+
+            }
+        }
+        return nodes;
     }
 
     static int compare(final byte[] a, final byte[] b) {
