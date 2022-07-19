@@ -367,7 +367,7 @@ public class Benchmarks {
         long before = System.currentTimeMillis();
         for (String lot : citylots2) {
             for (String rule : rules) {
-                if (Ruler.matches(lot, ruleJSON.get(rule))) {
+                if (Ruler.match(lot, ruleJSON.get(rule))) {
                     incrRuleCount(rule, received);
                 }
             }
@@ -654,7 +654,7 @@ public class Benchmarks {
         long before = System.currentTimeMillis();
         for (String lot : lines) {
             for (String rule : rules) {
-                if (Ruler.matches(lot, ruleJSON.get(rule))) {
+                if (Ruler.match(lot, ruleJSON.get(rule))) {
                     incrRuleCount(rule, received);
                 }
             }
