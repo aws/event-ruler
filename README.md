@@ -391,7 +391,8 @@ There is a single static boolean method `Ruler.matchesRule(event, rule)` -
 both arguments are provided as JSON strings. 
 
 NOTE: There is another deprecated method called `Ruler.matches(event, rule)`which 
-should not be used as its results are inconsistent with other `rulesForJSONEvent()` / `rulesForEvent()`
+should not be used as its results are inconsistent with `rulesForJSONEvent()` and 
+`rulesForEvent()`
 
 ## Matching with a Machine
 
@@ -627,7 +628,7 @@ this method may be a time-saver.
 #### Caveat: Compiled rules and JSON keys with dots
 
 When Ruler compiles keys, it uses dot (`.`) as the joining character. This means 
-it will compile following two rules to the same internal representation 
+it will compile the following two rules to the same internal representation 
 
 ```javascript
 ## has no dots in keys
