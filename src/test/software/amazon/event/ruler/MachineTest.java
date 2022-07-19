@@ -1318,12 +1318,12 @@ public class MachineTest {
                 "\t\"z\": [0.1]\n" +
                 "}";
         assertEquals(1, cut.rulesForEvent(event).size());
-        assertTrue(Ruler.match(eventJSON, rule));
+        assertTrue(Ruler.matchesRule(eventJSON, rule));
 
         // delete partial rule
         cut.deleteRule("r1", rule);
         assertEquals(0, cut.rulesForEvent(event).size());
-        assertTrue(Ruler.match(eventJSON, rule));
+        assertTrue(Ruler.matchesRule(eventJSON, rule));
         assertTrue(cut.isEmpty());
     }
 

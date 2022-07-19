@@ -2,13 +2,11 @@ package software.amazon.event.ruler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import javax.annotation.concurrent.Immutable;
 import javax.annotation.concurrent.ThreadSafe;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -36,7 +34,7 @@ public class Ruler {
      * @param rule The rule, in JSON form
      * @return true or false depending on whether the rule matches the event
      */
-    public static boolean match(final String event, final String rule) throws Exception {
+    public static boolean matchesRule(final String event, final String rule) throws Exception {
         Machine machine = new Machine();
         machine.addRule("rule", rule);
         return !machine.rulesForJSONEvent(event).isEmpty();
@@ -47,7 +45,7 @@ public class Ruler {
      * <p>
      * This method is deprecated. You should use `Ruler.match` instead in all but one cases:
      * this method will return false for ` {"detail" : { "state": { "state": "running" } } }` with
-     * `{ "detail" : { "state.state": "running" } }` while `Ruler.match(...)` will. When this gap
+     * `{ "detail" : { "state.state": "running" } }` while `Ruler.matchesRule(...)` will. When this gap
      * has been addressed, we will remove this method as it doesn't handle many of the new matchers
      * and is not able to perform array consistency checks like rest of Ruler. This method also is
      * slower.
@@ -164,47 +162,13 @@ public class Ruler {
     }
 
     static JsonNode tryToRetrievePath(JsonNode node, final List<String> path) {
-        final String[] pathsArray = path.toArray(new String[]{});
-        final int startingIndex = 0;
-        return tryToRetrievePathFromIndex(node, pathsArray, startingIndex);
-    }
-
-    private static JsonNode tryToRetrievePathFromIndex(JsonNode node, String[] pathsArray, int startingIndex) {
-        for (int i = startingIndex; i < pathsArray.length; i++) {
-            if (node instanceof ArrayNode) {
-                final ArrayNode jsonNodes =
-                        tryToRetrievePathFromArray((ArrayNode) node, pathsArray, i);
-                if(!jsonNodes.isEmpty()) {
-                    return jsonNodes;
-                } // else keep looking.
-            }
-            if ((node == null) || !(node.isObject() || node.isArray())) {
+        for (final String step : path) {
+            if ((node == null) || !node.isObject()) {
                 return null;
             }
-            String step = pathsArray[i];
             node = node.get(step);
         }
         return node;
-    }
-
-    private static ArrayNode tryToRetrievePathFromArray(ArrayNode arrayNode, String[] pathsArray, int startingIndex) {
-        Iterator<JsonNode> it = arrayNode.elements();
-        final ArrayNode nodes = OBJECT_MAPPER.createArrayNode();
-        while (it.hasNext()) {
-            JsonNode nextNode = it.next();
-            JsonNode retrievedNode = tryToRetrievePathFromIndex(nextNode, pathsArray, startingIndex);
-            if(retrievedNode != null) {
-                if(retrievedNode instanceof ArrayNode) {
-                    // flattening values for response, otherwise you can get nodes shaped like [[],[]]
-                    // which makes the subsequent `matchesAllFields` function more complicated.
-                    nodes.addAll((ArrayNode) retrievedNode);
-                } else {
-                    nodes.add(retrievedNode);
-                }
-
-            }
-        }
-        return nodes;
     }
 
     static int compare(final byte[] a, final byte[] b) {

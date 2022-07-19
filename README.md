@@ -387,11 +387,11 @@ whether an individual event matches a particular rule.
 
 ## Static Rule Matching
 
-There is a single static boolean method `Ruler.match(event, rule)` -
+There is a single static boolean method `Ruler.matchesRule(event, rule)` -
 both arguments are provided as JSON strings. 
 
-NOTE: This replaces `Ruler.matches(event, rule)` method
-which lacked parity with `rulesForJSONEvent()` / `rulesForEvent()`.
+NOTE: There is another deprecated method called `Ruler.matches(event, rule)`which 
+should not be used as its results are inconsistent with other `rulesForJSONEvent()` / `rulesForEvent()`
 
 ## Matching with a Machine
 
@@ -627,7 +627,7 @@ this method may be a time-saver.
 #### Caveat: Compiled rules and JSON keys with dots
 
 When Ruler compiles keys, it uses dot (`.`) as the joining character. This means 
-it will treat following two rules with be compiled to the same internal representation 
+it will compile following two rules to the same internal representation 
 
 ```javascript
 ## has no dots in keys
@@ -655,7 +655,7 @@ We measured Ruler's performance in two modes:
 
 1. Multiple Rules are compiled into a Machine and matching is done against an Event provided as a JSON string.
 2. As above, but the events are supplied as an array of pre-sorted name/value pairs.
-2. Individual Rules are checked against individual Events using the static `Ruler.match()` method.
+2. Individual Rules are checked against individual Events using the static `Ruler.matchesRule()` method.
 
 A benchmark which processes 213,068 JSON events with average size about 900 bytes against 5 each
 exact-match, prefix-match, suffix-match, equals-ignore-case-match, numeric-match, and anything-but-match rules and
