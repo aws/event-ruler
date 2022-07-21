@@ -1,14 +1,10 @@
 package software.amazon.event.ruler;
 
 import org.junit.Test;
-import software.amazon.event.ruler.Machine;
-import software.amazon.event.ruler.RuleCompiler;
-import software.amazon.event.ruler.Ruler;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -367,7 +363,7 @@ public class Benchmarks {
         long before = System.currentTimeMillis();
         for (String lot : citylots2) {
             for (String rule : rules) {
-                if (Ruler.matches(lot, ruleJSON.get(rule))) {
+                if (Ruler.matchesRule(lot, ruleJSON.get(rule))) {
                     incrRuleCount(rule, received);
                 }
             }
@@ -654,7 +650,7 @@ public class Benchmarks {
         long before = System.currentTimeMillis();
         for (String lot : lines) {
             for (String rule : rules) {
-                if (Ruler.matches(lot, ruleJSON.get(rule))) {
+                if (Ruler.matchesRule(lot, ruleJSON.get(rule))) {
                     incrRuleCount(rule, received);
                 }
             }

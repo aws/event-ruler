@@ -387,8 +387,12 @@ whether an individual event matches a particular rule.
 
 ## Static Rule Matching
 
-There is a single static boolean method `Ruler.matches(event, rule)` -
-both arguments are provided as JSON strings.
+There is a single static boolean method `Ruler.matchesRule(event, rule)` -
+both arguments are provided as JSON strings. 
+
+NOTE: There is another deprecated method called `Ruler.matches(event, rule)`which 
+should not be used as its results are inconsistent with `rulesForJSONEvent()` and 
+`rulesForEvent()`
 
 ## Matching with a Machine
 
@@ -477,7 +481,7 @@ names* section, you would have to call `deleteRule()` the same number of times,
 with the same associated patterns, to remove all references to that rule name
 from the machine.
 
-### rulesForEvent() / rulesForJSONEvent
+### rulesForEvent() / rulesForJSONEvent()
 
 This method returns a `List<String>` for Machine (and `List<T>` for GenericMachine) which contains
 the names of the rules that match the provided event.  The event may be provided to either method
@@ -621,13 +625,38 @@ success, returns a `Map<String>, List<String>>` in the form that Machine's
 `addRule()` method expects. Since the Machine class uses this internally,
 this method may be a time-saver.
 
+#### Caveat: Compiled rules and JSON keys with dots
+
+When Ruler compiles keys, it uses dot (`.`) as the joining character. This means 
+it will compile the following two rules to the same internal representation 
+
+```javascript
+## has no dots in keys
+{ "detail" : { "state": { "status": [ "running" ] } } }
+
+## has dots in keys
+{ "detail" : { "state.status": [ "running" ] } }
+```
+
+It also means that these rules will match against following two events : 
+
+```javascript
+## has no dots in keys
+{ "detail" : { "state": { "status": "running" } } }
+
+## has dots in keys
+{ "detail" : { "state.status": "running"  } }
+```
+
+This behaviour may change in future version (to avoid any confusions) and should not be relied upon.
+
 ## Performance
 
 We measured Ruler's performance in two modes:
 
 1. Multiple Rules are compiled into a Machine and matching is done against an Event provided as a JSON string.
 2. As above, but the events are supplied as an array of pre-sorted name/value pairs.
-2. Individual Rules are checked against individual Events using the static `Ruler.matches()` method.
+2. Individual Rules are checked against individual Events using the static `Ruler.matchesRule()` method.
 
 A benchmark which processes 213,068 JSON events with average size about 900 bytes against 5 each
 exact-match, prefix-match, suffix-match, equals-ignore-case-match, numeric-match, and anything-but-match rules and

@@ -25,13 +25,36 @@ import java.util.Map;
 public class Ruler {
 
     private final static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     /**
-     * Return true if an event matches the provided rule
+     * Return true if an event matches the provided rule. This is a thin wrapper around
+     * rule machine and `rulesForJSONEvent` method.
      *
      * @param event The event, in JSON form
      * @param rule The rule, in JSON form
      * @return true or false depending on whether the rule matches the event
      */
+    public static boolean matchesRule(final String event, final String rule) throws Exception {
+        Machine machine = new Machine();
+        machine.addRule("rule", rule);
+        return !machine.rulesForJSONEvent(event).isEmpty();
+    }
+
+    /**
+     * Return true if an event matches the provided rule.
+     * <p>
+     * This method is deprecated. You should use `Ruler.match` instead in all but one cases:
+     * this method will return false for ` {"detail" : { "state": { "state": "running" } } }` with
+     * `{ "detail" : { "state.state": "running" } }` while `Ruler.matchesRule(...)` will. When this gap
+     * has been addressed, we will remove this method as it doesn't handle many of the new matchers
+     * and is not able to perform array consistency checks like rest of Ruler. This method also is
+     * slower.
+     *
+     * @param event The event, in JSON form
+     * @param rule The rule, in JSON form
+     * @return true or false depending on whether the rule matches the event
+     */
+    @Deprecated
     public static boolean matches(final String event, final String rule) throws IOException {
         final JsonNode eventRoot = OBJECT_MAPPER.readTree(event);
         final Map<List<String>, List<Patterns>> ruleMap = RuleCompiler.ListBasedRuleCompiler.flattenRule(rule);
@@ -39,7 +62,6 @@ public class Ruler {
     }
 
     private static boolean matchesAllFields(final JsonNode event, final Map<List<String>, List<Patterns>> rule) {
-
         for (Map.Entry<List<String>, List<Patterns>> entry : rule.entrySet()) {
             final JsonNode fieldValue = tryToRetrievePath(event, entry.getKey());
             if (!matchesOneOf(fieldValue, entry.getValue())) {

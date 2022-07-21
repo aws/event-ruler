@@ -69,6 +69,18 @@ public class RulerTest {
             "  \"detail.state\": \"running\"\n" +
             "}\n";
 
+    private static final String JSON_WITH_COMPLEX_ARRAYS = "{\n" +
+            "  \"employees\":[\n" +
+            "    [\n" +
+            "      { \"firstName\":\"John\", \"lastName\":\"Doe\" , \"ids\" : [ 1234, 1000, 9999 ] },\n" +
+            "      { \"firstName\":\"Anna\", \"lastName\":\"Smith\" }\n" +
+            "    ],\n" +
+            "    [\n" +
+            "      { \"firstName\":\"Peter\", \"lastName\":\"Jones\", \"ids\" : [ ]  }\n" +
+            "    ]\n" +
+            "  ]\n" +
+            "}";
+
     @Test
     public void WHEN_RulesFromReadmeAreTried_THEN_TheyWork() throws Exception {
         String[] rules = {
@@ -111,8 +123,11 @@ public class RulerTest {
         };
 
         for (String rule : rules) {
-            assertTrue(Ruler.matches(JSON_FROM_README, rule));
+            assertTrue(Ruler.matchesRule(JSON_FROM_README, rule));
+
             // None flattened rule should not be matched with the flattened event
+            // Keep these around until we can make the tests pass for `Ruler.match`
+            assertTrue(Ruler.matches(JSON_FROM_README, rule));
             assertFalse(Ruler.matches(JSON_FROM_README_WITH_FLAT_FORMAT, rule));
         }
     }
@@ -194,10 +209,10 @@ public class RulerTest {
                         "}\n"
         };
         for (String rule : matchingRules){
-            assertTrue(Ruler.matches(JSON_FROM_RFC, rule));
+            assertTrue(Ruler.matchesRule(JSON_FROM_RFC, rule));
         }
         for (String rule : nonMatchingRules) {
-            assertFalse(Ruler.matches(JSON_FROM_RFC, rule));
+            assertFalse(Ruler.matchesRule(JSON_FROM_RFC, rule));
         }
     }
 
@@ -266,6 +281,72 @@ public class RulerTest {
     }
 
     @Test
+    public void WHEN_JSONContainsArrays_THEN_RulerNoCompileMatchesWork() throws Exception {
+        String[] matchingRules = new String[] {
+                "{\n" +
+                        "    \"employees\": {\n" +
+                        "        \"firstName\": [\"Anna\"]\n" +
+                        "    }\n" +
+                        "}",
+                "{\n" +
+                        "    \"employees\": {\n" +
+                        "        \"firstName\": [\"John\"],\n" +
+                        "        \"ids\": [ 1000 ]\n" +
+                        "    }\n" +
+                        "}",
+                "{\n" +
+                        "    \"employees\": {\n" +
+                        "        \"firstName\": [\"Anna\"],\n" +
+                        "        \"ids\": [ { \"exists\": false  } ]\n" +
+                        "    }\n" +
+                        "}"
+        };
+        String[] nonMatchingRules = new String[] {
+                "{\n" +
+                        "    \"employees\": {\n" +
+                        "        \"firstName\": [\"Alice\"]\n" +
+                        "    }\n" +
+                        "}",
+                "{\n" + // See JSON Array Matching in README
+                        "    \"employees\": {\n" +
+                        "        \"firstName\": [\"Anna\"],\n" +
+                        "        \"lastName\": [\"Jones\"]\n" +
+                        "    }\n" +
+                        "}",
+                "{\n" +
+                        "    \"employees\": {\n" +
+                        "        \"firstName\": [\"Alice\"],\n" +
+                        "        \"lastName\": [\"Bob\"]\n" +
+                        "    }\n" +
+                        "}",
+                "{\n" +
+                        "    \"a\": [ \"b\" ]\n" +
+                        "}",
+                "{\n" +
+                        "    \"employees\": [ \"b\" ]\n" +
+                        "}",
+                "{\n" +
+                        "    \"employees\": {\n" +
+                        "        \"firstName\": [\"Anna\"],\n" +
+                        "        \"ids\": [ 1000 ]\n" +
+                        "    }\n" +
+                        "}",
+                "{\n" +
+                        "    \"employees\": {\n" +
+                        "        \"firstName\": [\"Anna\"],\n" +
+                        "        \"ids\": [ { \"exists\": true  } ]\n" +
+                        "    }\n" +
+                        "}"
+        };
+        for(String rule : matchingRules) {
+            assertTrue(rule, Ruler.matchesRule(JSON_WITH_COMPLEX_ARRAYS, rule));
+        }
+        for(String rule : nonMatchingRules) {
+            assertFalse(rule, Ruler.matchesRule(JSON_WITH_COMPLEX_ARRAYS, rule));
+        }
+    }
+
+    @Test
     public void WHEN_WeTryToMatchExistsRules_THEN_TheyWork() throws Exception {
         String rule1 = "{ \"a\" : [ { \"exists\": true } ] }";
         String rule2 = "{ \"b\" : [ { \"exists\": false } ] }";
@@ -276,18 +357,18 @@ public class RulerTest {
         String event2 = "{ \"b\" : 2 }";
         String event3 = "{ \"x\" : \"X\" }";
 
-        assertTrue("1/1", Ruler.matches(event1, rule1));
-        assertTrue("2/1", Ruler.matches(event1, rule2));
-        assertFalse("3/1", Ruler.matches(event1, rule3));
-        assertTrue("4/1", Ruler.matches(event1, rule4));
-        assertFalse("1/2", Ruler.matches(event2, rule1));
-        assertFalse("2/2", Ruler.matches(event2, rule2));
-        assertFalse("3/2", Ruler.matches(event2, rule3));
-        assertTrue("4/2", Ruler.matches(event2, rule4));
-        assertFalse("1/3", Ruler.matches(event3, rule1));
-        assertTrue("2/3", Ruler.matches(event3, rule2));
-        assertTrue("3/3", Ruler.matches(event3, rule3));
-        assertFalse("4/3", Ruler.matches(event3, rule4));
+        assertTrue("1/1", Ruler.matchesRule(event1, rule1));
+        assertTrue("2/1", Ruler.matchesRule(event1, rule2));
+        assertFalse("3/1", Ruler.matchesRule(event1, rule3));
+        assertTrue("4/1", Ruler.matchesRule(event1, rule4));
+        assertFalse("1/2", Ruler.matchesRule(event2, rule1));
+        assertFalse("2/2", Ruler.matchesRule(event2, rule2));
+        assertFalse("3/2", Ruler.matchesRule(event2, rule3));
+        assertTrue("4/2", Ruler.matchesRule(event2, rule4));
+        assertFalse("1/3", Ruler.matchesRule(event3, rule1));
+        assertTrue("2/3", Ruler.matchesRule(event3, rule2));
+        assertTrue("3/3", Ruler.matchesRule(event3, rule3));
+        assertFalse("4/3", Ruler.matchesRule(event3, rule4));
     }
 
     @Test
@@ -302,12 +383,12 @@ public class RulerTest {
         String event4 = "{ \"x\" : true }";
 
 
-        assertTrue("1/1", Ruler.matches(event1, rule1));
-        assertTrue("2/2", Ruler.matches(event2, rule2));
-        assertTrue("3/3", Ruler.matches(event3, rule3));
-        assertFalse("4/1", Ruler.matches(event4, rule1));
-        assertFalse("4/2", Ruler.matches(event4, rule2));
-        assertFalse("4/3", Ruler.matches(event4, rule3));
+        assertTrue("1/1", Ruler.matchesRule(event1, rule1));
+        assertTrue("2/2", Ruler.matchesRule(event2, rule2));
+        assertTrue("3/3", Ruler.matchesRule(event3, rule3));
+        assertFalse("4/1", Ruler.matchesRule(event4, rule1));
+        assertFalse("4/2", Ruler.matchesRule(event4, rule2));
+        assertFalse("4/3", Ruler.matchesRule(event4, rule3));
     }
 
     @Test
@@ -391,7 +472,7 @@ public class RulerTest {
         boolean[] result = {true, false, false, false, false, false, false, false };
 
         for (int i = 0; i< events.length; i++) {
-            assertEquals(events[i], result[i], Ruler.matches(events[i], rule));
+            assertEquals(events[i], result[i], Ruler.matchesRule(events[i], rule));
         }
     }
 
@@ -432,7 +513,7 @@ public class RulerTest {
         boolean[] result = {false, false, false, true };
 
         for (int i = 0; i< events.length; i++) {
-            assertEquals(events[i], result[i], Ruler.matches(events[i], rule));
+            assertEquals(events[i], result[i], Ruler.matchesRule(events[i], rule));
         }
     }
 }
