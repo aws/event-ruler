@@ -29,6 +29,9 @@ public class PatternsTest {
         patternsList.add(Patterns.exactMatch("ab"));
         patternsList.add(Patterns.numericEquals(1.23));
         patternsList.add(Patterns.prefixMatch("abc"));
+        patternsList.add(Patterns.suffixMatch("zyx"));
+        patternsList.add(Patterns.equalsIgnoreCaseMatch("hElLo"));
+        patternsList.add(Patterns.wildcardMatch("wild*card"));
         patternsList.add(Range.between(1.1, true, 2.2, false));
 
         String [] expect = {
@@ -39,6 +42,9 @@ public class PatternsTest {
                 "ab",
                 "11C37937F344B0",
                 "abc",
+                "xyz",
+                "hElLo",
+                "wild*card",
                 null
         };
 

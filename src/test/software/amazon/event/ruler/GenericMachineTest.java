@@ -2,8 +2,6 @@ package software.amazon.event.ruler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -12,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -257,6 +256,36 @@ public class GenericMachineTest {
         val = genericMachine.rulesForJSONEvent(jsonEvent5);
         assertEquals(3, val.size());
         val.forEach(r -> assertTrue(Stream.of(r1, r2, r3).anyMatch(i -> (i == r))));
+    }
+
+    @Test
+    public void testEvaluateComplexity() throws Exception {
+        String rule1 = "{ \"a\" : [ { \"wildcard\": \"a*bc\" } ] }";
+        String rule2 = "{ \"b\" : [ { \"wildcard\": \"a*aa\" } ] }";
+        String rule3 = "{ \"c\" : [ { \"wildcard\": \"xyz*\" } ] }";
+
+        GenericMachine<SimpleFilter> genericMachine = new GenericMachine<>();
+        genericMachine.addRule(r1, rule1);
+        genericMachine.addRule(r2, rule2);
+        genericMachine.addRule(r3, rule3);
+
+        MachineComplexityEvaluator evaluator = new MachineComplexityEvaluator(100);
+        assertEquals(3, genericMachine.evaluateComplexity(evaluator));
+    }
+
+    @Test
+    public void testEvaluateComplexityHitMax() throws Exception {
+        String rule1 = "{ \"a\" : [ { \"wildcard\": \"a*bc\" } ] }";
+        String rule2 = "{ \"b\" : [ { \"wildcard\": \"a*aa\" } ] }";
+        String rule3 = "{ \"c\" : [ { \"wildcard\": \"xyz*\" } ] }";
+
+        GenericMachine<SimpleFilter> genericMachine = new GenericMachine<>();
+        genericMachine.addRule(r1, rule1);
+        genericMachine.addRule(r2, rule2);
+        genericMachine.addRule(r3, rule3);
+
+        MachineComplexityEvaluator evaluator = new MachineComplexityEvaluator(2);
+        assertEquals(2, genericMachine.evaluateComplexity(evaluator));
     }
 
     @Test

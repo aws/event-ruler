@@ -24,7 +24,7 @@ public class ValuePatterns extends Patterns {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof ValuePatterns)) {
+        if (o == null || !o.getClass().equals(getClass())) {
             return false;
         }
         if (!super.equals(o)) {

@@ -2,14 +2,13 @@ package software.amazon.event.ruler;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.junit.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -127,6 +126,9 @@ public class JsonRuleCompilerTest {
         j = "{\"a\": [ { \"equals-ignore-case\": \"abc\" } ] }";
         assertNull("Good equals-ignore-case should parse", JsonRuleCompiler.check(j));
 
+        j = "{\"a\": [ { \"wildcard\": \"a*b*c\" } ] }";
+        assertNull("Good wildcard should parse", JsonRuleCompiler.check(j));
+
         String[] badPatternTypes = {
                 "{\"a\": [ { \"exactly\": 33 } ] }",
                 "{\"a\": [ { \"prefix\": \"child\", \"foo\": [] } ] }",
@@ -145,7 +147,9 @@ public class JsonRuleCompilerTest {
                 "{\"a\": [ { \"anything-but\": { \"prefix\": \"foo\", \"a\":1 } } ] }",
                 "{\"a\": [ { \"anything-but\": { \"prefix\": \"foo\" }, \"x\": 1 } ] }",
                 "{\"a\": [ { \"equals-ignore-case\": 5 } ] }",
-                "{\"a\": [ { \"equals-ignore-case\": [ \"abc\" ] } ] }"
+                "{\"a\": [ { \"equals-ignore-case\": [ \"abc\" ] } ] }",
+                "{\"a\": [ { \"wildcard\": 5 } ] }",
+                "{\"a\": [ { \"wildcard\": [ \"abc\" ] } ] }"
         };
         for (String badPattern : badPatternTypes) {
             assertNotNull("bad pattern shouldn't parse", JsonRuleCompiler.check(badPattern));

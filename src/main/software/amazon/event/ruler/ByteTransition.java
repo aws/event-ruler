@@ -1,5 +1,7 @@
 package software.amazon.event.ruler;
 
+import java.util.Set;
+
 /**
  * Represents a transition (on a particular byte value) from a state to a state.
  */
@@ -8,7 +10,7 @@ abstract class ByteTransition implements Cloneable {
     /**
      * Returns the state to transfer to.
      *
-     * @return the state to transfer to, or {@code null} if this transition does not support state transfer
+     * @return the state to transfer to, or {@code null} if this transition does not transfer to a state
      */
     abstract ByteState getNextByteState();
 
@@ -21,31 +23,68 @@ abstract class ByteTransition implements Cloneable {
      * @return this or a new transition that contains the given next state if the next state is not {@code null};
      * otherwise, the method returns {@code null} or a new transition that does not support transfer
      */
-    abstract ByteTransition setNextByteState(ByteState nextState);
+    abstract SingleByteTransition setNextByteState(ByteState nextState);
 
     /**
-     * Returns the first match of a linked list of matches that are triggered if this transition is made.
+     * Get a subsequent transition from this transition for the given UTF-8 byte.
      *
-     * @return the first match of a linked list of matches, or {@code null} if this transition does not support matching
+     * @param utf8byte The byte to transition on
+     * @return The next transition given the byte, or {@code null} if there is not a next transition
      */
-    abstract ByteMatch getMatch();
+    abstract ByteTransition getTransition(byte utf8byte);
 
     /**
-     * Sets the match. The method returns this or a new transition that contains the given match if the match is not
-     * {@code null}. Otherwise, the method returns {@code null} or a new transition that does not
-     * support matching.
+     * Get all the unique transitions (single or compound) reachable from this transition by any UTF-8 byte value.
      *
-     * @param match the match
-     * @return this or a new transition that contains the given match if the match is not {@code null}; otherwise,
-     * {@code null} or a new transition that does not support matching
+     * @return Set of all transitions reachable from this transition.
      */
-    abstract ByteTransition setMatch(ByteMatch match);
+    abstract Set<ByteTransition> getTransitions();
+
+    /**
+     * Returns matches that are triggered if this transition is made. This is a convenience function that traverses the
+     * linked list of matches and returns all of them in a Set.
+     *
+     * @return matches that are triggered if this transition is made.
+     */
+    abstract Set<ByteMatch> getMatches();
+
+    /**
+     * Returns all shortcuts that are available if this transition is made.
+     *
+     * @return all shortcuts
+     */
+    abstract Set<ShortcutTransition> getShortcuts();
+
+    /**
+     * Get all transitions represented by this transition (can be more than one if this is a compound transition).
+     *
+     * @return A set of all transitions represented by this transition.
+     */
+    abstract Set<SingleByteTransition> expand();
+
+    /**
+     * Get a transition that represents all of the next byte states for this transition.
+     *
+     * @return A transition that represents all of the next byte states for this transition.
+     */
+    abstract ByteTransition getTransitionForNextByteStates();
 
     /**
      * Tell if current transition is a shortcut transition or not.
-     * @return boolean
+     *
+     * @return True if and only if this is a shortcut transition.
      */
     boolean isShortcutTrans() {
+        return false;
+    }
+
+    /**
+     * Tell if current transition is a match transition or not. Does not include shortcut transitions. Only includes
+     * transitions that are matches after processing the entire pattern value.
+     *
+     * @return True if and only if there is a match on this transition.
+     */
+    boolean isMatchTrans() {
         return false;
     }
 
@@ -54,7 +93,17 @@ abstract class ByteTransition implements Cloneable {
      * @return boolean
      */
     boolean isEmpty() {
-        return getMatch() == null && getNextByteState() == null;
+        return getMatches().isEmpty() && getNextByteState() == null;
+    }
+
+    /**
+     * Indicates if it is possible to traverse from the machine's start state to this transition using more than one
+     * possible prefix/character-sequence.
+     *
+     * @return True if prefix is indeterminate; false otherwise.
+     */
+    boolean hasIndeterminatePrefix() {
+        return false;
     }
 
     @Override

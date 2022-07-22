@@ -1,10 +1,5 @@
 package software.amazon.event.ruler;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -16,6 +11,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 
 /**
  * Compiles Rules, expressed in JSON, for use in Ruler.
@@ -357,6 +357,17 @@ public class RuleCompiler {
                 barf(parser, "Only one key allowed in match expression");
             }
             return pattern;
+        } else if (Constants.WILDCARD.equals(matchTypeName)) {
+            final JsonToken wildcardToken = parser.nextToken();
+            if (wildcardToken != JsonToken.VALUE_STRING) {
+                barf(parser, "wildcard match pattern must be a string");
+            }
+            final String parserText = parser.getText();
+            final Patterns pattern = Patterns.wildcardMatch('"' + parserText + '"');
+            if (parser.nextToken() != JsonToken.END_OBJECT) {
+                barf(parser, "Only one key allowed in match expression");
+            }
+            return pattern;
         } else {
             barf(parser, "Unrecognized match type " + matchTypeName);
             return null; // unreachable statement, but java can't see that?
@@ -558,7 +569,7 @@ public class RuleCompiler {
          * @return Map form of rule
          * @throws IOException if the rule isn't syntactically valid
          */
-        static Map<List<String>, List<Patterns>> flattenRule(final String source) throws IOException {
+        public static Map<List<String>, List<Patterns>> flattenRule(final String source) throws IOException {
             return doFlattenRule(JSON_FACTORY.createParser(source));
         }
 

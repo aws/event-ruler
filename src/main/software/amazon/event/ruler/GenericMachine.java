@@ -2,8 +2,6 @@ package software.amazon.event.ruler;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
-
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -15,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 
 /**
  *  Represents a state machine used to match name/value patterns to rules.
@@ -266,6 +265,7 @@ public class GenericMachine<T> {
         if (byteMachine == null && nameMatcher == null) {
             return;
         }
+
         for (Patterns pattern : patterns.get(key)) {
             NameState nextNameState = null;
             if (isNamePattern(pattern)) {
@@ -522,6 +522,10 @@ public class GenericMachine<T> {
         for (String step : steps) {
             fieldStepsUsedRefCount.compute(step, (k, v) -> (v == 1) ? null : v - 1);
         }
+    }
+
+    public int evaluateComplexity(MachineComplexityEvaluator evaluator) {
+        return startState.evaluateComplexity(evaluator);
     }
 
     @Override

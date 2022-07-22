@@ -1,7 +1,5 @@
 package software.amazon.event.ruler;
 
-import org.junit.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -16,11 +14,18 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.junit.Test;
+import org.hamcrest.collection.IsMapContaining;
+import org.hamcrest.collection.IsIterableContainingInOrder;
+import org.hamcrest.collection.IsIterableContainingInAnyOrder;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class RuleCompilerTest {
@@ -131,6 +136,12 @@ public class RuleCompilerTest {
         j = "{\"a\": [ { \"cidr\": \"10.0.0.0/8\" } ] }";
         assertNull("Good CIDR should parse", RuleCompiler.check(j));
 
+        j = "{\"a\": [ { \"equals-ignore-case\": \"abc\" } ] }";
+        assertNull("Good equals-ignore-case should parse", JsonRuleCompiler.check(j));
+
+        j = "{\"a\": [ { \"wildcard\": \"a*b*c\" } ] }";
+        assertNull("Good wildcard should parse", JsonRuleCompiler.check(j));
+
         String[] badPatternTypes = {
                 "{\"a\": [ { \"exactly\": 33 } ] }",
                 "{\"a\": [ { \"prefix\": \"child\", \"foo\": [] } ] }",
@@ -147,7 +158,11 @@ public class RuleCompilerTest {
                 "{\"a\": [ { \"anything-but\": { \"prefix\": 27 } } ] }",
                 "{\"a\": [ { \"anything-but\": { \"prefix\": \"\" } } ] }",
                 "{\"a\": [ { \"anything-but\": { \"prefix\": \"foo\", \"a\":1 } } ] }",
-                "{\"a\": [ { \"anything-but\": { \"prefix\": \"foo\" }, \"x\": 1 } ] }"
+                "{\"a\": [ { \"anything-but\": { \"prefix\": \"foo\" }, \"x\": 1 } ] }",
+                "{\"a\": [ { \"equals-ignore-case\": 5 } ] }",
+                "{\"a\": [ { \"equals-ignore-case\": [ \"abc\" ] } ] }",
+                "{\"a\": [ { \"wildcard\": 5 } ] }",
+                "{\"a\": [ { \"wildcard\": [ \"abc\" ] } ] }"
         };
         for (String badPattern : badPatternTypes) {
             assertNotNull("bad pattern shouldn't parse", RuleCompiler.check(badPattern));
@@ -192,6 +207,52 @@ public class RuleCompilerTest {
         vp2 = (ValuePatterns) l.get(1);
         assertEquals("\"in-service\"", vp1.pattern());
         assertEquals("\"dead\"", vp2.pattern());
+    }
+
+    @Test
+    public void testFlattenRule() throws Exception {
+        final String rule = "{" +
+                "\"a1\": [123, \"child\", {\"numeric\": [\">\", 0, \"<=\", 5]}]," +
+                "\"a2\": { \"b\": {" +
+                    "\"c1\": [" +
+                        "{ \"suffix\": \"child\" }," +
+                        "{ \"anything-but\": [111,222,333]}," +
+                        "{ \"anything-but\": { \"prefix\": \"foo\"}}" +
+                    "]," +
+                    "\"c2\": { \"d\": { \"e\": [" +
+                        "{ \"exactly\": \"child\" }," +
+                        "{ \"exists\": true }," +
+                        "{ \"cidr\": \"10.0.0.0/8\" }" +
+                    "]}}}" +
+                "}}";
+        Map<List<String>, List<Patterns>> m = RuleCompiler.ListBasedRuleCompiler.flattenRule(rule);
+
+        assertEquals(3, m.size());
+        assertThat(m, IsMapContaining.hasEntry(
+                IsIterableContainingInOrder.contains("a1"),
+                IsIterableContainingInAnyOrder.containsInAnyOrder(
+                        Patterns.numericEquals(123),
+                        Patterns.exactMatch("123"),
+                        Patterns.exactMatch("\"child\""),
+                        Range.between(0, true, 5, false)
+                )
+        ));
+        assertThat(m, IsMapContaining.hasEntry(
+                IsIterableContainingInOrder.contains("a2", "b", "c1"),
+                IsIterableContainingInAnyOrder.containsInAnyOrder(
+                        Patterns.suffixMatch("child\""),
+                        Patterns.anythingButNumberMatch(Stream.of(111, 222, 333).map(Double::valueOf).collect(Collectors.toSet())),
+                        Patterns.anythingButPrefix("\"foo")
+                )
+        ));
+        assertThat(m, IsMapContaining.hasEntry(
+                IsIterableContainingInOrder.contains("a2", "b", "c2", "d", "e"),
+                IsIterableContainingInAnyOrder.containsInAnyOrder(
+                        Patterns.exactMatch("\"child\""),
+                        Patterns.existencePatterns(),
+                        CIDR.cidr("10.0.0.0/8")
+                )
+        ));
     }
 
     @Test

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -91,7 +90,7 @@ public class JsonRuleCompiler {
     }
 
     /**
-     * Compile a rule from its JSON form to a Map suitable for use by event.Ruler (elements are surrounded by quotes).
+     * Compile a rule from its JSON form to a Map suitable for use by event.ruler.Ruler (elements are surrounded by quotes).
      *
      * @param source rule, as a String
      * @return List of Sub rule which represented as Map
@@ -448,6 +447,17 @@ public class JsonRuleCompiler {
                 barf(parser, "equals-ignore-case match pattern must be a string");
             }
             final Patterns pattern = Patterns.equalsIgnoreCaseMatch('"' + parser.getText() + '"');
+            if (parser.nextToken() != JsonToken.END_OBJECT) {
+                barf(parser, "Only one key allowed in match expression");
+            }
+            return pattern;
+        } else if (Constants.WILDCARD.equals(matchTypeName)) {
+            final JsonToken wildcardToken = parser.nextToken();
+            if (wildcardToken != JsonToken.VALUE_STRING) {
+                barf(parser, "wildcard match pattern must be a string");
+            }
+            final String parserText = parser.getText();
+            final Patterns pattern = Patterns.wildcardMatch('"' + parserText + '"');
             if (parser.nextToken() != JsonToken.END_OBJECT) {
                 barf(parser, "Only one key allowed in match expression");
             }

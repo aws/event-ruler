@@ -2,40 +2,47 @@ package software.amazon.event.ruler;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.ThreadSafe;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+
+import java.util.Collections;
+import java.util.Set;
 
 /**
- * Represents a state in a state machine and maps utf-8 bytes to transitions.
+ * Represents a state in a state machine and maps utf-8 bytes to transitions. One byte can have many transitions,
+ * meaning this is an NFA state as opposed to a DFA state.
  */
 @ThreadSafe
-final class ByteState extends ByteTransition {
+class ByteState extends SingleByteTransition {
 
-    /**
-     * The field is {@code null} when this state contains no transitions. The field stores
-     * {@link ByteTransitionEntry} when this state contains one transition and {@link ConcurrentHashMap} when this
-     * state contains two or more transitions.
+    private final ByteMap map = new ByteMap();
+
+    /* True if this state's placement in the machine means there is more than one possible value that can be matched on
+     * a traversal from the start state to this state. This will happen, for example, when a wildcard or regex
+     * expression occurs between the start state and this state.
      */
-    private volatile Object transitionStore;
+    private boolean hasIndeterminatePrefix = false;
 
-    @Override
-    public ByteState getNextByteState() {
+    ByteState getNextByteState() {
         return this;
     }
 
     @Override
-    public ByteTransition setNextByteState(ByteState nextState) {
+    public SingleByteTransition setNextByteState(ByteState nextState) {
         return nextState;
     }
 
     @Override
-    public ByteMatch getMatch() {
+    ByteMatch getMatch() {
         return null;
     }
 
     @Override
-    public ByteTransition setMatch(ByteMatch match) {
+    public SingleByteTransition setMatch(ByteMatch match) {
         return match == null ? this : new CompositeByteTransition(this, match);
+    }
+
+    @Override
+    public Set<ShortcutTransition> getShortcuts() {
+        return Collections.emptySet();
     }
 
     /**
@@ -44,7 +51,7 @@ final class ByteState extends ByteTransition {
      * @return {@code true} if this state contains no transitions
      */
     boolean hasNoTransitions() {
-        return transitionStore == null;
+        return map.isEmpty();
     }
 
     /**
@@ -55,124 +62,110 @@ final class ByteState extends ByteTransition {
      * @return the transition to which the given byte value is mapped, or {@code null} if this state contains no
      * transitions for the given byte value
      */
+    @Override
     ByteTransition getTransition(byte utf8byte) {
-        // saving the value to avoid reading an updated value
-        Object transitionStore = this.transitionStore;
-        if (transitionStore == null) {
-            return null;
-        } else if (transitionStore instanceof ByteTransitionEntry) {
-            ByteTransitionEntry entry = (ByteTransitionEntry) transitionStore;
-            return utf8byte == entry.utf8byte ? entry.transition : null;
-        } else {
-            @SuppressWarnings("unchecked")
-            Map<Byte, ByteTransition> map = (Map<Byte, ByteTransition>) transitionStore;
-            return map.get(utf8byte);
-        }
+        return map.getTransition(utf8byte);
     }
 
     @Override
-    public String toString() {
-        String hc = Long.toString((hashCode()));
-        if (transitionStore == null) {
-            return "BS: " + hc + ":null";
-        } else if (transitionStore instanceof ByteTransitionEntry) {
-            ByteTransitionEntry entry = (ByteTransitionEntry) transitionStore;
-            ByteState next = entry.transition.getNextByteState();
-            return "BS: " + hc + ":\n" + (char) entry.utf8byte + "=>" + next;
-        } else {
-            @SuppressWarnings("unchecked")
-            Map<Byte, ByteTransition> map = (Map<Byte, ByteTransition>) transitionStore;
-            StringBuilder sb = new StringBuilder("BS: " + hc);
-            for (byte key : map.keySet()) {
-                ByteState next = map.get(key).getNextByteState();
-                String nextLabel = (next == null) ? "null" : Integer.toString(next.hashCode());
-                sb.append("\n ").append((char) key).append("=>").append(nextLabel);
-            }
-            return sb.toString();
-        }
+    ByteTransition getTransitionForAllBytes() {
+        return map.getTransitionForAllBytes();
     }
 
-
-
+    @Override
+    Set<ByteTransition> getTransitions() {
+        return map.getTransitions();
+    }
 
     /**
-     * Associates the given transition with the given byte value in this state. If the state previously contained a
-     * transition for the byte value, the old transition is replaced by the given transition.
+     * Associates the given transition with the given byte value in this state. If the state previously contained any
+     * transitions for the byte value, the old transitions are replaced by the given transition.
      *
      * @param utf8byte   the byte value with which the given transition is to be associated
      * @param transition the transition to be associated with the given byte value
      */
-    void putTransition(byte utf8byte, @Nonnull ByteTransition transition) {
-        // saving the value to avoid reading an updated value
-        Object transitionStore = this.transitionStore;
-        if (transitionStore == null) {
-            this.transitionStore = new ByteTransitionEntry(utf8byte, transition);
-        } else if (transitionStore instanceof ByteTransitionEntry) {
-            ByteTransitionEntry entry = (ByteTransitionEntry) transitionStore;
-            if (utf8byte == entry.utf8byte) {
-                entry.transition = transition;
-            } else {
-                Map<Byte, ByteTransition> map = new ConcurrentHashMap<>(2);
-                map.put(entry.utf8byte, entry.transition);
-                map.put(utf8byte, transition);
-                this.transitionStore = map;
-            }
-        } else {
-            @SuppressWarnings("unchecked")
-            Map<Byte, ByteTransition> map = (Map<Byte, ByteTransition>) transitionStore;
-            map.put(utf8byte, transition);
-        }
+    void putTransition(byte utf8byte, @Nonnull SingleByteTransition transition) {
+        map.putTransition(utf8byte, transition);
     }
 
     /**
-     * Removes the transition for the given byte value from this state if it is present.
+     * Associates the given transition with all possible byte values in this state. If the state previously contained
+     * any transitions for any of the byte values, the old transitions are replaced by the given transition.
      *
-     * @param utf8byte the byte value whose transition is to be removed from the state
+     * @param transition the transition to be associated with the given byte value
      */
-    void removeTransition(byte utf8byte) {
-        // saving the value to avoid reading an updated value
-        Object transitionStore = this.transitionStore;
-        if (transitionStore != null) {
-            if (transitionStore instanceof ByteTransitionEntry) {
-                ByteTransitionEntry entry = (ByteTransitionEntry) transitionStore;
-                if (utf8byte == entry.utf8byte) {
-                    this.transitionStore = null;
-                }
-            } else {
-                @SuppressWarnings("unchecked")
-                Map<Byte, ByteTransition> map = (Map<Byte, ByteTransition>) transitionStore;
-                if (map.containsKey(utf8byte)) {
-                    if (map.size() == 2) {
-                        for (Map.Entry<Byte, ByteTransition> entry : map.entrySet()) {
-                            if (utf8byte != entry.getKey()) {
-                                this.transitionStore = new ByteTransitionEntry(entry.getKey(), entry.getValue());
-                                break;
-                            }
-                        }
-                    } else {
-                        map.remove(utf8byte);
-                    }
-                }
-            }
-        }
+    void putTransitionForAllBytes(@Nonnull SingleByteTransition transition) {
+        map.putTransitionForAllBytes(transition);
     }
 
-    private static final class ByteTransitionEntry {
+    /**
+     * Associates the given transition with the given byte value in this state. If the state previously contained any
+     * transitions for the byte value, the given transition is added to these old transitions.
+     *
+     * @param utf8byte   the byte value with which the given transition is to be associated
+     * @param transition the transition to be associated with the given byte value
+     */
+    void addTransition(byte utf8byte, @Nonnull SingleByteTransition transition) {
+        map.addTransition(utf8byte, transition);
+    }
 
-        final byte utf8byte;
-        volatile ByteTransition transition;
+    /**
+     * Associates the given transition with all possible byte values in this state. If the state previously contained
+     * any transitions for any of the byte values, the given transition is added to these old transitions.
+     *
+     * @param transition the transition to be associated with all possible byte values
+     */
+    void addTransitionForAllBytes(final SingleByteTransition transition) {
+        map.addTransitionForAllBytes(transition);
+    }
 
-        ByteTransitionEntry(byte utf8byte, ByteTransition transition) {
-            this.utf8byte = utf8byte;
-            this.transition = transition;
-        }
+    /**
+     * Removes all transitions for the given byte value from this state.
+     *
+     * @param utf8byte the byte value whose transitions are to be removed from the state
+     */
+    void removeTransition(byte utf8byte, SingleByteTransition transition) {
+        map.removeTransition(utf8byte, transition);
+    }
 
-        @Override
-        public String toString() {
-            ByteState next = transition.getNextByteState();
-            String nextLabel = (next == null) ? "null" : Integer.toString(next.hashCode());
-            return "BT: " + (char) utf8byte + "=>" + nextLabel;
+    /**
+     * Removes the given transition for all possible byte values from this state.
+     *
+     * @param transition the transition to be removed for all possible byte values
+     */
+    void removeTransitionForAllBytes(final SingleByteTransition transition) {
+        map.removeTransitionForAllBytes(transition);
+    }
 
-        }
+    @Override
+    boolean hasIndeterminatePrefix() {
+        return hasIndeterminatePrefix;
+    }
+
+    void setIndeterminatePrefix(boolean hasIndeterminatePrefix) {
+        this.hasIndeterminatePrefix = hasIndeterminatePrefix;
+    }
+
+    /**
+     * Return true if this state has a self-referential transition and no others.
+     *
+     * @return True if this state has a self-referential transition and no others, false otherwise.
+     */
+    boolean hasOnlySelfReferentialTransition() {
+        return map.numberOfTransitions() == 1 && map.hasTransition(this);
+    }
+
+    /**
+     * Gets all the ceiling values contained in the ByteMap.
+     *
+     * @return All the ceiling values contained in the ByteMap.
+     */
+    Set<Integer> getCeilings() {
+        return map.getCeilings();
+    }
+
+    @Override
+    public String toString() {
+        return "BS: " + map;
     }
 }

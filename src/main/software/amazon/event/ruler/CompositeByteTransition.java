@@ -1,11 +1,13 @@
 package software.amazon.event.ruler;
 
 import javax.annotation.Nonnull;
+import java.util.Collections;
+import java.util.Set;
 
 /**
  * Represents a composite transition that has a next state and a match.
  */
-final class CompositeByteTransition extends ByteTransition {
+final class CompositeByteTransition extends SingleByteTransition {
 
     /**
      * The state to transfer to.
@@ -34,7 +36,7 @@ final class CompositeByteTransition extends ByteTransition {
     }
 
     @Override
-    public ByteTransition setNextByteState(ByteState nextState) {
+    public SingleByteTransition setNextByteState(ByteState nextState) {
         if (nextState == null) {
             return match;
         } else {
@@ -44,17 +46,47 @@ final class CompositeByteTransition extends ByteTransition {
     }
 
     @Override
-    public ByteMatch getMatch() {
+    public ByteTransition getTransition(byte utf8byte) {
+        return null;
+    }
+
+    @Override
+    public ByteTransition getTransitionForAllBytes() {
+        return null;
+    }
+
+    @Override
+    public Set<ByteTransition> getTransitions() {
+        return Collections.EMPTY_SET;
+    }
+
+    @Override
+    ByteMatch getMatch() {
         return match;
     }
 
     @Override
-    public ByteTransition setMatch(ByteMatch match) {
+    public SingleByteTransition setMatch(ByteMatch match) {
         if (match == null) {
             return nextState;
         } else {
             this.match = match;
             return this;
         }
+    }
+
+    @Override
+    public Set<ShortcutTransition> getShortcuts() {
+        return Collections.emptySet();
+    }
+
+    @Override
+    boolean hasIndeterminatePrefix() {
+        return nextState == null ? false : nextState.hasIndeterminatePrefix();
+    }
+
+    @Override
+    boolean isMatchTrans() {
+        return true;
     }
 }

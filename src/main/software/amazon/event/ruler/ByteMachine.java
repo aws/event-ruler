@@ -1,23 +1,29 @@
 package software.amazon.event.ruler;
 
-import javax.annotation.concurrent.ThreadSafe;
+import software.amazon.event.ruler.input.InputByte;
+import software.amazon.event.ruler.input.InputCharacter;
+import software.amazon.event.ruler.input.InputCharacterType;
+import software.amazon.event.ruler.input.InputMultiByteSet;
+import software.amazon.event.ruler.input.MultiByte;
+
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import javax.annotation.concurrent.ThreadSafe;
 
-import static software.amazon.event.ruler.MatchType.EQUALS_IGNORE_CASE;
+import static software.amazon.event.ruler.CompoundByteTransition.coalesce;
 import static software.amazon.event.ruler.MatchType.EXACT;
 import static software.amazon.event.ruler.MatchType.EXISTS;
 import static software.amazon.event.ruler.MatchType.SUFFIX;
+import static software.amazon.event.ruler.input.Parser.getParser;
 
 /**
  * Represents a UTF8-byte-level state machine that matches a Ruler state machine's field values.
@@ -28,10 +34,12 @@ import static software.amazon.event.ruler.MatchType.SUFFIX;
 class ByteMachine {
 
     // Only these match types support shortcuts during traversal.
-    private static final Set<MatchType> SHORTCUT_MATCH_TYPES =
-            Collections.unmodifiableSet(new HashSet<>(Arrays.asList(EXACT, EQUALS_IGNORE_CASE)));
+    private static final Set<MatchType> SHORTCUT_MATCH_TYPES = Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList(EXACT)));
 
     private final ByteState startState = new ByteState();
+    // For wildcard rule "*", the start state is a match.
+    private ByteMatch startStateMatch;
 
     // non-zero if the machine has a numerical-comparison pattern included.  In which case, values
     //  should be converted to ComparableNumber before testing for matches, if possible.
@@ -45,9 +53,6 @@ class ByteMachine {
     // signal the presence of suffix match in current byteMachine instance
     private final AtomicInteger hasSuffix = new AtomicInteger(0);
 
-    // signal the presence of equals-ignore-case match in current byteMachine instance
-    private final AtomicInteger hasEqualsIgnoreCase = new AtomicInteger(0);
-
     // For anything-but patterns, we assume they've matched unless we can prove they didn't.  When we
     //  add an anything-but to the machine, we put it in just like an exact match and remember it in
     //  this structure.  Then when we traverse the machine, if we get an exact match to the anything-but,
@@ -60,11 +65,11 @@ class ByteMachine {
     //  other byte values to a "success" match.  In state 2 and state 3, "o" would transition to the next state
     //  and all 255 others to success; then you'd have all 256 values in state 4 be success.  This would be simple
     //  and fast, but VERY memory-expensive, because you'd have 4 fully-filled states, and a thousand or so
-    //  different Match objects.  Now, there are optimizations to be had with default-values in ByteStates,
+    //  different NameState objects.  Now, there are optimizations to be had with default-values in ByteStates,
     //  and lazily allocating Matches only when you have unique values, but all of these things would add
     //  considerable complexity, and this is also easy to understand, and probably not much slower.
     //
-    private final Set<ByteMatch> anythingButs = ConcurrentHashMap.newKeySet();
+    private final Set<NameState> anythingButs = ConcurrentHashMap.newKeySet();
 
     // Multiple different next-namestate steps can result from  processing a single field value, for example
     //  "foot" matches "foot" exactly, "foo" as a prefix, and "hand" as an anything-but.  So, this
@@ -100,7 +105,7 @@ class ByteMachine {
     }
 
     boolean isEmpty() {
-        if (startState.hasNoTransitions()) {
+        if (startState.hasNoTransitions() && startStateMatch == null) {
             assert anythingButs.isEmpty();
             assert hasNumeric.get() == 0;
             assert hasIP.get() == 0;
@@ -112,69 +117,142 @@ class ByteMachine {
     // this is to support deleteRule().  It deletes the ByteStates that exist to support matching the provided pattern.
     void deletePattern(final Patterns pattern) {
         switch (pattern.type()) {
-        case NUMERIC_RANGE:
-            assert pattern instanceof Range;
-            deleteRangePattern((Range) pattern);
-            break;
-        case ANYTHING_BUT:
-            assert pattern instanceof AnythingBut;
-            deleteAnythingButPattern((AnythingBut) pattern);
-            break;
-        case EXACT:
-        case NUMERIC_EQ:
-        case PREFIX:
-        case SUFFIX:
-        case ANYTHING_BUT_PREFIX:
-        case EQUALS_IGNORE_CASE:
-            assert pattern instanceof ValuePatterns;
-            deleteMatchPattern((ValuePatterns) pattern);
-            break;
-        case EXISTS:
-            deleteExistencePattern(pattern);
-            break;
-        default:
-            throw new AssertionError(pattern + " is not implemented yet");
+            case NUMERIC_RANGE:
+                assert pattern instanceof Range;
+                deleteRangePattern((Range) pattern);
+                break;
+            case ANYTHING_BUT:
+                assert pattern instanceof AnythingBut;
+                deleteAnythingButPattern((AnythingBut) pattern);
+                break;
+            case EXACT:
+            case NUMERIC_EQ:
+            case PREFIX:
+            case SUFFIX:
+            case ANYTHING_BUT_PREFIX:
+            case EQUALS_IGNORE_CASE:
+            case WILDCARD:
+                assert pattern instanceof ValuePatterns;
+                deleteMatchPattern((ValuePatterns) pattern);
+                break;
+            case EXISTS:
+                deleteExistencePattern(pattern);
+                break;
+            default:
+                throw new AssertionError(pattern + " is not implemented yet");
         }
     }
 
     private void deleteExistencePattern(Patterns pattern) {
-        final byte[] utf8bytes = Patterns.EXISTS_BYTE_STRING.getBytes(StandardCharsets.UTF_8);
-        deleteMatchStep(startState, 0, pattern, utf8bytes);
+        final InputCharacter[] characters = getParser().parse(pattern.type(), Patterns.EXISTS_BYTE_STRING);
+        deleteMatchStep(startState, 0, pattern, characters);
     }
 
     private void deleteAnythingButPattern(AnythingBut pattern) {
         pattern.getValues().forEach(value ->
-            deleteMatchStep(startState, 0, pattern, value.getBytes(StandardCharsets.UTF_8)));
+            deleteMatchStep(startState, 0, pattern, getParser().parse(pattern.type(), value)));
     }
 
     private void deleteMatchPattern(ValuePatterns pattern) {
-        final byte[] utf8bytes = pattern.pattern().getBytes(StandardCharsets.UTF_8);
-        deleteMatchStep(startState, 0, pattern, utf8bytes);
+        final InputCharacter[] characters = getParser().parse(pattern.type(), pattern.pattern());
+
+        if (characters.length == 1 && isWildcard(characters[0])) {
+            // Only character is wildcard. Remove the start state match.
+            startStateMatch = null;
+            return;
+        }
+
+        deleteMatchStep(startState, 0, pattern, characters);
     }
 
-    private void deleteMatchStep(ByteState byteState, int byteIndex, Patterns pattern, final byte[] utf8bytes) {
-        if (byteIndex < utf8bytes.length - 1) {
-            final byte currentByte = utf8bytes[byteIndex];
-            final ByteTransition trans = getTransition(byteState, currentByte);
+    private void deleteMatchStep(ByteState byteState, int charIndex, Patterns pattern,
+                                 final InputCharacter[] characters) {
+        final InputCharacter currentChar = characters[charIndex];
+        final ByteTransition trans = getTransition(byteState, currentChar);
 
-            // if it is shortcut trans, we need stop loop and delete it directly.
-            if (trans.isShortcutTrans()) {
-                deleteMatch(currentByte, byteState, pattern);
-                return;
+        for (SingleByteTransition eachTrans : trans.expand()) {
+            if (charIndex < characters.length - 1) {
+                // if it is shortcut trans, we delete it directly.
+                if (eachTrans.isShortcutTrans()) {
+                    deleteMatch(currentChar, byteState, pattern, eachTrans);
+                } else {
+                    ByteState nextByteState = eachTrans.getNextByteState();
+                    if (nextByteState != null && nextByteState != byteState) {
+                        deleteMatchStep(nextByteState, charIndex + 1, pattern, characters);
+                    }
+
+                    // Perform handling for certain wildcard cases.
+                    eachTrans = deleteMatchStepForWildcard(byteState, charIndex, pattern, characters, eachTrans,
+                            nextByteState);
+
+                    if (nextByteState != null &&
+                            (nextByteState.hasNoTransitions() || nextByteState.hasOnlySelfReferentialTransition())) {
+                        // The transition's next state has no meaningful transitions, so compact the transition.
+                        putTransitionNextState(byteState, currentChar, eachTrans, null);
+                    }
+                }
+            } else {
+                deleteMatch(currentChar, byteState, pattern, eachTrans);
+            }
+        }
+    }
+
+    /**
+     * Performs delete match step handling for certain wildcard cases.
+     *
+     * @param byteState The current ByteState.
+     * @param charIndex The index of the current character in characters.
+     * @param pattern The pattern we are deleting.
+     * @param characters The array of InputCharacters corresponding to the pattern's value.
+     * @param transition One of the transitions from byteState using the current byte.
+     * @param nextByteState The next ByteState led to by transition.
+     * @return Transition, or a replacement for transition if the original instance no longer exists in the machine.
+     */
+    private SingleByteTransition deleteMatchStepForWildcard(ByteState byteState, int charIndex, Patterns pattern,
+                                                            InputCharacter[] characters,
+                                                            SingleByteTransition transition, ByteState nextByteState) {
+        final InputCharacter currentChar = characters[charIndex];
+
+        // There will be a match using second last character on second last state when last character is
+        // a wildcard. This allows empty substring to satisfy wildcard.
+        if (charIndex == characters.length - 2 && isWildcard(characters[characters.length - 1])) {
+            // Delete the match.
+            SingleByteTransition updatedTransition = deleteMatch(currentChar, byteState, pattern, transition);
+            if (updatedTransition != null) {
+                return updatedTransition;
             }
 
-            ByteState nextByteState = trans.getNextByteState();
-            if (nextByteState != null) {
-                deleteMatchStep(nextByteState, byteIndex + 1, pattern, utf8bytes);
+        // Undo the machine changes for a wildcard as described in the Javadoc of addTransitionNextStateForWildcard.
+        } else if (nextByteState != null && isWildcard(currentChar)) {
+            // Remove transition for all possible byte values if it leads to an only self-referencing state
+            if (nextByteState.hasOnlySelfReferentialTransition()) {
+                byteState.removeTransitionForAllBytes(transition);
+            }
 
-                if (nextByteState.hasNoTransitions()) {
-                    // the transition's next state has no transitions, compact the transition
-                    setTransitionNextState(byteState, currentByte, trans, null);
+            // Remove match on last char that exists for second-last char wildcard on second last state to be satisfied
+            // by empty substring.
+            if (charIndex == characters.length - 2 && isWildcard(characters[characters.length - 2])) {
+                deleteMatches(characters[charIndex + 1], byteState, pattern);
+            // Remove match on second last char that exists for third last and last char wildcard combination on third
+            // last state to be both satisfied by empty substrings. I.e. "ax" can match "a*x*".
+            } else if (charIndex == characters.length - 3 && isWildcard(characters[characters.length - 1]) &&
+                    isWildcard(characters[characters.length - 3])) {
+                deleteMatches(characters[charIndex + 1], byteState, pattern);
+            }
+
+            // Remove transition that exists for wildcard to be satisfied by empty substring.
+            ByteTransition skipWildcardTransition = getTransition(byteState, characters[charIndex + 1]);
+            for (SingleByteTransition eachTrans : skipWildcardTransition.expand()) {
+                ByteState skipWildcardState = eachTrans.getNextByteState();
+                if (eachTrans.getMatches().isEmpty() && skipWildcardState != null &&
+                        (skipWildcardState.hasNoTransitions() ||
+                         skipWildcardState.hasOnlySelfReferentialTransition())) {
+                    removeTransition(byteState, characters[charIndex + 1], eachTrans);
                 }
             }
-        } else {
-            deleteMatch(utf8bytes[utf8bytes.length - 1], byteState, pattern);
         }
+
+        return transition;
     }
 
     // this method is only called after findRangePattern proves that matched pattern exist.
@@ -194,12 +272,12 @@ class ByteMachine {
         // Note: byteState is deletable only when it has no match and no transition to next byteState.
         // Refer to definition of class ComparableNumber, the max length in bytes for Number type is 16,
         // so here we take 16 as ArrayDeque capacity which is defined as ComparableNumber.MAX_BYTE_LENGTH.
-        final ArrayDeque<AbstractMap.SimpleImmutableEntry<Byte, ByteState>> byteStatesTraversePathAlongRangeBottomValue =
+        final ArrayDeque<AbstractMap.SimpleImmutableEntry<Byte, ByteTransition>> byteStatesTraversePathAlongRangeBottomValue =
                 new ArrayDeque<>(ComparableNumber.MAX_LENGTH_IN_BYTES);
-        final ArrayDeque<AbstractMap.SimpleImmutableEntry<Byte, ByteState>> byteStatesTraversePathAlongRangeTopValue =
+        final ArrayDeque<AbstractMap.SimpleImmutableEntry<Byte, ByteTransition>> byteStatesTraversePathAlongRangeTopValue =
                 new ArrayDeque<>(ComparableNumber.MAX_LENGTH_IN_BYTES);
 
-        ByteState forkState = startState;
+        ByteTransition forkState = startState;
         int forkOffset = 0;
         byteStatesTraversePathAlongRangeBottomValue.addFirst(new AbstractMap.SimpleImmutableEntry<>(range.bottom[0], forkState));
         byteStatesTraversePathAlongRangeTopValue.addFirst(new AbstractMap.SimpleImmutableEntry<>(range.top[0], forkState));
@@ -207,7 +285,7 @@ class ByteMachine {
         // bypass common prefix of range's bottom and top patterns
         // we need move forward the state and save all states traversed for checking later.
         while (range.bottom[forkOffset] == range.top[forkOffset]) {
-            forkState = findNextByteState(forkState, range.bottom[forkOffset]);
+            forkState = findNextByteStateForRangePattern(forkState, range.bottom[forkOffset]);
             assert forkState != null : "forkState != null";
             byteStatesTraversePathAlongRangeBottomValue.addFirst(new AbstractMap.SimpleImmutableEntry<>(range.bottom[forkOffset], forkState));
             byteStatesTraversePathAlongRangeTopValue.addFirst(new AbstractMap.SimpleImmutableEntry<>(range.top[forkOffset], forkState));
@@ -217,11 +295,11 @@ class ByteMachine {
         // when bottom byte on forkOffset position < top byte in same position, there must be matches existing
         // in this state, go ahead to delete matches in the fork state.
         for (byte bb : Range.digitSequence(range.bottom[forkOffset], range.top[forkOffset], false, false)) {
-            deleteMatch(bb, forkState, range);
+            deleteMatches(getParser().parse(bb), forkState, range);
         }
 
         // process all the transitions on the bottom range bytes
-        ByteState state = forkState;
+        ByteTransition state = forkState;
         int lastMatchOffset = forkOffset;
 
         // see explanation in addRangePattern(), we need delete state and match accordingly.
@@ -229,7 +307,7 @@ class ByteMachine {
             byte b = range.bottom[offsetB];
             if (b < Constants.MAX_DIGIT) {
                 while (lastMatchOffset < offsetB) {
-                    state = findNextByteState(state, range.bottom[lastMatchOffset]);
+                    state = findNextByteStateForRangePattern(state, range.bottom[lastMatchOffset]);
                     assert state != null : "state must be existing for this pattern";
                     byteStatesTraversePathAlongRangeBottomValue.addFirst(
                             new AbstractMap.SimpleImmutableEntry<>(range.bottom[lastMatchOffset], state));
@@ -237,7 +315,7 @@ class ByteMachine {
                 }
                 assert lastMatchOffset == offsetB : "lastMatchOffset == offsetB";
                 for (byte bb : Range.digitSequence(b, Constants.MAX_DIGIT, false, true)) {
-                    deleteMatch(bb, state, range);
+                    deleteMatches(getParser().parse(bb), state, range);
                 }
             }
         }
@@ -248,20 +326,20 @@ class ByteMachine {
         final byte lastTop = range.top[range.top.length - 1];
         if ((lastBottom < Constants.MAX_DIGIT) || !range.openBottom) {
             while (lastMatchOffset < range.bottom.length - 1) {
-                state = findNextByteState(state, range.bottom[lastMatchOffset]);
+                state = findNextByteStateForRangePattern(state, range.bottom[lastMatchOffset]);
                 assert state != null : "state != null";
                 byteStatesTraversePathAlongRangeBottomValue.addFirst(new AbstractMap.SimpleImmutableEntry<>(range.bottom[lastMatchOffset], state));
                 lastMatchOffset++;
             }
             assert lastMatchOffset == range.bottom.length - 1 : "lastMatchOffset == range.bottom.length - 1";
             if (!range.openBottom) {
-                deleteMatch(lastBottom, state, range);
+                deleteMatches(getParser().parse(lastBottom), state, range);
             }
             // unless the last digit is also at the fork position, fill in the extra matches due to
             //  the strictly-less-than condition (see discussion above)
             if (forkOffset < (range.bottom.length - 1)) {
                 for (byte bb : Range.digitSequence(lastBottom, Constants.MAX_DIGIT, false, true)) {
-                    deleteMatch(bb, state, range);
+                    deleteMatches(getParser().parse(bb), state, range);
                 }
             }
         }
@@ -274,7 +352,7 @@ class ByteMachine {
             byte b = range.top[offsetT];
             if (b > '0') {
                 while (lastMatchOffset < offsetT) {
-                    state = findNextByteState(state, range.top[lastMatchOffset]);
+                    state = findNextByteStateForRangePattern(state, range.top[lastMatchOffset]);
                     assert state != null : "state must be existing for this pattern";
                     byteStatesTraversePathAlongRangeTopValue.addFirst(new AbstractMap.SimpleImmutableEntry<>(range.top[lastMatchOffset], state));
                     lastMatchOffset++;
@@ -282,7 +360,7 @@ class ByteMachine {
                 assert lastMatchOffset == offsetT : "lastMatchOffset == offsetT";
 
                 for (byte bb : Range.digitSequence((byte) '0', range.top[offsetT], true, false)) {
-                    deleteMatch(bb, state, range);
+                    deleteMatches(getParser().parse(bb), state, range);
                 }
             }
         }
@@ -291,21 +369,21 @@ class ByteMachine {
         // see explanation in addRangePattern(), we need to delete states and matches accordingly.
         if ((lastTop > '0') || !range.openTop) {
             while (lastMatchOffset < range.top.length - 1) {
-                state = findNextByteState(state, range.top[lastMatchOffset]);
+                state = findNextByteStateForRangePattern(state, range.top[lastMatchOffset]);
                 assert state != null : "state != null";
                 byteStatesTraversePathAlongRangeTopValue.addFirst(new AbstractMap.SimpleImmutableEntry<>(range.top[lastMatchOffset], state));
                 lastMatchOffset++;
             }
             assert lastMatchOffset == range.top.length - 1 : "lastMatchOffset == range.top.length - 1";
             if (!range.openTop) {
-                deleteMatch(lastTop, state, range);
+                deleteMatches(getParser().parse(lastTop), state, range);
             }
 
             // unless the last digit is also at the fork position, fill in the extra matches due to
             //  the strictly-less-than condition (see discussion above)
             if (forkOffset < (range.top.length - 1)) {
                 for (byte bb : Range.digitSequence((byte) '0', lastTop, true, false)) {
-                    deleteMatch(bb, state, range);
+                    deleteMatches(getParser().parse(bb), state, range);
                 }
             }
         }
@@ -319,39 +397,45 @@ class ByteMachine {
         // wasn't added into machine before.
     }
 
-    private void checkAndDeleteStateAlongTraversedPath(ArrayDeque<AbstractMap.SimpleImmutableEntry<Byte, ByteState>> byteStateQueue) {
+    private void checkAndDeleteStateAlongTraversedPath(
+            ArrayDeque<AbstractMap.SimpleImmutableEntry<Byte, ByteTransition>> byteStateQueue) {
 
         if (byteStateQueue.isEmpty()) {
             return;
         }
 
-        final AbstractMap.SimpleImmutableEntry<Byte, ByteState> childStatePair = byteStateQueue.pollFirst();
+        final AbstractMap.SimpleImmutableEntry<Byte, ByteTransition> childStatePair = byteStateQueue.pollFirst();
         if (childStatePair != null) {
             Byte childByteKey = childStatePair.getKey();
-            ByteState childByteState = childStatePair.getValue();
+            ByteTransition childByteTransition = childStatePair.getValue();
             while (!byteStateQueue.isEmpty()) {
-                final AbstractMap.SimpleImmutableEntry<Byte, ByteState> parentStatePair = byteStateQueue.pollFirst();
+                final AbstractMap.SimpleImmutableEntry<Byte, ByteTransition> parentStatePair = byteStateQueue.pollFirst();
                 if (parentStatePair != null) {
                     final Byte parentByteKey = parentStatePair.getKey();
-                    final ByteState parentByteState = parentStatePair.getValue();
-                    if (childByteState != null && childByteState.hasNoTransitions() && parentByteState != null) {
-                        ByteTransition transition = getTransition(parentByteState, childByteKey);
-
-                        ByteState nextState = transition.getNextByteState();
-                        if (nextState != null && nextState.hasNoTransitions()) {
-                            // the transition's next state has no transitions, compact the transition
-                            setTransitionNextState(parentByteState, childByteKey, transition, null);
+                    final ByteTransition parentByteTransition = parentStatePair.getValue();
+                    for (SingleByteTransition singleChild : childByteTransition.expand()) {
+                        for (SingleByteTransition singleParent : parentByteTransition.expand()) {
+                            if (singleChild != null && singleChild.getNextByteState().hasNoTransitions() && singleParent != null) {
+                                ByteTransition transition = getTransition(singleParent, childByteKey);
+                                for (SingleByteTransition eachTrans : transition.expand()) {
+                                    ByteState nextState = eachTrans.getNextByteState();
+                                    if (nextState != null && nextState.hasNoTransitions()) {
+                                        // the transition's next state has no transitions, compact the transition
+                                        putTransitionNextState(singleParent.getNextByteState(), getParser().parse(childByteKey), eachTrans, null);
+                                    }
+                                }
+                            }
                         }
                     }
                     childByteKey = parentByteKey;
-                    childByteState = parentByteState;
+                    childByteTransition = parentByteTransition;
                 }
             }
         }
     }
 
     private void doTransitionOn(final String valString, final Set<NameState> transitionTo, boolean fieldValueIsNumeric) {
-        final Set<ByteMatch> failedAnythingButs = new HashSet<>();
+        final Set<NameState> failedAnythingButs = new HashSet<>();
         final byte[] val = valString.getBytes(StandardCharsets.UTF_8);
 
         // we need to add the name state for key existence
@@ -360,90 +444,89 @@ class ByteMachine {
         // attempt to harvest the possible suffix match
         addSuffixMatch(val, transitionTo);
 
-        // attempt to harvest the possible equals-ignore-case match
-        addEqualsIgnoreCaseMatch(valString, transitionTo);
+        if (startStateMatch != null) {
+            transitionTo.add(startStateMatch.getNextNameState());
+        }
 
-        // we have to do old-school indexing rather than "for (byte b : trans)" because there is some special-casing
+        // we have to do old-school indexing rather than "for (byte b : val)" because there is some special-casing
         // on transitions on the last byte in the value array
-        ByteState state = startState;
+        ByteTransition trans = startState;
         for (int valIndex = 0; valIndex < val.length; valIndex++) {
-            final ByteTransition trans = getTransition(state, val[valIndex]);
+            final ByteTransition nextTrans = getTransition(trans, val[valIndex]);
 
-            if (attemptAddShortcutTransitionMatch(trans, valString, EXACT, transitionTo)) {
-                // Have successfully taken shortcut. Can break now.
-                break;
-            }
+            attemptAddShortcutTransitionMatch(nextTrans, valString, EXACT, transitionTo);
 
-            // process any matches hanging off this transition
-            for (ByteMatch match = trans.getMatch(); match != null; match = match.getNextMatch()) {
-                switch (match.getPattern().type()) {
-                case EXACT:
-                    if (valIndex == (val.length - 1)) {
-                        transitionTo.add(match.getNextNameState());
+            if (!nextTrans.isShortcutTrans()) {
+
+                // process any matches hanging off this transition
+                for (ByteMatch match : nextTrans.getMatches()) {
+                    switch (match.getPattern().type()) {
+                        case EXACT:
+                        case EQUALS_IGNORE_CASE:
+                        case WILDCARD:
+                            if (valIndex == (val.length - 1)) {
+                                transitionTo.add(match.getNextNameState());
+                            }
+                            break;
+                        case NUMERIC_EQ:
+                            // only matches at last character
+                            if (fieldValueIsNumeric && valIndex == (val.length - 1)) {
+                                transitionTo.add(match.getNextNameState());
+                            }
+                            break;
+
+                        case PREFIX:
+                            transitionTo.add(match.getNextNameState());
+                            break;
+
+                        case SUFFIX:
+                        case EXISTS:
+                            // we already harvested these matches via separate functions due to special matching
+                            // requirements, so just ignore them here.
+                            break;
+
+                        case NUMERIC_RANGE:
+                            // as soon as you see the match, you've matched
+                            Range range = (Range) match.getPattern();
+                            if ((fieldValueIsNumeric && !range.isCIDR) || (!fieldValueIsNumeric && range.isCIDR)) {
+                                transitionTo.add(match.getNextNameState());
+                            }
+                            break;
+
+                        case ANYTHING_BUT:
+                            AnythingBut anythingBut = (AnythingBut) match.getPattern();
+                            // only applies if at last character
+                            if (valIndex == (val.length - 1) && anythingBut.isNumeric() == fieldValueIsNumeric) {
+                                failedAnythingButs.add(match.getNextNameState());
+                            }
+                            break;
+
+                        case ANYTHING_BUT_PREFIX:
+                            failedAnythingButs.add(match.getNextNameState());
+                            break;
+
+                        default:
+                            throw new RuntimeException("Not implemented yet");
+
                     }
-                    break;
-                case NUMERIC_EQ:
-                    // only matches at last character
-                    if (fieldValueIsNumeric && valIndex == (val.length - 1)) {
-                        transitionTo.add(match.getNextNameState());
-                    }
-                    break;
-
-                case PREFIX:
-                    transitionTo.add(match.getNextNameState());
-                    break;
-
-                case SUFFIX:
-                case EQUALS_IGNORE_CASE:
-                case EXISTS:
-                    // we already harvested these matches via separate functions due to special matching requirements,
-                    // so just ignore them here.
-                    break;
-
-                case NUMERIC_RANGE:
-                    // as soon as you see the match, you've matched
-                    Range range = (Range) match.getPattern();
-                    if ((fieldValueIsNumeric && !range.isCIDR) || (!fieldValueIsNumeric && range.isCIDR)) {
-                        transitionTo.add(match.getNextNameState());
-                    }
-                    break;
-
-                case ANYTHING_BUT:
-                    AnythingBut anythingBut = (AnythingBut) match.getPattern();
-                    // only applies if at last character
-                    if (valIndex == (val.length - 1) && anythingBut.isNumeric() == fieldValueIsNumeric) {
-                        failedAnythingButs.add(match);
-                    }
-                    break;
-
-                case ANYTHING_BUT_PREFIX:
-                    failedAnythingButs.add(match);
-                    break;
-
-                default:
-                    throw new RuntimeException("Not implemented yet");
-
                 }
             }
 
-            state = trans.getNextByteState();
-            if (state == null) {
+            trans = nextTrans.getTransitionForNextByteStates();
+            if (trans == null) {
                 break;
             }
         }
 
-        // This may look like premature optimization, but the first "if" here yields
-        // roughly 10x performance improvement.
+        // This may look like premature optimization, but the first "if" here yields roughly 10x performance
+        // improvement.
         if (!anythingButs.isEmpty()) {
             if (!failedAnythingButs.isEmpty()) {
                 transitionTo.addAll(anythingButs.stream()
-                        .filter(anythingBut -> !failedAnythingButs.contains(anythingBut))
-                        .map(ByteMatch::getNextNameState)
-                        .collect(Collectors.toList()));
+                                                .filter(anythingBut -> !failedAnythingButs.contains(anythingBut))
+                                                .collect(Collectors.toList()));
             } else {
-                transitionTo.addAll(anythingButs.stream()
-                        .map(ByteMatch::getNextNameState)
-                        .collect(Collectors.toList()));
+                transitionTo.addAll(anythingButs);
             }
         }
     }
@@ -451,24 +534,22 @@ class ByteMachine {
     private void addExistenceMatch(final Set<NameState> transitionTo) {
         final byte[] val = Patterns.EXISTS_BYTE_STRING.getBytes(StandardCharsets.UTF_8);
 
-        ByteState state = startState;
-        ByteTransition trans = null;
-        for (int valIndex = 0; valIndex < val.length && state != null; valIndex++) {
-            trans = getTransition(state, val[valIndex]);
-            state = trans.getNextByteState();
+        ByteTransition trans = startState;
+        ByteTransition nextTrans = null;
+        for (int valIndex = 0; valIndex < val.length && trans != null; valIndex++) {
+            nextTrans = getTransition(trans, val[valIndex]);
+            trans = nextTrans.getTransitionForNextByteStates();
         }
 
-        if (trans == null) {
+        if (nextTrans == null) {
             return;
         }
 
-        ByteMatch match = trans.getMatch();
-        while (match != null) {
+        for (ByteMatch match : nextTrans.getMatches()) {
             if (match.getPattern().type() == EXISTS) {
                 transitionTo.add(match.getNextNameState());
                 break;
             }
-            match = match.getNextMatch();
         }
     }
 
@@ -476,58 +557,21 @@ class ByteMachine {
         // we only attempt to evaluate suffix matches when there is suffix match in current byte machine instance.
         // it works as performance level to avoid other type of matches from being affected by suffix checking.
         if (hasSuffix.get() > 0) {
-            ByteState state = startState;
+            ByteTransition trans = startState;
             // check the byte in reverse order in order to harvest suffix matches
             for (int valIndex = val.length - 1; valIndex >= 0; valIndex--) {
-                final ByteTransition trans = getTransition(state, val[valIndex]);
-                for (ByteMatch match = trans.getMatch(); match != null; match = match.getNextMatch()) {
+                final ByteTransition nextTrans = getTransition(trans, val[valIndex]);
+                for (ByteMatch match : nextTrans.getMatches()) {
                     // given we are traversing in reverse order (from right to left), only suffix matches are eligible
                     // to be collected.
                     if (match.getPattern().type() == SUFFIX) {
                         transitionTo.add(match.getNextNameState());
                     }
                 }
-                state = trans.getNextByteState();
-                if (state == null) {
+                trans = nextTrans.getTransitionForNextByteStates();
+                if (trans == null) {
                     break;
                 }
-            }
-        }
-    }
-
-    private void addEqualsIgnoreCaseMatch(final String valString, final Set<NameState> transitionTo) {
-        // We only attempt to evaluate equals-ignore-case matches when there is an equals-ignore-case rule in the
-        // current byte machine instance. It avoids other match types being affected by equals-ignore-case checking.
-        if (hasEqualsIgnoreCase.get() > 0) {
-            addIgnoreCaseMatch(valString, transitionTo, EQUALS_IGNORE_CASE);
-        }
-    }
-
-    // Potentially can re-use this method for prefix-ignore-case and suffix-ignore-case match types.
-    // If this machine turns into a NFA, as it likely will to support wildcard matching, it will be simpler to implement
-    // ignore-case matching by adding lower-case and upper-case transitions to the byte machine and then removing this
-    // special-case match harvesting. As is, there will be a performance hit if a field has ignore-case rules as well as
-    // other rules.
-    private void addIgnoreCaseMatch(final String valString, final Set<NameState> transitionTo, MatchType matchType) {
-        final String valStringLowerCase = valString.toLowerCase(Locale.ROOT);
-        final byte[] val = valStringLowerCase.getBytes(StandardCharsets.UTF_8);
-        ByteState state = startState;
-        for (int valIndex = 0; valIndex < val.length; valIndex++) {
-            final ByteTransition trans = getTransition(state, val[valIndex]);
-
-            if (attemptAddShortcutTransitionMatch(trans, valStringLowerCase, matchType, transitionTo)) {
-                // Have successfully taken shortcut. Can break now.
-                break;
-            }
-
-            for (ByteMatch match = trans.getMatch(); match != null; match = match.getNextMatch()) {
-                if (!trans.isShortcutTrans() && match.getPattern().type() == matchType) {
-                    transitionTo.add(match.getNextNameState());
-                }
-            }
-            state = trans.getNextByteState();
-            if (state == null) {
-                break;
             }
         }
     }
@@ -547,8 +591,8 @@ class ByteMachine {
      */
     private boolean attemptAddShortcutTransitionMatch(final ByteTransition transition, final String value,
             final MatchType expectedMatchType, final Set<NameState> transitionTo) {
-        if (transition.isShortcutTrans()) {
-            ByteMatch match = transition.getMatch();
+        for (ShortcutTransition shortcut : transition.getShortcuts()) {
+            ByteMatch match = shortcut.getMatch();
             assert match != null;
             if (match.getPattern().type() == expectedMatchType) {
                 ValuePatterns valuePatterns = (ValuePatterns) match.getPattern();
@@ -565,26 +609,27 @@ class ByteMachine {
     // Adds one pattern to a byte machine.
     NameState addPattern(final Patterns pattern) {
         switch (pattern.type()) {
-        case NUMERIC_RANGE:
-            assert pattern instanceof Range;
-            return addRangePattern((Range) pattern);
-        case ANYTHING_BUT:
-            assert pattern instanceof AnythingBut;
-            return addAnythingButPattern((AnythingBut) pattern);
+            case NUMERIC_RANGE:
+                assert pattern instanceof Range;
+                return addRangePattern((Range) pattern);
+            case ANYTHING_BUT:
+                assert pattern instanceof AnythingBut;
+                return addAnythingButPattern((AnythingBut) pattern);
 
-        case ANYTHING_BUT_PREFIX:
-        case EXACT:
-        case NUMERIC_EQ:
-        case PREFIX:
-        case SUFFIX:
-        case EQUALS_IGNORE_CASE:
-            assert pattern instanceof ValuePatterns;
-            return addMatchPattern((ValuePatterns) pattern);
+            case ANYTHING_BUT_PREFIX:
+            case EXACT:
+            case NUMERIC_EQ:
+            case PREFIX:
+            case SUFFIX:
+            case EQUALS_IGNORE_CASE:
+            case WILDCARD:
+                assert pattern instanceof ValuePatterns;
+                return addMatchPattern((ValuePatterns) pattern);
 
-        case EXISTS:
-            return addExistencePattern(pattern);
-        default:
-            throw new AssertionError(pattern + " is not implemented yet");
+            case EXISTS:
+                return addExistencePattern(pattern);
+            default:
+                throw new AssertionError(pattern + " is not implemented yet");
         }
     }
 
@@ -611,23 +656,59 @@ class ByteMachine {
 
     private NameState addMatchValue(Patterns pattern, String value, NameState nameStateToBeReturned) {
 
-        final byte[] utf8bytes = value.getBytes(StandardCharsets.UTF_8);
+        final InputCharacter[] characters = getParser().parse(pattern.type(), value);
         ByteState byteState = startState;
+        ByteState prevByteState = null;
         int i = 0;
-        for (; i < utf8bytes.length - 1; i++) {
-            ByteTransition trans = getTransition(byteState, utf8bytes[i]);
+        for (; i < characters.length - 1; i++) {
+            ByteTransition trans = getTransition(byteState, characters[i]);
             if (trans.isEmpty()) {
                 break;
             }
-            ByteState stateReturned = trans.getNextByteState();
-            if (stateReturned == null) {
-                break;
-            } else {
-                byteState = stateReturned;
+            ByteState stateToReuse = null;
+            for (SingleByteTransition single : trans.expand()) {
+                ByteState nextByteState = single.getNextByteState();
+                if (canReuseNextByteState(byteState, single, nextByteState, i, characters)) {
+                    stateToReuse = nextByteState;
+                    break;
+                }
             }
+
+            if (stateToReuse == null) {
+                break;
+            }
+            prevByteState = byteState;
+            byteState = stateToReuse;
         }
-        // we found our way through the machine with all bytes except the last having matches or shortcut byte.
-        return addEndOfMatch(byteState, utf8bytes, i, pattern, nameStateToBeReturned);
+        // we found our way through the machine with all characters except the last having matches or shortcut.
+        return addEndOfMatch(byteState, prevByteState, characters, i, pattern, nameStateToBeReturned);
+    }
+
+    private boolean canReuseNextByteState(ByteState byteState, SingleByteTransition single, ByteState nextByteState,
+                                          int i, InputCharacter[] characters) {
+        // We cannot re-use nextByteState if it is non-existent (null) or if it is the same as the current byteState,
+        // meaning we are looping on a self-referencing transition.
+        if (nextByteState == null || nextByteState == byteState) {
+            return false;
+        }
+
+        // Case 1: When we have a determinate prefix, we can re-use nextByteState except for the special case where we
+        //         are on the second-last character with a final character wildcard. A composite is required for this
+        //         case, so we will create a new state.
+        if (!nextByteState.hasIndeterminatePrefix()) {
+            return !(i == characters.length - 2 && isWildcard(characters[i + 1]));
+
+        // Case 2: nextByteState has an indeterminate prefix and single is not a composite (given by
+        //         single == nextByteState). We can re-use nextByteState only if current character is a wildcard and
+        //         nextByteState is already a "wildcard state", meaning all bytes reference back to only nextByteState.
+        } else if (single == nextByteState) {
+            return isWildcard(characters[i]) && nextByteState.getTransitionForAllBytes() == single;
+
+        // Case 3: nextByteState has an indeterminate prefix and single is a composite. We can re-use nextByteState only
+        //         if next character is a wildcard and all bytes reference back to only the composite.
+        } else {
+            return isWildcard(characters[i + 1]) && nextByteState.getTransitionForAllBytes() == single;
+        }
     }
 
     NameState findPattern(final Patterns pattern) {
@@ -644,10 +725,11 @@ class ByteMachine {
         case SUFFIX:
         case ANYTHING_BUT_PREFIX:
         case EQUALS_IGNORE_CASE:
+        case WILDCARD:
             assert pattern instanceof ValuePatterns;
             return findMatchPattern((ValuePatterns) pattern);
         case EXISTS:
-            return findMatchPattern(Patterns.EXISTS_BYTE_STRING.getBytes(StandardCharsets.UTF_8), pattern);
+            return findMatchPattern(getParser().parse(pattern.type(), Patterns.EXISTS_BYTE_STRING), pattern);
         default:
             throw new AssertionError(pattern + " is not implemented yet");
         }
@@ -656,7 +738,7 @@ class ByteMachine {
     private NameState findAnythingButPattern(AnythingBut pattern) {
 
         Set<NameState> nextNameStates = pattern.getValues().stream().
-                map(value -> findMatchPattern(value.getBytes(StandardCharsets.UTF_8), pattern)).
+                map(value -> findMatchPattern(getParser().parse(pattern.type(), value), pattern)).
                 filter(Objects::nonNull).collect(Collectors.toSet());
         if (!nextNameStates.isEmpty()) {
             assert nextNameStates.size() == 1 : "nextNameStates.size() == 1";
@@ -666,38 +748,57 @@ class ByteMachine {
     }
 
     private NameState findMatchPattern(ValuePatterns pattern) {
-        return findMatchPattern(pattern.pattern().getBytes(StandardCharsets.UTF_8), pattern);
+        return findMatchPattern(getParser().parse(pattern.type(), pattern.pattern()), pattern);
     }
 
-    private NameState findMatchPattern(final byte[] utf8bytes, final Patterns pattern) {
-        ByteState byteState = startState;
-
+    private NameState findMatchPattern(final InputCharacter[] characters, final Patterns pattern) {
+        Set<SingleByteTransition> transitionsToProcess = new HashSet<>();
+        transitionsToProcess.add(startState);
         ByteTransition shortcutTrans = null;
-        // iterate byteState to process last byte
-        for (int i = 0; i < utf8bytes.length - 1; i++) {
-            final ByteTransition trans = getTransition(byteState, utf8bytes[i]);
 
-            // shortcut and stop loop
-            if (trans.isShortcutTrans()) {
-                shortcutTrans = trans;
-                break;
+        // Iterate down all possible paths in machine that match characters.
+        outerLoop: for (int i = 0; i < characters.length - 1; i++) {
+            Set<SingleByteTransition> nextTransitionsToProcess = new HashSet<>();
+            for (SingleByteTransition trans : transitionsToProcess) {
+                ByteTransition nextTrans = getTransition(trans, characters[i]);
+                for (SingleByteTransition eachTrans : nextTrans.expand()) {
+
+                    // Shortcut and stop outer character loop
+                    if (SHORTCUT_MATCH_TYPES.contains(pattern.type()) && eachTrans.isShortcutTrans()) {
+                        shortcutTrans = eachTrans;
+                        break outerLoop;
+                    }
+
+                    SingleByteTransition nextByteState = eachTrans.getNextByteState();
+                    if (nextByteState == null) {
+                        return null;
+                    }
+
+                    // We are interested in the first state that hasn't simply led back to trans
+                    if (trans != nextByteState) {
+                        nextTransitionsToProcess.add(nextByteState);
+                    }
+                }
             }
+            transitionsToProcess = nextTransitionsToProcess;
+        }
 
-            byteState = trans.getNextByteState();
-            if (byteState == null) {
-                return null;
+        // Get all possible transitions for final character.
+        Set<ByteTransition> finalTransitionsToProcess = new HashSet<>();
+        if (shortcutTrans != null) {
+            finalTransitionsToProcess.add(shortcutTrans);
+        } else {
+            for (SingleByteTransition trans : transitionsToProcess) {
+                finalTransitionsToProcess.add(getTransition(trans, characters[characters.length - 1]));
             }
         }
 
-        // for last byte, check its match
-        final ByteTransition trans = (shortcutTrans != null) ? shortcutTrans :
-                                     getTransition(byteState, utf8bytes[utf8bytes.length - 1]);
-
-        for (ByteMatch match = trans.getMatch(); match != null; match = match.getNextMatch()) {
-
-            // along the chain of match, one match pattern object should only have one element in the chain.
-            if (match.getPattern().equals(pattern)) {
-                return match.getNextNameState();
+        // Check matches for all possible final transitions until we find the pattern we are looking for.
+        for (ByteTransition nextTrans : finalTransitionsToProcess) {
+            for (ByteMatch match : nextTrans.getMatches()) {
+                if (match.getPattern().equals(pattern)) {
+                    return match.getNextNameState();
+                }
             }
         }
         return null;
@@ -710,20 +811,20 @@ class ByteMachine {
         Set<NameState> nextNameStates = new HashSet<>();
         NameState nextNameState = null;
 
-        ByteState forkState = startState;
+        ByteTransition forkTrans = startState;
         int forkOffset = 0;
 
         // bypass common prefix of range's bottom and top patterns
         while (range.bottom[forkOffset] == range.top[forkOffset]) {
-            forkState = findNextByteState(forkState, range.bottom[forkOffset++]);
-            if (forkState == null) {
+            forkTrans = findNextByteStateForRangePattern(forkTrans, range.bottom[forkOffset++]);
+            if (forkTrans == null) {
                 return null;
             }
         }
 
         // fill in matches in the fork state
         for (byte bb : Range.digitSequence(range.bottom[forkOffset], range.top[forkOffset], false, false)) {
-            nextNameState = findMatch(bb, forkState, range);
+            nextNameState = findMatchForRangePattern(bb, forkTrans, range);
             if (nextNameState == null) {
                 return null;
             }
@@ -731,20 +832,20 @@ class ByteMachine {
         }
 
         // process all the transitions on the bottom range bytes
-        ByteState state = forkState;
+        ByteTransition trans = forkTrans;
         int lastMatchOffset = forkOffset;
         for (int offsetB = forkOffset + 1; offsetB < (range.bottom.length - 1); offsetB++) {
             byte b = range.bottom[offsetB];
             if (b < Constants.MAX_DIGIT) {
                 while (lastMatchOffset < offsetB) {
-                    state = findNextByteState(state, range.bottom[lastMatchOffset++]);
-                    if (state == null) {
+                    trans = findNextByteStateForRangePattern(trans, range.bottom[lastMatchOffset++]);
+                    if (trans == null) {
                         return null;
                     }
                 }
                 assert lastMatchOffset == offsetB : "lastMatchOffset == offsetB";
                 for (byte bb : Range.digitSequence(b, Constants.MAX_DIGIT, false, true)) {
-                    nextNameState = findMatch(bb, state, range);
+                    nextNameState = findMatchForRangePattern(bb, trans, range);
                     if (nextNameState == null) {
                         return null;
                     }
@@ -758,14 +859,14 @@ class ByteMachine {
         final byte lastTop = range.top[range.top.length - 1];
         if ((lastBottom < Constants.MAX_DIGIT) || !range.openBottom) {
             while (lastMatchOffset < range.bottom.length - 1) {
-                state = findNextByteState(state, range.bottom[lastMatchOffset++]);
-                if (state == null) {
+                trans = findNextByteStateForRangePattern(trans, range.bottom[lastMatchOffset++]);
+                if (trans == null) {
                     return null;
                 }
             }
             assert lastMatchOffset == (range.bottom.length - 1) : "lastMatchOffset == (range.bottom.length - 1)";
             if (!range.openBottom) {
-                nextNameState = findMatch(lastBottom, state, range);
+                nextNameState = findMatchForRangePattern(lastBottom, trans, range);
                 if (nextNameState == null) {
                     return null;
                 }
@@ -776,7 +877,7 @@ class ByteMachine {
             //  the strictly-less-than condition (see discussion above)
             if (forkOffset < (range.bottom.length - 1)) {
                 for (byte bb : Range.digitSequence(lastBottom, Constants.MAX_DIGIT, false, true)) {
-                    nextNameState = findMatch(bb, state, range);
+                    nextNameState = findMatchForRangePattern(bb, trans, range);
                     if (nextNameState == null) {
                         return null;
                     }
@@ -786,21 +887,21 @@ class ByteMachine {
         }
 
         // now process transitions along the top range bytes
-        state = forkState;
+        trans = forkTrans;
         lastMatchOffset = forkOffset;
         for (int offsetT = forkOffset + 1; offsetT < (range.top.length - 1); offsetT++) {
             byte b = range.top[offsetT];
             if (b > '0') {
                 while (lastMatchOffset < offsetT) {
-                    state = findNextByteState(state, range.top[lastMatchOffset++]);
-                    if (state == null) {
+                    trans = findNextByteStateForRangePattern(trans, range.top[lastMatchOffset++]);
+                    if (trans == null) {
                         return null;
                     }
                 }
                 assert lastMatchOffset == offsetT : "lastMatchOffset == offsetT";
 
                 for (byte bb : Range.digitSequence((byte) '0', range.top[offsetT], true, false)) {
-                    nextNameState = findMatch(bb, state, range);
+                    nextNameState = findMatchForRangePattern(bb, trans, range);
                     if (nextNameState == null) {
                         return null;
                     }
@@ -812,14 +913,14 @@ class ByteMachine {
         // now for last "top" digit
         if ((lastTop > '0') || !range.openTop) {
             while (lastMatchOffset < range.top.length - 1) {
-                state = findNextByteState(state, range.top[lastMatchOffset++]);
-                if (state == null) {
+                trans = findNextByteStateForRangePattern(trans, range.top[lastMatchOffset++]);
+                if (trans == null) {
                     return null;
                 }
             }
             assert lastMatchOffset == (range.top.length - 1) : "lastMatchOffset == (range.top.length - 1)";
             if (!range.openTop) {
-                nextNameState = findMatch(lastTop, state, range);
+                nextNameState = findMatchForRangePattern(lastTop, trans, range);
                 if (nextNameState == null) {
                     return null;
                 }
@@ -829,7 +930,7 @@ class ByteMachine {
             //  the strictly-less-than condition (see discussion above)
             if (forkOffset < (range.top.length - 1)) {
                 for (byte bb : Range.digitSequence((byte) '0', lastTop, true, false)) {
-                    nextNameState = findMatch(bb, state, range);
+                    nextNameState = findMatchForRangePattern(bb, trans, range);
                     if (nextNameState == null) {
                         return null;
                     }
@@ -859,7 +960,7 @@ class ByteMachine {
 
         // bypass common prefix of range's bottom and top patterns
         while (range.bottom[forkOffset] == range.top[forkOffset]) {
-            forkState = findOrMakeNextByteState(forkState, range.bottom[forkOffset], forkOffset++);
+            forkState = findOrMakeNextByteStateForRangePattern(forkState, range.bottom, forkOffset++);
         }
 
         // now we've bypassed any initial positions where the top and bottom patterns are the same, and arrived
@@ -889,7 +990,7 @@ class ByteMachine {
 
         // fill in matches in the fork state
         for (byte bb : Range.digitSequence(range.bottom[forkOffset], range.top[forkOffset], false, false)) {
-            nextNameState = insertMatch(bb, forkState, nextNameState, range);
+            nextNameState = insertMatchForRangePattern(bb, forkState, nextNameState, range);
         }
 
         // process all the transitions on the bottom range bytes
@@ -906,7 +1007,7 @@ class ByteMachine {
             if (b < Constants.MAX_DIGIT) {
                 // add transitions for any 9's we bypassed
                 while (lastMatchOffset < offsetB) {
-                    state = findOrMakeNextByteState(state, range.bottom[lastMatchOffset], lastMatchOffset++);
+                    state = findOrMakeNextByteStateForRangePattern(state, range.bottom, lastMatchOffset++);
                 }
 
                 assert lastMatchOffset == offsetB : "lastMatchOffset == offsetB";
@@ -914,7 +1015,7 @@ class ByteMachine {
 
                 // now add transitions for values greater than this non-9 digit
                 for (byte bb : Range.digitSequence(b, Constants.MAX_DIGIT, false, true)) {
-                    nextNameState = insertMatch(bb, state, nextNameState, range);
+                    nextNameState = insertMatchForRangePattern(bb, state, nextNameState, range);
                 }
             }
         }
@@ -928,21 +1029,21 @@ class ByteMachine {
 
             // add transitions for any 9's we bypassed
             while (lastMatchOffset < range.bottom.length - 1) {
-                state = findOrMakeNextByteState(state, range.bottom[lastMatchOffset], lastMatchOffset++);
+                state = findOrMakeNextByteStateForRangePattern(state, range.bottom, lastMatchOffset++);
             }
             assert lastMatchOffset == (range.bottom.length - 1) : "lastMatchOffset == (range.bottom.length - 1)";
             assert state != null : "state != null";
 
             // now we insert matches for possible values of last digit
             if (!range.openBottom) {
-                nextNameState = insertMatch(lastBottom, state, nextNameState, range);
+                nextNameState = insertMatchForRangePattern(lastBottom, state, nextNameState, range);
             }
 
             // unless the last digit is also at the fork position, fill in the extra matches due to
             //  the strictly-less-than condition (see discussion above)
             if (forkOffset < (range.bottom.length - 1)) {
                 for (byte bb : Range.digitSequence(lastBottom, Constants.MAX_DIGIT, false, true)) {
-                    nextNameState = insertMatch(bb, state, nextNameState, range);
+                    nextNameState = insertMatchForRangePattern(bb, state, nextNameState, range);
                 }
             }
         }
@@ -959,14 +1060,14 @@ class ByteMachine {
             // if need to add transition
             if (b > '0') {
                 while (lastMatchOffset < offsetT) {
-                    state = findOrMakeNextByteState(state, range.top[lastMatchOffset], lastMatchOffset++);
+                    state = findOrMakeNextByteStateForRangePattern(state, range.top, lastMatchOffset++);
                 }
                 assert lastMatchOffset == offsetT : "lastMatchOffset == offsetT";
                 assert state != null : "state != null";
 
                 // now add transitions for values less than this non-0 digit
                 for (byte bb : Range.digitSequence((byte) '0', range.top[offsetT], true, false)) {
-                    nextNameState = insertMatch(bb, state, nextNameState, range);
+                    nextNameState = insertMatchForRangePattern(bb, state, nextNameState, range);
                 }
             }
         }
@@ -978,21 +1079,21 @@ class ByteMachine {
 
             // add transitions for any 0's we bypassed
             while (lastMatchOffset < range.top.length - 1) {
-                state = findOrMakeNextByteState(state, range.top[lastMatchOffset], lastMatchOffset++);
+                state = findOrMakeNextByteStateForRangePattern(state, range.top, lastMatchOffset++);
             }
             assert lastMatchOffset == (range.top.length - 1) : "lastMatchOffset == (range.top.length - 1)";
             assert state != null : "state != null";
 
             // now we insert matches for possible values of last digit
             if (!range.openTop) {
-                nextNameState = insertMatch(lastTop, state, nextNameState, range);
+                nextNameState = insertMatchForRangePattern(lastTop, state, nextNameState, range);
             }
 
             // unless the last digit is also at the fork position, fill in the extra matches due to
             //  the strictly-less-than condition (see discussion above)
             if (forkOffset < (range.top.length - 1)) {
                 for (byte bb : Range.digitSequence((byte) '0', lastTop, true, false)) {
-                    nextNameState = insertMatch(bb, state, nextNameState, range);
+                    nextNameState = insertMatchForRangePattern(bb, state, nextNameState, range);
                 }
             }
         }
@@ -1000,51 +1101,89 @@ class ByteMachine {
         return nextNameState;
     }
 
-    // return the index of the next byte state after transitioning from the one at the current stateIndex
-    //  on the value b.  May have to create it if it doesn't exist.
-    private ByteState findOrMakeNextByteState(ByteState state, final byte b, int currentIndex) {
-        ByteTransition trans = getTransition(state, b);
-
-        // If we meet shortcut trans, that means Range have byte overlapped with shortcut matches,
-        // To simplify the logic, we extend the shortcut to normal byte state chain, then decide whether need create
-        // new byte state for current call.
-        if(trans.isShortcutTrans()) {
-            String valueInCurrentPos = ((ValuePatterns) trans.getMatch().getPattern()).pattern();
-            final byte[] utf8bytesInCurrentPos = valueInCurrentPos.getBytes(StandardCharsets.UTF_8);
-            ByteState firstNewState = null;
-            ByteState currentState = state;
-            for (int k = currentIndex; k < utf8bytesInCurrentPos.length-1; k++) {
-                // we need keep the current state always pointed to last byte.
-                final ByteState newByteState = new ByteState();
-                if (k != currentIndex) {
-                    setTransitionNextState(currentState, utf8bytesInCurrentPos[k], EmptyByteTransition.INSTANCE, newByteState);
-                } else {
-                    firstNewState = newByteState;
-                }
-                currentState = newByteState;
-            }
-            setTransitionMatch(currentState, utf8bytesInCurrentPos[utf8bytesInCurrentPos.length-1], EmptyByteTransition.INSTANCE, trans.getMatch());
-            setTransitionNextState(state, b, EmptyByteTransition.INSTANCE, firstNewState);
-            trans = getTransition(state, b);
+    // If we meet shortcut trans, that means Range have byte overlapped with shortcut matches,
+    // To simplify the logic, we extend the shortcut to normal byte state chain, then decide whether need create
+    // new byte state for current call.
+    private ByteTransition extendShortcutTransition(final ByteState state, final ByteTransition trans,
+                                                    final InputCharacter character, final int currentIndex) {
+        if (!trans.isShortcutTrans()) {
+            return trans;
         }
 
-        ByteState nextState = trans.getNextByteState();
+        ShortcutTransition shortcut = (ShortcutTransition) trans;
+        Patterns shortcutPattern = shortcut.getMatch().getPattern();
+        String valueInCurrentPos = ((ValuePatterns) shortcutPattern).pattern();
+        final InputCharacter[] charactersInCurrentPos = getParser().parse(shortcutPattern.type(), valueInCurrentPos);
+        ByteState firstNewState = null;
+        ByteState currentState = state;
+        for (int k = currentIndex; k < charactersInCurrentPos.length-1; k++) {
+            // we need keep the current state always pointed to last character.
+            final ByteState newByteState = new ByteState();
+            newByteState.setIndeterminatePrefix(currentState.hasIndeterminatePrefix());
+            if (k != currentIndex) {
+                putTransitionNextState(currentState, charactersInCurrentPos[k], shortcut, newByteState);
+            } else {
+                firstNewState = newByteState;
+            }
+            currentState = newByteState;
+        }
+
+        putTransitionMatch(currentState, charactersInCurrentPos[charactersInCurrentPos.length-1],
+                EmptyByteTransition.INSTANCE, shortcut.getMatch());
+        removeTransition(currentState, charactersInCurrentPos[charactersInCurrentPos.length-1], shortcut);
+        putTransitionNextState(state, character, shortcut, firstNewState);
+        return getTransition(state, character);
+    }
+
+    private ByteState findOrMakeNextByteStateForRangePattern(ByteState state, final byte[] utf8bytes,
+                                                             int currentIndex) {
+        final InputCharacter character = getParser().parse(utf8bytes[currentIndex]);
+        ByteTransition trans = getTransition(state, character);
+
+        Set<SingleByteTransition> singles = trans.expand();
+        SingleByteTransition single = singles.isEmpty() ? EmptyByteTransition.INSTANCE : singles.iterator().next();
+        ByteState nextState = single.getNextByteState();
         if (nextState == null) {
-            // the next state is null, create a new state, set the transition's next state to the new state
+            // the next state is null => create a new state, set the transition's next state to the new state
             nextState = new ByteState();
-            setTransitionNextState(state, b, trans, nextState);
+            nextState.setIndeterminatePrefix(state.hasIndeterminatePrefix());
+            putTransitionNextState(state, character, single, nextState);
         }
 
         return nextState;
     }
 
-    private ByteState findNextByteState(ByteState state, final byte b) {
-        if (state == null) {
+    //  Return the next byte state after transitioning from state using character at currentIndex. Will create it if it
+    //  doesn't exist.
+    private ByteState findOrMakeNextByteState(ByteState state, ByteState prevState,
+                                              final InputCharacter[] characters, int currentIndex, Patterns pattern) {
+        final InputCharacter character = characters[currentIndex];
+        ByteTransition trans = getTransition(state, character);
+        trans = extendShortcutTransition(state, trans, character, currentIndex);
+
+        ByteState nextState = trans.getNextByteState();
+        if (nextState == null || nextState.hasIndeterminatePrefix() ||
+                (currentIndex == characters.length - 2 && isWildcard(characters[currentIndex + 1]))) {
+            // There are three cases for which we cannot re-use the next state and must add a new next state.
+            // 1. Next state is null (does not exist).
+            // 2. Next state has an indeterminate prefix, so using it would create unintended matches.
+            // 3. We're on second last char and last char is wildcard: next state will be composite with match so empty
+            //    substring satisfies wildcard. The composite will self-reference and would create unintended matches.
+            nextState = new ByteState();
+            nextState.setIndeterminatePrefix(state.hasIndeterminatePrefix());
+            addTransitionNextState(state, character, characters, currentIndex, prevState, pattern, nextState);
+        }
+
+        return nextState;
+    }
+
+    private ByteTransition findNextByteStateForRangePattern(ByteTransition trans, final byte b) {
+        if (trans == null) {
             return null;
         }
 
-        ByteTransition trans = getTransition(state, b);
-        return trans.getNextByteState();
+        ByteTransition nextTrans = getTransition(trans, b);
+        return nextTrans.getTransitionForNextByteStates();
     }
 
     // add a match type pattern, i.e. anything but a numeric range, to the byte machine.
@@ -1052,55 +1191,61 @@ class ByteMachine {
         return addMatchValue(pattern, pattern.pattern(), null);
     }
 
-    // We can reach to this function when we have checked the existing bytes array from left to right and found we need
-    // add the match in the tail byte or we find we can shortcut to tail directly without creating new byte transition
-    // in the middle.
-    // If we met the shortcut transition, we need compare the input value to adjust it accordingly. please refer to
-    // detail comments in ShortcutTransition.java.
-    private NameState addEndOfMatch(ByteState byteState,
-                                    final byte[] utf8bytes,
-                                    final int byteIndex,
+    // We can reach to this function when we have checked the existing characters array from left to right and found we
+    // need add the match in the tail character or we find we can shortcut to tail directly without creating new byte
+    // transition in the middle. If we met the shortcut transition, we need compare the input value to adjust it
+    // accordingly. Please refer to detail comments in ShortcutTransition.java.
+    private NameState addEndOfMatch(ByteState state,
+                                    ByteState prevState,
+                                    final InputCharacter[] characters,
+                                    final int charIndex,
                                     final Patterns pattern,
                                     final NameState nameStateCandidate) {
+        final int length = characters.length;
+        NameState nameState = (nameStateCandidate == null) ? new NameState() : nameStateCandidate;
 
-        final NameState nameState = (nameStateCandidate == null) ? new NameState() : nameStateCandidate;
+        if (length == 1 && isWildcard(characters[0])) {
+            // Only character is '*'. Make the start state a match so empty input is matched.
+            startStateMatch = new ByteMatch(pattern, nameState);
+            return nameState;
+        }
 
-        ByteTransition trans = getTransition(byteState, utf8bytes[byteIndex]);
-        // If we reach to addEndOfMatch, it means we have already traversed the path and get stopped at position of
-        // current byteIndex.
-        assert byteIndex >= utf8bytes.length - 1 || trans.getNextByteState() == null;
+        ByteTransition trans = getTransition(state, characters[charIndex]);
 
         // If it is shortcut transition, we need do adjustment first.
         if (!trans.isEmpty() && trans.isShortcutTrans()) {
-            ByteMatch match = trans.getMatch();
+            ShortcutTransition shortcut = (ShortcutTransition) trans;
+            ByteMatch match = shortcut.getMatch();
             // In add/delete rule path, match must not be null and must not have other match
-            assert match != null && SHORTCUT_MATCH_TYPES.contains(match.getPattern().type()) && match.getNextMatch() == null;
+            assert match != null && SHORTCUT_MATCH_TYPES.contains(match.getPattern().type());
             // If it is the same pattern, just return.
             if (pattern.equals(match.getPattern())) {
                 return match.getNextNameState();
             }
             // Have asserted current match pattern must be value patterns
             String valueInCurrentPos = ((ValuePatterns) match.getPattern()).pattern();
-            final byte[] utf8bytesInCurrentPos = valueInCurrentPos.getBytes(StandardCharsets.UTF_8);
+            final InputCharacter[] charactersInCurrentPos = getParser().parse(match.getPattern().type(),
+                    valueInCurrentPos);
             // find the position <m> where the common prefix ends.
-            int m = byteIndex;
-            for (; m < utf8bytesInCurrentPos.length && m < utf8bytes.length; m++) {
-                if (utf8bytesInCurrentPos[m] != utf8bytes[m]) {
+            int m = charIndex;
+            for (; m < charactersInCurrentPos.length && m < length; m++) {
+                if (!charactersInCurrentPos[m].equals(characters[m])) {
                     break;
                 }
             }
-            // Extend the prefix part in value to byte transitions, to avoid impact on concurrent read
-            // we need firstly make the new byte chain ready for using and leave the old transition removing to the last step.
-            // firstNewState will be head of new byte chain and, to avoid impact on concurrent match traffic in read path,
-            // it need be linked to current byteState chain after adjustment done.
+            // Extend the prefix part in value to byte transitions, to avoid impact on concurrent read we need firstly
+            // make the new byte chain ready for using and leave the old transition removing to the last step.
+            // firstNewState will be head of new byte chain and, to avoid impact on concurrent match traffic in read
+            // path, it need be linked to current state chain after adjustment done.
             ByteState firstNewState = null;
-            ByteState currentState = byteState;
-            for (int k = byteIndex; k < m; k++) {
-                // we need keep the current state always pointed to last byte.
-                if (k != utf8bytesInCurrentPos.length -1) {
+            ByteState currentState = state;
+            for (int k = charIndex; k < m; k++) {
+                // we need keep the current state always pointed to last character.
+                if (k != charactersInCurrentPos.length -1) {
                     final ByteState newByteState = new ByteState();
-                    if (k != byteIndex) {
-                        setTransitionNextState(currentState, utf8bytesInCurrentPos[k], EmptyByteTransition.INSTANCE, newByteState);
+                    newByteState.setIndeterminatePrefix(currentState.hasIndeterminatePrefix());
+                    if (k != charIndex) {
+                        putTransitionNextState(currentState, charactersInCurrentPos[k], shortcut, newByteState);
                     } else {
                         firstNewState = newByteState;
                     }
@@ -1108,39 +1253,60 @@ class ByteMachine {
                 }
             }
 
-            // If it reached to last byte, link the previous read transition in this byte, else create shortcut transition.
-            // Note: at this time, the previous transition can still keep working.
-            int indexToBeChange = m;
-            if (m == utf8bytesInCurrentPos.length || m == utf8bytesInCurrentPos.length - 1) {
-                indexToBeChange = utf8bytesInCurrentPos.length - 1;
-                setTransitionMatch(currentState, utf8bytesInCurrentPos[indexToBeChange], EmptyByteTransition.INSTANCE, match);
-            } else { // m is not at tail of utf8bytesInCurrentPos, we just create the shortcut trans to position of m.
-                setTransitionMatch(currentState, utf8bytesInCurrentPos[indexToBeChange], new ShortcutTransition(), match);
-            }
+            // If it reached to last character, link the previous read transition in this character, else create
+            // shortcut transition. Note: at this time, the previous transition can still keep working.
+            boolean isShortcutNeeded = m < charactersInCurrentPos.length - 1;
+            int indexToBeChange = isShortcutNeeded ? m : charactersInCurrentPos.length - 1;
+            putTransitionMatch(currentState, charactersInCurrentPos[indexToBeChange], isShortcutNeeded ?
+                            new ShortcutTransition() : EmptyByteTransition.INSTANCE, match);
+            removeTransition(currentState, charactersInCurrentPos[indexToBeChange], shortcut);
 
-            // At last, we link the new created chain to the byte state path, so no uncompleted change can be felt by reading thread.
-            // Note: we already confirmed there is only old shortcut transition at byteIndex position, now we have move it to new
-            // position, so we can directly replace previous transition with new transition pointed to new byte state chain.
-            setTransitionNextState(byteState, utf8bytes[byteIndex], EmptyByteTransition.INSTANCE, firstNewState);
+            // At last, we link the new created chain to the byte state path, so no uncompleted change can be felt by
+            // reading thread. Note: we already confirmed there is only old shortcut transition at charIndex position,
+            // now we have move it to new position, so we can directly replace previous transition with new transition
+            // pointed to new byte state chain.
+            putTransitionNextState(state, characters[charIndex], shortcut, firstNewState);
         }
 
         // If there is a exact match transition on tail of path, after adjustment target transitions, we start
-        // looking at current remaining bytes.
-        // If this is tail transition, go directly analyse the remaining bytes, traverse to tail of chain:
-        int j = byteIndex;
-        for (; j < (utf8bytes.length - 1); j++) {
-            trans = getTransition(byteState,utf8bytes[j]);
+        // looking at current remaining characters.
+        // If this is tail transition, go directly analyse the remaining characters, traverse to tail of chain:
+        boolean isEligibleForShortcut = true;
+        int j = charIndex;
+        for (; j < (length - 1); j++) {
+            // We do not want to re-use an existing state for the second last character in the case of a final-character
+            // wildcard pattern. In this case, we will have a self-referencing composite match state, which allows zero
+            // or many character to satisfy the wildcard. The self-reference would lead to unintended matches for the
+            // existing patterns.
+            if (j == length - 2 && isWildcard(characters[j + 1])) {
+                break;
+            }
+
+            trans = getTransition(state, characters[j]);
             if (trans.isEmpty()) {
                 break;
             }
-            if (trans.getNextByteState() != null) {
-                byteState = trans.getNextByteState();
+            ByteState nextByteState = trans.getNextByteState();
+            if (nextByteState != null) {
+                // We cannot re-use a state with an indeterminate prefix without creating unintended matches.
+                if (nextByteState.hasIndeterminatePrefix()) {
+                    // Since there is more path we are unable to traverse, this means we cannot insert shortcut without
+                    // potentially ignoring matches further down path.
+                    isEligibleForShortcut = false;
+                    break;
+                }
+                prevState = state;
+                state = nextByteState;
             } else {
-                // trans has match but no next state, we need prepare a next next state to add trans for either last byte
-                // or shortcut byte.
+                // trans has match but no next state, we need prepare a next next state to add trans for either last
+                // character or shortcut byte.
                 final ByteState newByteState = new ByteState();
-                setTransitionNextState(byteState, utf8bytes[j], trans, newByteState);
-                byteState = newByteState;
+                newByteState.setIndeterminatePrefix(state.hasIndeterminatePrefix());
+                // Stream will not be empty since trans has been verified as non-empty
+                SingleByteTransition single = trans.expand().iterator().next();
+                putTransitionNextState(state, characters[j], single, newByteState);
+                prevState = state;
+                state = newByteState;
             }
         }
 
@@ -1149,28 +1315,44 @@ class ByteMachine {
         //  like true or false or numbers, because if we do this for numbers produced by
         //  ComparableNumber.generate(), they can be messed up by addRangePattern.
         if (SHORTCUT_MATCH_TYPES.contains(pattern.type())) {
-            // For exactly match, if it is last byte already, we just put the real transition with match there.
-            if (j == utf8bytes.length - 1) {
-                return insertMatch(utf8bytes[j], byteState, nameState, pattern);
-            } else {
-                // If current byte is not last bytes, create the shortcut transition with the next
+            // For exactly match, if it is last character already, we just put the real transition with match there.
+            if (j == length - 1) {
+                return insertMatch(characters, j, state, nameState, pattern, prevState);
+            } else if (isEligibleForShortcut) {
+                // If current character is not last character, create the shortcut transition with the next
                 ByteMatch byteMatch = new ByteMatch(pattern, nameState);
-                setTransitionMatch(byteState, utf8bytes[j], new ShortcutTransition(), byteMatch);
+                addTransition(state, characters[j], new ShortcutTransition().setMatch(byteMatch));
                 addMatchReferences(byteMatch);
                 return nameState;
             }
         }
-        // For other match type, keep the old logic to extend all bytes to byte state path and put the match in the tail state.
-        for (; j < (utf8bytes.length - 1); j++) {
-            byteState = findOrMakeNextByteState(byteState, utf8bytes[j], j);
+
+        // For other match type, keep the old logic to extend all characters to byte state path and put the match in the
+        // tail state.
+        for (; j < (length - 1); j++) {
+            ByteState nextByteState = findOrMakeNextByteState(state, prevState, characters, j, pattern);
+            prevState = state;
+            state = nextByteState;
         }
-        return insertMatch(utf8bytes[utf8bytes.length - 1], byteState, nameState, pattern);
+
+        if (length > 1 && isWildcard(characters[length - 2])) {
+            // Second last character is '*'. This means we need to add a match to the previous state using final
+            // character so that empty substring can satisfy wildcard character.
+            nameState = insertMatch(characters, length - 1, prevState, nameState, pattern, null);
+        }
+        return insertMatch(characters, length - 1, state, nameState, pattern, prevState);
     }
 
-    private NameState insertMatch(byte b, ByteState state, NameState nextNameState, Patterns pattern) {
-        ByteTransition trans = getTransition(state, b);
+    private NameState insertMatchForRangePattern(byte b, ByteState state, NameState nextNameState,
+                                                 Patterns pattern) {
+        return insertMatch(new InputCharacter[] { getParser().parse(b) }, 0, state, nextNameState, pattern, null);
+    }
 
-        ByteMatch match = findMatch(trans.getMatch(), pattern);
+    private NameState insertMatch(InputCharacter[] characters, int currentIndex, ByteState state,
+                                  NameState nextNameState, Patterns pattern, ByteState prevState) {
+        InputCharacter character = characters[currentIndex];
+
+        ByteMatch match = findMatch(getTransition(state, character).getMatches(), pattern);
         if (match != null) {
             // There is a match linked to the transition that's the same type, so we just re-use its nextNameState
             return match.getNextNameState();
@@ -1179,14 +1361,58 @@ class ByteMachine {
         // we make a new NameState and hook it up
         NameState nameState = nextNameState == null ? new NameState() : nextNameState;
 
-        match = new ByteMatch(pattern, nameState);
-        match.setNextMatch(trans.getMatch());
+        // If we're on the last character and the second last character was a wildcard, then there is already a match
+        // that we can find and re-use. Otherwise, create a new match.
+        if (prevState != null && currentIndex == characters.length - 1 &&
+                isWildcard(characters[characters.length - 2])) {
+            ByteTransition existingTrans = getTransition(prevState, character);
+            match = findMatch(existingTrans.getMatches(), pattern);
+        } else {
+            match = new ByteMatch(pattern, nameState);
+        }
 
         addMatchReferences(match);
 
-        setTransitionMatch(state, b, trans, match);
+        if (isWildcard(character)) {
+            // Rule ends with '*'. Allow no characters up to many characters to match, using a composite match state
+            // that references a self-referencing composite match state. Two composite states are used so the count of
+            // matching rule prefixes is accurate in MachineComplexityEvaluator. If there is a previous state, then the
+            // first composite already exists and we will find it. Otherwise, create a brand new composite.
+            SingleByteTransition composite;
+            if (prevState != null) {
+                composite = getTransitionHavingNextByteState(prevState, state, characters[currentIndex - 1]);
+                assert composite != null : "Composite must exist";
+            } else {
+                composite = new ByteState().setMatch(match);
+            }
+
+            ByteState nextState = composite.getNextByteState();
+            CompositeByteTransition compositeClone = (CompositeByteTransition) composite.clone();
+            nextState.addTransitionForAllBytes(compositeClone);
+            nextState.setIndeterminatePrefix(true);
+        } else {
+            addTransition(state, character, match);
+        }
 
         return nameState;
+    }
+
+    /**
+     * Gets the first transition originating from origin on character that has a next byte state of toFind.
+     *
+     * @param origin The origin transition that we will explore transitions from.
+     * @param toFind The state that we are looking for from origin's transitions.
+     * @param character The character to retrieve transitions from origin.
+     * @return Origin's first transition on character that has a next byte state of toFind, or null if not found.
+     */
+    private static SingleByteTransition getTransitionHavingNextByteState(SingleByteTransition origin,
+            SingleByteTransition toFind, InputCharacter character) {
+        for (SingleByteTransition eachTrans : getTransition(origin, character).expand()) {
+            if (eachTrans.getNextByteState() == toFind) {
+                return eachTrans;
+            }
+        }
+        return null;
     }
 
     private void addMatchReferences(ByteMatch match) {
@@ -1195,6 +1421,8 @@ class ByteMachine {
         case EXACT:
         case PREFIX:
         case EXISTS:
+        case EQUALS_IGNORE_CASE:
+        case WILDCARD:
             break;
         case SUFFIX:
             hasSuffix.incrementAndGet();
@@ -1211,61 +1439,75 @@ class ByteMachine {
             }
             break;
         case ANYTHING_BUT:
-            anythingButs.add(match);
+            anythingButs.add(match.getNextNameState());
             if (((AnythingBut) pattern).isNumeric()) {
                 hasNumeric.incrementAndGet();
             }
             break;
         case ANYTHING_BUT_PREFIX:
-            anythingButs.add(match);
-            break;
-        case EQUALS_IGNORE_CASE:
-            hasEqualsIgnoreCase.incrementAndGet();
+            anythingButs.add(match.getNextNameState());
             break;
         default:
             throw new AssertionError("Not implemented yet");
         }
     }
 
-    private NameState findMatch(byte b, ByteState state, Patterns pattern) {
+    private NameState findMatchForRangePattern(byte b, ByteTransition trans, Patterns pattern) {
+        if (trans == null) {
+            return null;
+        }
+
+        ByteTransition nextTrans = getTransition(trans, b);
+
+        ByteMatch match = findMatch(nextTrans.getMatches(), pattern);
+        return match == null ? null : match.getNextNameState();
+    }
+
+    /**
+     * Deletes any matches that exist on the given pattern that are accessed from ByteTransition transition using
+     * character.
+     *
+     * @param character The character used to transition.
+     * @param transition The transition we are transitioning from to look for matches.
+     * @param pattern The pattern whose match we are attempting to delete.
+     */
+    private void deleteMatches(InputCharacter character, ByteTransition transition, Patterns pattern) {
+        if (transition == null) {
+            return;
+        }
+
+        for (SingleByteTransition single : transition.expand()) {
+            ByteTransition trans = getTransition(single, character);
+            for (SingleByteTransition eachTrans : trans.expand()) {
+                deleteMatch(character, single.getNextByteState(), pattern, eachTrans);
+            }
+        }
+    }
+
+    /**
+     * Deletes a match, if it exists, on the given pattern that is accessed from ByteState state using character to
+     * transition over SingleByteTransition trans.
+     *
+     * @param character The character used to transition.
+     * @param state The state we are transitioning from.
+     * @param pattern The pattern whose match we are attempting to delete.
+     * @param trans The transition to the match.
+     * @return The updated transition (may or may not be same object as trans) if the match was found. Null otherwise.
+     */
+    private SingleByteTransition deleteMatch(InputCharacter character, ByteState state, Patterns pattern,
+                                             SingleByteTransition trans) {
         if (state == null) {
             return null;
         }
 
-        ByteTransition trans = getTransition(state, b);
+        ByteMatch match = trans.getMatch();
 
-        ByteMatch match = findMatch(trans.getMatch(), pattern);
-        return match == null ? null : match.getNextNameState();
-    }
-
-    private void deleteMatch(byte b, ByteState state, Patterns pattern) {
-        if (state == null) {
-            return;
+        if (match != null && match.getPattern().equals(pattern)) {
+            updateMatchReferences(match);
+            return putTransitionMatch(state, character, trans, null);
         }
 
-        ByteTransition trans = getTransition(state, b);
-
-        // find the match with the given pattern
-        for (ByteMatch match = trans.getMatch(), prevMatch = null; match != null; match = match.getNextMatch()) {
-            if (match.getPattern().equals(pattern)) {
-                // the match is found
-                if (prevMatch == null) {
-                    // the match found is the first match in the transition's match list, set the transition's match to
-                    // the next match
-                    setTransitionMatch(state, b, trans, match.getNextMatch());
-                } else {
-                    // the match found is not the first match in the transition's match list, remove the match from the
-                    // transition's match list
-                    prevMatch.setNextMatch(match.getNextMatch());
-                }
-
-                updateMatchReferences(match);
-
-                return;
-            }
-
-            prevMatch = match;
-        }
+        return null;
     }
 
     private void updateMatchReferences(ByteMatch match) {
@@ -1274,6 +1516,8 @@ class ByteMachine {
         case EXACT:
         case PREFIX:
         case EXISTS:
+        case EQUALS_IGNORE_CASE:
+        case WILDCARD:
             break;
         case SUFFIX:
             hasSuffix.decrementAndGet();
@@ -1290,64 +1534,242 @@ class ByteMachine {
             }
             break;
         case ANYTHING_BUT:
-            anythingButs.remove(match);
+            anythingButs.remove(match.getNextNameState());
             if (((AnythingBut) pattern).isNumeric()) {
                 hasNumeric.decrementAndGet();
             }
             break;
         case ANYTHING_BUT_PREFIX:
-            anythingButs.remove(match);
-            break;
-        case EQUALS_IGNORE_CASE:
-            hasEqualsIgnoreCase.decrementAndGet();
+            anythingButs.remove(match.getNextNameState());
             break;
         default:
             throw new AssertionError("Not implemented yet");
         }
     }
 
-    private static ByteTransition getTransition(ByteState state, byte b) {
-        ByteTransition transition = state.getTransition(b);
-        return transition == null ? EmptyByteTransition.INSTANCE : transition;
+    private static ByteTransition getTransition(ByteTransition trans, byte b) {
+        ByteTransition nextTrans = trans.getTransition(b);
+        return nextTrans == null ? EmptyByteTransition.INSTANCE : nextTrans;
     }
 
-    private static void setTransitionNextState(ByteState state, byte b, ByteTransition transition,
-            ByteState nextState) {
-        // In order to avoid change being felt by the concurrent query thread in the middle of change, we clone the
-        // trans firstly and will not update state store until the changes have completely applied in the new trans.
-        ByteTransition trans = transition.clone();
-        trans = trans.setNextByteState(nextState);
-        updateTransition(state, b, transition, trans);
-    }
-
-    private static void setTransitionMatch(ByteState state, byte b, ByteTransition transition, ByteMatch match) {
-        // In order to avoid change being felt by the concurrent query thread in the middle of change, we clone the
-        // trans firstly and will not update state store until the changes have completely applied in the new trans.
-        ByteTransition trans = transition.clone();
-        trans = trans.setMatch(match);
-        updateTransition(state, b, transition, trans);
-    }
-
-    private static void updateTransition(ByteState state, byte b, ByteTransition oldTransition,
-            ByteTransition newTransition) {
-        if (newTransition == null || newTransition.isEmpty()) {
-            state.removeTransition(b);
-        } else if (newTransition != oldTransition) {
-            state.putTransition(b, newTransition);
+    private static ByteTransition getTransition(SingleByteTransition trans, InputCharacter character) {
+        switch (character.getType()) {
+            case WILDCARD:
+                return trans.getTransitionForAllBytes();
+            case MULTI_BYTE_SET:
+                return getTransitionForMultiBytes(trans, InputMultiByteSet.cast(character).getMultiBytes());
+            case BYTE:
+                return getTransition(trans, InputByte.cast(character).getByte());
+            default:
+                throw new AssertionError("Not implemented yet");
         }
     }
 
-    private static ByteMatch findMatch(ByteMatch match, Patterns pattern) {
-        while (match != null) {
+    private static ByteTransition getTransitionForMultiBytes(SingleByteTransition trans, Set<MultiByte> multiBytes) {
+        Set<SingleByteTransition> candidates = new HashSet<>();
+
+        for (MultiByte multiByte : multiBytes) {
+            ByteTransition currentTransition = trans;
+            for (byte b : multiByte.getBytes()) {
+                ByteTransition nextTransition = currentTransition.getTransition(b);
+                if (nextTransition == null) {
+                    return EmptyByteTransition.INSTANCE;
+                }
+                currentTransition = nextTransition;
+            }
+
+            if (candidates.isEmpty()) {
+                currentTransition.expand().forEach(t -> candidates.add(t));
+            } else {
+                Set<SingleByteTransition> retainThese = new HashSet<>();
+                currentTransition.expand().forEach(t -> retainThese.add(t));
+                candidates.retainAll(retainThese);
+                if (candidates.isEmpty()) {
+                    return EmptyByteTransition.INSTANCE;
+                }
+            }
+        }
+
+        return coalesce(candidates);
+    }
+
+    private static void addTransitionNextState(ByteState state, InputCharacter character, InputCharacter[] characters,
+                                               int currentIndex, ByteState prevState, Patterns pattern,
+                                               ByteState nextState) {
+        if (isWildcard(character)) {
+            addTransitionNextStateForWildcard(state, nextState);
+        } else {
+            // If the last character is the wildcard character, and we're on the second last character, set a match on
+            // the transition (turning it into a composite) before adding transitions from state and prevState.
+            SingleByteTransition single = nextState;
+            if (isWildcard(characters[characters.length - 1]) && currentIndex == characters.length - 2) {
+                ByteMatch match = new ByteMatch(pattern, new NameState());
+                single = nextState.setMatch(match);
+                nextState.setIndeterminatePrefix(true);
+            } else if (isMultiByteSet(character)) {
+                nextState.setIndeterminatePrefix(true);
+            }
+
+            addTransition(state, character, single);
+
+            // If there was a previous state and it transitioned using the wildcard character, we need to add a
+            // transition from the previous state to allow wildcard match on empty substring.
+            if (prevState != null && isWildcard(characters[currentIndex - 1])) {
+                addTransition(prevState, character, single);
+            }
+        }
+    }
+
+    /**
+     * Assuming a current wildcard character, a next character of byte b, a current state of A, a next state of B, and a
+     * next next state of C, this function produces the following state machine:
+     *
+     *          ____
+     *     *   | *  |
+     *  A ---> B <--
+     *
+     * When processing the next byte (b) of the current rule, which transitions to the next next state of C, the
+     * addTransitionNextState function will be invoked to transform the state machine to:
+     *
+     *           ____                         ____
+     *      *   | *  |                  *    | *  |
+     *   A ---> B <--               A -----> B <--
+     *        b |         =====>    | b    b |
+     *      C <--                    --> C <--
+     *
+     * A more naive implementation would skip B altogether, like:
+     *
+     *   ____
+     *  | * |  b
+     *  --> A ---> C
+     *
+     * But the naive implementation does not work in the case of multiple rules in one machine. Since the current state,
+     * A, may already have transitions for other rules, adding a self-referential * transition to A can lead to
+     * unintended matches using those existing rules. We must create a new state (B) that the wildcard byte transitions
+     * to so that we do not affect existing rules in the machine.
+     *
+     * @param state The current state.
+     * @param nextState The next state.
+     */
+    private static void addTransitionNextStateForWildcard(ByteState state,
+                                                          ByteState nextState) {
+        // Add * transition from current state (A) to next state (B).
+        state.addTransitionForAllBytes(nextState);
+
+        // Add self-referential * transition to next state (B).
+        nextState.addTransitionForAllBytes(nextState);
+
+        nextState.setIndeterminatePrefix(true);
+    }
+
+    private static void putTransitionNextState(ByteState state, InputCharacter character,
+                                               SingleByteTransition transition, ByteState nextState) {
+        // In order to avoid change being felt by the concurrent query thread in the middle of change, we clone the
+        // trans firstly and will not update state store until the changes have completely applied in the new trans.
+        ByteTransition trans = transition.clone();
+        SingleByteTransition single = trans.setNextByteState(nextState);
+        if (single != null && !single.isEmpty() && single != transition) {
+            addTransition(state, character, single);
+        }
+        removeTransition(state, character, transition);
+    }
+
+    /**
+     * Returns the cloned transition with the match set.
+     */
+    private static SingleByteTransition putTransitionMatch(ByteState state, InputCharacter character,
+                                                           SingleByteTransition transition, ByteMatch match) {
+        // In order to avoid change being felt by the concurrent query thread in the middle of change, we clone the
+        // trans firstly and will not update state store until the changes have completely applied in the new trans.
+        SingleByteTransition trans = (SingleByteTransition) transition.clone();
+        SingleByteTransition single = trans.setMatch(match);
+        if (single != null && !single.isEmpty() && single != transition) {
+            addTransition(state, character, single);
+        }
+        removeTransition(state, character, transition);
+        return single;
+    }
+
+    private static void removeTransition(ByteState state, InputCharacter character, SingleByteTransition transition) {
+        if (isWildcard(character)) {
+            state.removeTransitionForAllBytes(transition);
+        } else if (isMultiByteSet(character)) {
+            removeTransitionForMultiByteSet(state, InputMultiByteSet.cast(character), transition);
+        } else {
+            state.removeTransition(InputByte.cast(character).getByte(), transition);
+        }
+    }
+
+    private static void removeTransitionForMultiByteSet(ByteState state, InputMultiByteSet multiByteSet,
+                                                        SingleByteTransition transition) {
+        for (MultiByte multiByte : multiByteSet.getMultiBytes()) {
+            removeTransitionForBytes(state, multiByte.getBytes(), 0, transition);
+        }
+    }
+
+    private static void removeTransitionForBytes(ByteState state, byte[] bytes, int index,
+                                                 SingleByteTransition transition) {
+        if (index == bytes.length - 1) {
+            state.removeTransition(bytes[index], transition);
+        } else {
+            for (SingleByteTransition single : getTransition(state, bytes[index]).expand()) {
+                ByteState nextState = single.getNextByteState();
+                if (nextState != null) {
+                    removeTransitionForBytes(nextState, bytes, index + 1, transition);
+                    if (nextState.hasNoTransitions() || nextState.hasOnlySelfReferentialTransition()) {
+                        state.removeTransition(bytes[index], single);
+                    }
+                }
+            }
+        }
+    }
+
+    private static void addTransition(ByteState state, InputCharacter character, SingleByteTransition transition) {
+        if (isWildcard(character)) {
+            state.putTransitionForAllBytes(transition);
+        } else if (isMultiByteSet(character)) {
+            addTransitionForMultiByteSet(state, InputMultiByteSet.cast(character), transition);
+        } else {
+            state.addTransition(InputByte.cast(character).getByte(), transition);
+        }
+    }
+
+    private static void addTransitionForMultiByteSet(ByteState state, InputMultiByteSet multiByteSet,
+                                                     SingleByteTransition transition) {
+        for (MultiByte multiByte : multiByteSet.getMultiBytes()) {
+            byte[] bytes = multiByte.getBytes();
+            ByteState currentState = state;
+            for (int i = 0; i < bytes.length - 1; i++) {
+                ByteState nextState = new ByteState();
+                currentState.addTransition(bytes[i], nextState);
+                currentState = nextState;
+            }
+            currentState.addTransition(bytes[bytes.length - 1], transition);
+        }
+    }
+
+    private static ByteMatch findMatch(Set<ByteMatch> matches, Patterns pattern) {
+        for (ByteMatch match : matches) {
             if (match.getPattern().equals(pattern)) {
                 return match;
             }
-            match = match.getNextMatch();
         }
         return null;
     }
 
-    public static final class EmptyByteTransition extends ByteTransition {
+    private static boolean isWildcard(InputCharacter character) {
+        return character.getType() == InputCharacterType.WILDCARD;
+    }
+
+    private static boolean isMultiByteSet(InputCharacter character) {
+        return character.getType() == InputCharacterType.MULTI_BYTE_SET;
+    }
+
+    public int evaluateComplexity(MachineComplexityEvaluator evaluator) {
+        return (startStateMatch != null ? 1 : 0) + evaluator.evaluate(startState);
+    }
+
+    public static final class EmptyByteTransition extends SingleByteTransition {
 
         static final EmptyByteTransition INSTANCE = new EmptyByteTransition();
 
@@ -1357,8 +1779,23 @@ class ByteMachine {
         }
 
         @Override
-        public ByteTransition setNextByteState(ByteState nextState) {
+        public SingleByteTransition setNextByteState(ByteState nextState) {
             return nextState;
+        }
+
+        @Override
+        public ByteTransition getTransition(byte utf8byte) {
+            return null;
+        }
+
+        @Override
+        public ByteTransition getTransitionForAllBytes() {
+            return null;
+        }
+
+        @Override
+        public Set<ByteTransition> getTransitions() {
+            return Collections.emptySet();
         }
 
         @Override
@@ -1367,9 +1804,15 @@ class ByteMachine {
         }
 
         @Override
-        public ByteTransition setMatch(ByteMatch match) {
+        public Set<ShortcutTransition> getShortcuts() {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public SingleByteTransition setMatch(ByteMatch match) {
             return match;
         }
+
     }
 
     @Override

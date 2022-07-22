@@ -516,4 +516,46 @@ public class RulerTest {
             assertEquals(events[i], result[i], Ruler.matchesRule(events[i], rule));
         }
     }
+
+    @Test
+    public void WHEN_WeTryWildcardRules_THEN_TheyWork() throws Exception {
+        String rule = "{\n" +
+                "\"a\": [ { \"wildcard\": \"*bc\" } ],\n" +
+                "\"b\": [ { \"wildcard\": \"d*f\" } ],\n" +
+                "\"c\": [ { \"wildcard\": \"xy*\" } ],\n" +
+                "\"d\": [ { \"wildcard\": \"xy*\" } ]\n" +
+                "}";
+
+        String[] events = {
+                "{" +
+                        "    \"a\": \"abcbc\",\n" +
+                        "    \"b\": \"deeeefx\",\n" +
+                        "    \"c\": \"xy\",\n" +
+                        "    \"d\": \"xyzzz\"\n" +
+                        "}\n",
+                "{" +
+                        "    \"a\": \"abcbc\",\n" +
+                        "    \"b\": \"deeeef\",\n" +
+                        "    \"d\": \"xyzzz\"\n" +
+                        "}\n",
+                "{" +
+                        "    \"a\": \"abcbc\",\n" +
+                        "    \"b\": \"xy\",\n" +
+                        "    \"c\": \"deeeef\",\n" +
+                        "    \"d\": \"xyzzz\"\n" +
+                        "}\n",
+                "{" +
+                        "    \"a\": \"abcbc\",\n" +
+                        "    \"b\": \"deeeef\",\n" +
+                        "    \"c\": \"xy\",\n" +
+                        "    \"d\": \"xyzzz\"\n" +
+                        "}\n"
+        };
+
+        boolean[] result = {false, false, false, true };
+
+        for (int i = 0; i< events.length; i++) {
+            assertEquals(events[i], result[i], Ruler.matches(events[i], rule));
+        }
+    }
 }
