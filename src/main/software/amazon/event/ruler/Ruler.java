@@ -2,7 +2,6 @@ package software.amazon.event.ruler;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -11,7 +10,7 @@ import javax.annotation.concurrent.ThreadSafe;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+
 /**
  * The core idea of Ruler is to match rules to events at a rate that's independent of the number of rules.  This is
  *  achieved by compiling the rules into an automaton, at some up-front cost for compilation and memory use. There
@@ -27,6 +26,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 public class Ruler {
 
     private final static ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    private Ruler() { }
 
     /**
      * Return true if an event matches the provided rule. This is a thin wrapper around

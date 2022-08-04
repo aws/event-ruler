@@ -23,6 +23,11 @@ import static software.amazon.event.ruler.CompoundByteTransition.coalesce;
 import static software.amazon.event.ruler.MatchType.EXACT;
 import static software.amazon.event.ruler.MatchType.EXISTS;
 import static software.amazon.event.ruler.MatchType.SUFFIX;
+import static software.amazon.event.ruler.input.MultiByte.MAX_FIRST_BYTE_FOR_ONE_BYTE_CHAR;
+import static software.amazon.event.ruler.input.MultiByte.MAX_FIRST_BYTE_FOR_TWO_BYTE_CHAR;
+import static software.amazon.event.ruler.input.MultiByte.MAX_NON_FIRST_BYTE;
+import static software.amazon.event.ruler.input.MultiByte.MIN_FIRST_BYTE_FOR_ONE_BYTE_CHAR;
+import static software.amazon.event.ruler.input.MultiByte.MIN_FIRST_BYTE_FOR_TWO_BYTE_CHAR;
 import static software.amazon.event.ruler.input.Parser.getParser;
 
 /**
@@ -668,7 +673,7 @@ class ByteMachine {
             ByteState stateToReuse = null;
             for (SingleByteTransition single : trans.expand()) {
                 ByteState nextByteState = single.getNextByteState();
-                if (canReuseNextByteState(byteState, single, nextByteState, i, characters)) {
+                if (canReuseNextByteState(byteState, nextByteState, characters, i)) {
                     stateToReuse = nextByteState;
                     break;
                 }
@@ -684,8 +689,8 @@ class ByteMachine {
         return addEndOfMatch(byteState, prevByteState, characters, i, pattern, nameStateToBeReturned);
     }
 
-    private boolean canReuseNextByteState(ByteState byteState, SingleByteTransition single, ByteState nextByteState,
-                                          int i, InputCharacter[] characters) {
+    private boolean canReuseNextByteState(ByteState byteState, ByteState nextByteState, InputCharacter[] characters,
+                                          int i) {
         // We cannot re-use nextByteState if it is non-existent (null) or if it is the same as the current byteState,
         // meaning we are looping on a self-referencing transition.
         if (nextByteState == null || nextByteState == byteState) {
@@ -695,19 +700,94 @@ class ByteMachine {
         // Case 1: When we have a determinate prefix, we can re-use nextByteState except for the special case where we
         //         are on the second-last character with a final character wildcard. A composite is required for this
         //         case, so we will create a new state.
+        //
+        //         Example 1: Take the following machine representing an exact match pattern.
+        //              a        b        c
+        //            -----> A -----> B -----> C
+        //         With a byteState of A, a current char of b, and a next and final char of *, we would be unable to
+        //         re-use B as nextByteState, since we need to create a new self-referencing composite state D.
         if (!nextByteState.hasIndeterminatePrefix()) {
             return !(i == characters.length - 2 && isWildcard(characters[i + 1]));
 
-        // Case 2: nextByteState has an indeterminate prefix and single is not a composite (given by
-        //         single == nextByteState). We can re-use nextByteState only if current character is a wildcard and
-        //         nextByteState is already a "wildcard state", meaning all bytes reference back to only nextByteState.
-        } else if (single == nextByteState) {
-            return isWildcard(characters[i]) && nextByteState.getTransitionForAllBytes() == single;
-
-        // Case 3: nextByteState has an indeterminate prefix and single is a composite. We can re-use nextByteState only
-        //         if next character is a wildcard and all bytes reference back to only the composite.
+        // Case 2: nextByteState has an indeterminate prefix and current character is not a wildcard. We can re-use
+        //         nextByteState only if byteState does not have at least two transitions, one using the next
+        //         InputCharacter, that eventually converge to a common state.
+        //
+        //         Example 2a: Take the following machine representing a wildcard pattern.
+        //                             ____
+        //              a        *    | *  |
+        //            -----> A -----> B <--
+        //                   | b    b |
+        //                   --> C <--
+        //         With a byteState of A, and a current char of b, we would be unable to re-use C as nextByteState,
+        //         since A has a second transition to B that eventually leads to C as well. But we could re-use B.
+        //
+        //         Example 2b: Take the following machine representing an equals_ignore_case pattern.
+        //              x       Y
+        //            -----> A ------
+        //                   |  y   v
+        //                   -----> B
+        //         With a byteState of A, and a current char of y, we would be unable to re-use B as nextByteState,
+        //         since A has a second transition to B using char Y.
         } else {
-            return isWildcard(characters[i + 1]) && nextByteState.getTransitionForAllBytes() == single;
+            return !doMultipleTransitionsConvergeForInputByte(byteState, characters, i);
+        }
+    }
+
+    /**
+     * Returns true if the current InputCharacter is the first InputByte of a Java character and there exists at least
+     * two transitions, one using the next InputCharacter, away from byteState leading down paths that eventually
+     * converge to a common state.
+     *
+     * @param byteState State where we look for at least two transitions that eventually converge to a common state.
+     * @param characters The array of InputCharacters.
+     * @param i The current index in the characters array.
+     * @return True if and only if multiple transitions eventually converge to a common state.
+     */
+    private boolean doMultipleTransitionsConvergeForInputByte(ByteState byteState, InputCharacter[] characters, int i) {
+        if (!isByte(characters[i])) {
+            return false;
+        }
+
+        if (!isNextCharacterFirstByteOfMultiByte(characters, i)) {
+            // If we are in the midst of a multi-byte sequence, we know that we are dealing with single transitions.
+            return false;
+        }
+
+        // Scenario 1 where multiple transitions will later converge: wildcard leads to wildcard state and following
+        // character can be used to skip wildcard state. Check for a non-self-referencing wildcard transition.
+        ByteTransition byteStateTransitionForAllBytes = byteState.getTransitionForAllBytes();
+        if (!byteStateTransitionForAllBytes.isEmpty() && byteStateTransitionForAllBytes != byteState) {
+            return true;
+        }
+
+        // Scenario 2 where multiple transitions will later converge: equals_ignore_case lower and upper case paths.
+        // Parse the next Java character into lower and upper case multibyte representations. Check if there are
+        // multiple multibytes (paths) and that there exists a transition that both lead to.
+        String value = extractNextJavaCharacterFromInputCharacters(characters, i);
+        InputCharacter[] inputCharacters = getParser().parse(MatchType.EQUALS_IGNORE_CASE, value);
+        InputMultiByteSet inputMultiByteSet = InputMultiByteSet.cast(inputCharacters[0]);
+        ByteTransition transition = getTransition(byteState, inputMultiByteSet);
+        return inputMultiByteSet.getMultiBytes().size() > 1 && transition != null;
+    }
+
+    private boolean isNextCharacterFirstByteOfMultiByte(InputCharacter[] characters, int i) {
+        byte firstByte = InputByte.cast(characters[i]).getByte();
+        // Since MIN_NON_FIRST_BYTE is (byte) 0x80 = -128 = Byte.MIN_VALUE, we can simply compare against
+        // MAX_NON_FIRST_BYTE to see if this is a first byte or not.
+        return firstByte > MAX_NON_FIRST_BYTE;
+    }
+
+    private String extractNextJavaCharacterFromInputCharacters(InputCharacter[] characters, int i) {
+        byte firstByte = InputByte.cast(characters[i]).getByte();
+        if (firstByte >= MIN_FIRST_BYTE_FOR_ONE_BYTE_CHAR && firstByte <= MAX_FIRST_BYTE_FOR_ONE_BYTE_CHAR) {
+            return new String(new byte[] { firstByte } , StandardCharsets.UTF_8);
+        } else if (firstByte >= MIN_FIRST_BYTE_FOR_TWO_BYTE_CHAR && firstByte <= MAX_FIRST_BYTE_FOR_TWO_BYTE_CHAR) {
+            return new String(new byte[] { firstByte, InputByte.cast(characters[i + 1]).getByte() },
+                    StandardCharsets.UTF_8);
+        } else {
+            return new String(new byte[] { firstByte, InputByte.cast(characters[i + 1]).getByte(),
+                    InputByte.cast(characters[i + 2]).getByte() }, StandardCharsets.UTF_8);
         }
     }
 
@@ -1653,13 +1733,13 @@ class ByteMachine {
      */
     private static void addTransitionNextStateForWildcard(ByteState state,
                                                           ByteState nextState) {
-        // Add * transition from current state (A) to next state (B).
-        state.addTransitionForAllBytes(nextState);
-
         // Add self-referential * transition to next state (B).
         nextState.addTransitionForAllBytes(nextState);
 
         nextState.setIndeterminatePrefix(true);
+
+        // Add * transition from current state (A) to next state (B).
+        state.addTransitionForAllBytes(nextState);
     }
 
     private static void putTransitionNextState(ByteState state, InputCharacter character,
@@ -1741,6 +1821,7 @@ class ByteMachine {
             ByteState currentState = state;
             for (int i = 0; i < bytes.length - 1; i++) {
                 ByteState nextState = new ByteState();
+                nextState.setIndeterminatePrefix(true);
                 currentState.addTransition(bytes[i], nextState);
                 currentState = nextState;
             }
@@ -1755,6 +1836,10 @@ class ByteMachine {
             }
         }
         return null;
+    }
+
+    private static boolean isByte(InputCharacter character) {
+        return character.getType() == InputCharacterType.BYTE;
     }
 
     private static boolean isWildcard(InputCharacter character) {

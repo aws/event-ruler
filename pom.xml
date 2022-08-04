@@ -98,6 +98,8 @@
   </dependencies>
 
   <build>
+    <sourceDirectory>src/main</sourceDirectory>
+    <testSourceDirectory>src/test</testSourceDirectory>
     <finalName>${project.artifactId}-${project.version}</finalName>
     <plugins>
       <plugin>

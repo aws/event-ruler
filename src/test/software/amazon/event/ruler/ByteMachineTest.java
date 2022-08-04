@@ -1,6 +1,5 @@
 package software.amazon.event.ruler;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -8,22 +7,17 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import software.amazon.event.ruler.input.ParseException;
 import org.junit.Test;
 
-import static software.amazon.event.ruler.TestUtilities.generateAllPermutations;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.core.IsEqual.equalTo;
+import static software.amazon.event.ruler.PermutationsGenerator.generateAllPermutations;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -694,7 +688,7 @@ public class ByteMachineTest {
         cut.deletePattern(Patterns.existencePatterns());
 
         stateFound = cut.findPattern(Patterns.existencePatterns());
-        assertThat(stateFound, is(nullValue()));
+        assertNull(stateFound);
 
         assertTrue(cut.isEmpty());
     }
@@ -706,7 +700,7 @@ public class ByteMachineTest {
         cut.addPattern(Patterns.existencePatterns());
 
         Set<NameState> matches = cut.transitionOn("someValue");
-        assertThat(matches.size(), is(equalTo(1)));
+        assertEquals(1, matches.size());
 
         cut.deletePattern(Patterns.existencePatterns());
         assertTrue(cut.isEmpty());
@@ -717,7 +711,7 @@ public class ByteMachineTest {
         ByteMachine cut = new ByteMachine();
 
         Set<NameState> matches = cut.transitionOn("someValue");
-        assertThat(matches.size(), is(equalTo(0)));
+        assertEquals(0, matches.size());
 
         assertTrue(cut.isEmpty());
     }
@@ -731,21 +725,21 @@ public class ByteMachineTest {
         cut.addPattern(Patterns.exactMatch(val));
 
         Set<NameState> matches = cut.transitionOn("anotherValue");
-        assertThat(matches.size(), is(equalTo(1)));
+        assertEquals(1, matches.size());
 
         matches = cut.transitionOn(val);
-        assertThat(matches.size(), is(equalTo(2)));
+        assertEquals(2, matches.size());
 
         cut.deletePattern(Patterns.existencePatterns());
         matches = cut.transitionOn("anotherValue");
-        assertThat(matches.size(), is(equalTo(0)));
+        assertEquals(0, matches.size());
 
         matches = cut.transitionOn(val);
-        assertThat(matches.size(), is(equalTo(1)));
+        assertEquals(1, matches.size());
 
         cut.deletePattern(Patterns.exactMatch(val));
         matches = cut.transitionOn(val);
-        assertThat(matches.size(), is(equalTo(0)));
+        assertEquals(0, matches.size());
     }
 
     @Test
@@ -767,21 +761,21 @@ public class ByteMachineTest {
         cut.addPattern(Patterns.exactMatch(val));
 
         Set<NameState> matches = cut.transitionOn("NewValue");
-        assertThat(matches.size(), is(equalTo(1)));
+        assertEquals(1, matches.size());
 
         matches = cut.transitionOn(val);
-        assertThat(matches.size(), is(equalTo(2)));
+        assertEquals(2, matches.size());
 
         cut.deletePattern(Patterns.existencePatterns());
         matches = cut.transitionOn("NewValue");
-        assertThat(matches.size(), is(equalTo(0)));
+        assertEquals(0, matches.size());
 
         matches = cut.transitionOn(val);
-        assertThat(matches.size(), is(equalTo(1)));
+        assertEquals(1, matches.size());
 
         cut.deletePattern(Patterns.exactMatch(val));
         matches = cut.transitionOn(val);
-        assertThat(matches.size(), is(equalTo(0)));
+        assertEquals(0, matches.size());
     }
 
     @Test
@@ -1010,6 +1004,41 @@ public class ByteMachineTest {
                         "abca"),
                 new PatternMatch(Patterns.prefixMatch("abcA"),
                         "abcA")
+        );
+    }
+
+    @Test
+    public void testEqualsIgnoreCaseFirstCharacterWithDifferentByteLengthForCasesWithLowerCasePrefixMatch() {
+        String[] noMatches = new String[] { "", "ⱥ", "Ⱥ", "c" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.equalsIgnoreCaseMatch("ⱥc"),
+                        "ⱥc", "Ⱥc"),
+                new PatternMatch(Patterns.prefixMatch("ⱥc"),
+                        "ⱥc", "ⱥcd")
+        );
+    }
+
+    @Test
+    public void testEqualsIgnoreCaseFirstCharacterWithDifferentByteLengthForCasesWithUpperCasePrefixMatch() {
+        String[] noMatches = new String[] { "", "ⱥ", "Ⱥ", "c" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.equalsIgnoreCaseMatch("Ⱥc"),
+                        "ⱥc", "Ⱥc"),
+                new PatternMatch(Patterns.prefixMatch("Ⱥc"),
+                        "Ⱥc", "Ⱥcd")
+        );
+    }
+
+    @Test
+    public void testEqualsIgnoreCaseWhereLowerAndUpperCaseAlreadyExist() {
+        String[] noMatches = new String[] { "", "a", "b" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixMatch("ab"),
+                        "ab", "abc", "abC"),
+                new PatternMatch(Patterns.prefixMatch("AB"),
+                        "AB", "ABC", "ABc"),
+                new PatternMatch(Patterns.equalsIgnoreCaseMatch("ab"),
+                        "ab", "AB", "Ab", "aB")
         );
     }
 
@@ -1825,7 +1854,7 @@ public class ByteMachineTest {
 
     @Test
     public void testWildcardWithEqualsIgnoreCasePattern() {
-        String[] noMatches = new String[] { "", "hel", "heo", "HEXLO", "HExLO", "hexlO", "helllLo", "hElo", "HEXlo"};
+        String[] noMatches = new String[] { "", "hel", "heo", "HEXLO", "HExLO", "hexlO", "helllLo", "hElo", "HEXlo" };
         testPatternPermutations(noMatches,
                 new PatternMatch(Patterns.wildcardMatch("he*lo"),
                         "helo", "hello", "heLlo", "hellllo"),
@@ -1841,6 +1870,17 @@ public class ByteMachineTest {
                         "helo", "hello", "hellllo"),
                 new PatternMatch(Patterns.existencePatterns(),
                         "", "a", "b", "c", "abc", "helo", "hello", "hellllo")
+        );
+    }
+
+    @Test
+    public void testWildcardSecondWildcardCharacterIsNotReusedByOtherWildcardRule() {
+        String[] noMatches = new String[] { "", "abcd", "bcde", "ae", "xabcde", "abcdex" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.wildcardMatch("a*bc*de"),
+                        "abcde", "axbcde", "abcxde", "axbcxde"),
+                new PatternMatch(Patterns.wildcardMatch("a*bcde"),
+                        "abcde", "axbcde")
         );
     }
 
@@ -1939,6 +1979,51 @@ public class ByteMachineTest {
     }
 
     @Test
+    public void testWildcardRuleIsNotDuplicated() {
+        ByteMachine cut = new ByteMachine();
+        for (int i = 0; i < 10; i++) {
+            cut.addPattern(Patterns.wildcardMatch("1*2345"));
+        }
+        assertEquals(2, cut.evaluateComplexity(new MachineComplexityEvaluator(Integer.MAX_VALUE)));
+    }
+
+    @Test
+    public void testWildcardRuleIsNotDuplicatedWildcardIsFirstChar() {
+        ByteMachine cut = new ByteMachine();
+        for (int i = 0; i < 10; i++) {
+            cut.addPattern(Patterns.wildcardMatch("*123"));
+        }
+        assertEquals(2, cut.evaluateComplexity(new MachineComplexityEvaluator(Integer.MAX_VALUE)));
+    }
+
+    @Test
+    public void testWildcardRuleIsNotDuplicatedWildcardIsSecondLastChar() {
+        ByteMachine cut = new ByteMachine();
+        for (int i = 0; i < 10; i++) {
+            cut.addPattern(Patterns.wildcardMatch("1*2"));
+        }
+        assertEquals(2, cut.evaluateComplexity(new MachineComplexityEvaluator(Integer.MAX_VALUE)));
+    }
+
+    @Test
+    public void testWildcardRuleIsNotDuplicatedWildcardIsLastChar() {
+        ByteMachine cut = new ByteMachine();
+        for (int i = 0; i < 10; i++) {
+            cut.addPattern(Patterns.wildcardMatch("1*"));
+        }
+        assertEquals(2, cut.evaluateComplexity(new MachineComplexityEvaluator(Integer.MAX_VALUE)));
+    }
+
+    @Test
+    public void testWildcardRuleIsNotDuplicatedWildcardIsThirdLastAndLastChar() {
+        ByteMachine cut = new ByteMachine();
+        for (int i = 0; i < 10; i++) {
+            cut.addPattern(Patterns.wildcardMatch("12*3*"));
+        }
+        assertEquals(3, cut.evaluateComplexity(new MachineComplexityEvaluator(Integer.MAX_VALUE)));
+    }
+
+    @Test
     public void testWildcardMultipleWildcardPatterns1() {
         // Considering the following as potential matches: "hello", "hxxllo", "xhello", "xxhello", "hellox", "helloxx", "hellxo", "hellxxo", "", "helxlo", "kaboom"
         String[] noMatches = new String[] { "", "helxlo", "kaboom" };
@@ -2026,7 +2111,9 @@ public class ByteMachineTest {
      * @param patternMatches Array where each element contains a pattern and values that will match the pattern.
      */
     private void testPatternPermutations(String[] noMatches, PatternMatch ... patternMatches) {
-        Random r = new Random();
+        long seed = new Random().nextLong();
+        System.out.println("USE ME TO REPRODUCE - ByteMachineTest.testPatternPermutations seeding with " + seed);
+        Random r = new Random(seed);
         ByteMachine cut = new ByteMachine();
         Set<String> matchValues = Stream.of(patternMatches)
                                         .map(patternMatch -> patternMatch.matches)

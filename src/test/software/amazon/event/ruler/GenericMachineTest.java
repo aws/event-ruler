@@ -211,14 +211,12 @@ public class GenericMachineTest {
         genericMachine.addRule(r2, rule2);
         genericMachine.addRule(r3, rule3);
 
-
         String[] event1 = { "a", "1" };
         String jsonEvent1 = "{ \"a\" :  1 }" ;
         String[] event2 = { "b", "2" };
         String jsonEvent2 = "{ \"b\" :  2 }" ;
-        // String[] event3 = { "c", "3" };
         String[] event4 = { "x", "true" };
-        String jsonEvent4 = "{ \"x\" :  true }" ;;
+        String jsonEvent4 = "{ \"x\" :  true }" ;
         String[] event5 = { "a", "1", "b", "2","c", "3"};
         String jsonEvent5 = "{ \"a\" :  1, \"b\": 2, \"c\" : 3 }";
 

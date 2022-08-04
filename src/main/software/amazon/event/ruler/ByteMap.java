@@ -34,11 +34,6 @@ class ByteMap {
         updateTransition(utf8byte, transition, Operation.PUT);
     }
 
-    /**
-     * Puts a transition for all UTF8 bytes.
-     *
-     * @param transition Transition to put for all UTF8 bytes.
-     */
     void putTransitionForAllBytes(final SingleByteTransition transition) {
         NavigableMap<Integer, ByteTransition> newMap = new TreeMap<>();
         newMap.put(256, transition);
@@ -49,11 +44,6 @@ class ByteMap {
         updateTransition(utf8byte, transition, Operation.ADD);
     }
 
-    /**
-     * Adds a transition for all UTF8 bytes.
-     *
-     * @param transition Transition to add for all UTF8 bytes.
-     */
     void addTransitionForAllBytes(final SingleByteTransition transition) {
         NavigableMap<Integer, ByteTransition> newMap = new TreeMap<>(map);
         for (Map.Entry<Integer, ByteTransition> entry : newMap.entrySet()) {
@@ -70,11 +60,6 @@ class ByteMap {
         updateTransition(utf8byte, transition, Operation.REMOVE);
     }
 
-    /**
-     * Removes a transition for all UTF8 bytes.
-     *
-     * @param transition Transition to remove for all UTF8 bytes.
-     */
     void removeTransitionForAllBytes(final SingleByteTransition transition) {
         NavigableMap<Integer, ByteTransition> newMap = new TreeMap<>(map);
         for (Map.Entry<Integer, ByteTransition> entry : newMap.entrySet()) {
@@ -96,7 +81,7 @@ class ByteMap {
      *  representing the proportion greater than the byte value. Then we merge entries mapping to the same transition.
      *  One effect is that you can remove the transition at position X by putting (X, null). An earlier implementation
      *  expanded the map to a ByteMapExtent[256] array of singletons, did the update, then contracted it, but that drove
-     *  the compute/memory cost up so addRule and deleteRule were showing up in the profiler. Another earlier
+     *  the compute/memory cost up so much that addRule and deleteRule were showing up in the profiler. Another earlier
      *  implementation tried to do the merging at the same time as the entry wrangling and dissolved into an
      *  incomprehensible pile of special-case code.
      */

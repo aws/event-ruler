@@ -161,7 +161,7 @@ public class GenericMachine<T> {
      *   r1 {a, [1,2]}
      *
      * @param name ARN of the rule
-     * @param namevals names & values which make up the rule
+     * @param namevals names and values which make up the rule
      */
     public void addRule(final T name, final Map<String, List<String>> namevals) {
         final Map<String, List<Patterns>> patternMap = new HashMap<>();
@@ -178,7 +178,7 @@ public class GenericMachine<T> {
      * or more sophisticated (like {anything-but : "1", range: { ... } })
      *
      * @param name ARN of the rule4
-     * @param namevals names & values which make up the rule
+     * @param namevals names and values which make up the rule
      */
     public void addPatternRule(final T name, final Map<String, List<Patterns>> namevals) {
 

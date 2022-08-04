@@ -1,8 +1,6 @@
 package software.amazon.event.ruler;
 
-import java.util.Locale;
 import java.util.Set;
-import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 

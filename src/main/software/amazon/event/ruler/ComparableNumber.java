@@ -1,5 +1,7 @@
 package software.amazon.event.ruler;
 
+import java.util.Locale;
+
 /**
  * Represents a number, turned into a comparable string
  *  Numbers are allowed in the range -50**9 .. +50**9, inclusive
@@ -29,12 +31,15 @@ package software.amazon.event.ruler;
 class ComparableNumber {
     private static final double TEN_E_SIX = 1E6;
     static final int MAX_LENGTH_IN_BYTES = 16;
+
+    private ComparableNumber() { }
+
     static String generate(final double f) {
         if (f < -Constants.FIVE_BILLION || f > Constants.FIVE_BILLION) {
             throw new IllegalArgumentException("Value must be between " + -Constants.FIVE_BILLION +
                     " and " + Constants.FIVE_BILLION + ", inclusive");
         }
-        return String.format("%014x", (long) (TEN_E_SIX * (Constants.FIVE_BILLION + f))).toUpperCase();
+        return String.format("%014x", (long) (TEN_E_SIX * (Constants.FIVE_BILLION + f))).toUpperCase(Locale.ROOT);
     }
 }
 

@@ -24,6 +24,27 @@ public class EqualsIgnoreCaseParserTest {
     }
 
     @Test
+    public void testParseSimpleString() {
+        assertArrayEquals(new InputCharacter[] {
+                set(new MultiByte((byte) 97), new MultiByte((byte) 65)),
+                set(new MultiByte((byte) 98), new MultiByte((byte) 66)),
+                set(new MultiByte((byte) 99), new MultiByte((byte) 67)),
+        }, parser.parse("aBc"));
+    }
+
+    @Test
+    public void testParseSimpleStringWithNonLetters() {
+        assertArrayEquals(new InputCharacter[] {
+                set(new MultiByte((byte) 97), new MultiByte((byte) 65)),
+                set(new MultiByte((byte) 49)),
+                set(new MultiByte((byte) 98), new MultiByte((byte) 66)),
+                set(new MultiByte((byte) 50)),
+                set(new MultiByte((byte) 99), new MultiByte((byte) 67)),
+                set(new MultiByte((byte) 33)),
+        }, parser.parse("a1B2c!"));
+    }
+
+    @Test
     public void testParseStringWithSingleBytesMultiBytesCharactersNonCharactersAndDifferingLengthMultiBytes() {
         assertArrayEquals(new InputCharacter[] {
                 set(new MultiByte((byte) 49)),

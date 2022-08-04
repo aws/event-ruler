@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 
-public class TestUtilities {
+public class PermutationsGenerator {
+
+    private PermutationsGenerator() { }
 
     public static <T> List<T[]> generateAllPermutations(T[] array) {
         int numPermutations = IntStream.rangeClosed(1, array.length).reduce((x, y) -> x * y).getAsInt();

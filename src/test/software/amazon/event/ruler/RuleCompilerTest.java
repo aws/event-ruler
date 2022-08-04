@@ -6,6 +6,7 @@ import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -17,15 +18,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.Test;
-import org.hamcrest.collection.IsMapContaining;
-import org.hamcrest.collection.IsIterableContainingInOrder;
-import org.hamcrest.collection.IsIterableContainingInAnyOrder;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class RuleCompilerTest {
@@ -214,45 +211,37 @@ public class RuleCompilerTest {
         final String rule = "{" +
                 "\"a1\": [123, \"child\", {\"numeric\": [\">\", 0, \"<=\", 5]}]," +
                 "\"a2\": { \"b\": {" +
-                    "\"c1\": [" +
-                        "{ \"suffix\": \"child\" }," +
-                        "{ \"anything-but\": [111,222,333]}," +
-                        "{ \"anything-but\": { \"prefix\": \"foo\"}}" +
-                    "]," +
-                    "\"c2\": { \"d\": { \"e\": [" +
-                        "{ \"exactly\": \"child\" }," +
-                        "{ \"exists\": true }," +
-                        "{ \"cidr\": \"10.0.0.0/8\" }" +
-                    "]}}}" +
+                "\"c1\": [" +
+                "{ \"suffix\": \"child\" }," +
+                "{ \"anything-but\": [111,222,333]}," +
+                "{ \"anything-but\": { \"prefix\": \"foo\"}}" +
+                "]," +
+                "\"c2\": { \"d\": { \"e\": [" +
+                "{ \"exactly\": \"child\" }," +
+                "{ \"exists\": true }," +
+                "{ \"cidr\": \"10.0.0.0/8\" }" +
+                "]}}}" +
                 "}}";
-        Map<List<String>, List<Patterns>> m = RuleCompiler.ListBasedRuleCompiler.flattenRule(rule);
 
-        assertEquals(3, m.size());
-        assertThat(m, IsMapContaining.hasEntry(
-                IsIterableContainingInOrder.contains("a1"),
-                IsIterableContainingInAnyOrder.containsInAnyOrder(
-                        Patterns.numericEquals(123),
-                        Patterns.exactMatch("123"),
-                        Patterns.exactMatch("\"child\""),
-                        Range.between(0, true, 5, false)
-                )
+        Map<List<String>, List<Patterns>> expected = new HashMap<>();
+        expected.put(Arrays.asList("a1"), Arrays.asList(
+                Patterns.numericEquals(123),
+                Patterns.exactMatch("123"),
+                Patterns.exactMatch("\"child\""),
+                Range.between(0, true, 5, false)
         ));
-        assertThat(m, IsMapContaining.hasEntry(
-                IsIterableContainingInOrder.contains("a2", "b", "c1"),
-                IsIterableContainingInAnyOrder.containsInAnyOrder(
-                        Patterns.suffixMatch("child\""),
-                        Patterns.anythingButNumberMatch(Stream.of(111, 222, 333).map(Double::valueOf).collect(Collectors.toSet())),
-                        Patterns.anythingButPrefix("\"foo")
-                )
+        expected.put(Arrays.asList("a2", "b", "c1"), Arrays.asList(
+                Patterns.suffixMatch("child\""),
+                Patterns.anythingButNumberMatch(Stream.of(111, 222, 333).map(Double::valueOf).collect(Collectors.toSet())),
+                Patterns.anythingButPrefix("\"foo")
         ));
-        assertThat(m, IsMapContaining.hasEntry(
-                IsIterableContainingInOrder.contains("a2", "b", "c2", "d", "e"),
-                IsIterableContainingInAnyOrder.containsInAnyOrder(
-                        Patterns.exactMatch("\"child\""),
-                        Patterns.existencePatterns(),
-                        CIDR.cidr("10.0.0.0/8")
-                )
+        expected.put(Arrays.asList("a2", "b", "c2", "d", "e"), Arrays.asList(
+                Patterns.exactMatch("\"child\""),
+                Patterns.existencePatterns(),
+                CIDR.cidr("10.0.0.0/8")
         ));
+
+        assertEquals(expected, RuleCompiler.ListBasedRuleCompiler.flattenRule(rule));
     }
 
     @Test

@@ -5,6 +5,9 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 class Constants {
+
+    private Constants() { }
+
     final static String EXACT_MATCH = "exactly";
     final static String EQUALS_IGNORE_CASE = "equals-ignore-case";
     final static String PREFIX_MATCH = "prefix";

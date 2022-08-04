@@ -16,7 +16,6 @@
     <module name="MissingSwitchDefault"/>
     <module name="MultipleVariableDeclarations"/>
     <module name="OneStatementPerLine"/>
-    <module name="NoClone"/>
     <module name="NoFinalizer"/>
     <module name="RedundantImport"/>
     <module name="DefaultComesLast"/>

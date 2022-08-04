@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  * array, for each object in "$or" array, this Compiler will fork a new Map to include all fields of patterns in
  * that "or" branch, and when it goes over all branches in "$or" relationship, it will end up with the list of Map
  * and each Map represents a match branch composed of fields of patterns.
- * i.e.: a rule which describe the effect of ("source" && ("metricName" || ("metricType && "namespace") || "scope"))
+ * i.e.: a rule which describe the effect of ("source" AND ("metricName" OR ("metricType AND "namespace") OR "scope"))
  * its JSON format String is:
  *   {
  *     "source": [ "aws.cloudwatch" ],
@@ -47,6 +47,8 @@ import java.util.stream.Collectors;
 public class JsonRuleCompiler {
 
     private static final JsonFactory JSON_FACTORY = new JsonFactory();
+
+    private JsonRuleCompiler() { }
 
     /**
      * Verify the syntax of a rule

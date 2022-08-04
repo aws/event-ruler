@@ -5,7 +5,7 @@ import org.junit.Test;
 
 import java.util.List;
 
-import static software.amazon.event.ruler.TestUtilities.generateAllPermutations;
+import static software.amazon.event.ruler.PermutationsGenerator.generateAllPermutations;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -374,6 +374,48 @@ public class MachineComplexityEvaluatorTest {
         testPatternPermutations(10, Patterns.wildcardMatch("F*eatureFeature"),
                                     Patterns.wildcardMatch("Fe*atureFeature"),
                                     Patterns.wildcardMatch("Fea*tureFeature"));
+    }
+
+    /**
+     * I'm not going to try to determine the maximum complexity input string. This is here just to demonstrate that this
+     * set of rules, which has proven problematic for Quamina in the past, is handled ok by Ruler.
+     */
+    @Test
+    public void testEvaluateQuaminaExploder() {
+        ByteMachine machine = new ByteMachine();
+        machine.addPattern(Patterns.wildcardMatch("aahed*"));
+        machine.addPattern(Patterns.wildcardMatch("aal*ii"));
+        machine.addPattern(Patterns.wildcardMatch("aargh*"));
+        machine.addPattern(Patterns.wildcardMatch("aarti*"));
+        machine.addPattern(Patterns.wildcardMatch("a*baca"));
+        machine.addPattern(Patterns.wildcardMatch("*abaci"));
+        machine.addPattern(Patterns.wildcardMatch("a*back"));
+        machine.addPattern(Patterns.wildcardMatch("ab*acs"));
+        machine.addPattern(Patterns.wildcardMatch("abaf*t"));
+        machine.addPattern(Patterns.wildcardMatch("*abaka"));
+        machine.addPattern(Patterns.wildcardMatch("ab*amp"));
+        machine.addPattern(Patterns.wildcardMatch("a*band"));
+        machine.addPattern(Patterns.wildcardMatch("*abase"));
+        machine.addPattern(Patterns.wildcardMatch("abash*"));
+        machine.addPattern(Patterns.wildcardMatch("abas*k"));
+        machine.addPattern(Patterns.wildcardMatch("ab*ate"));
+        machine.addPattern(Patterns.wildcardMatch("aba*ya"));
+        machine.addPattern(Patterns.wildcardMatch("abbas*"));
+        machine.addPattern(Patterns.wildcardMatch("abbed*"));
+        machine.addPattern(Patterns.wildcardMatch("ab*bes"));
+        machine.addPattern(Patterns.wildcardMatch("abbey*"));
+        machine.addPattern(Patterns.wildcardMatch("*abbot"));
+        machine.addPattern(Patterns.wildcardMatch("ab*cee"));
+        machine.addPattern(Patterns.wildcardMatch("abea*m"));
+        machine.addPattern(Patterns.wildcardMatch("abe*ar"));
+        machine.addPattern(Patterns.wildcardMatch("a*bele"));
+        machine.addPattern(Patterns.wildcardMatch("a*bers"));
+        machine.addPattern(Patterns.wildcardMatch("abet*s"));
+        machine.addPattern(Patterns.wildcardMatch("*abhor"));
+        machine.addPattern(Patterns.wildcardMatch("abi*de"));
+        machine.addPattern(Patterns.wildcardMatch("a*bies"));
+        machine.addPattern(Patterns.wildcardMatch("*abled"));
+        assertEquals(45, machine.evaluateComplexity(evaluator));
     }
 
     /**

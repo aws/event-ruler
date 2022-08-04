@@ -1,8 +1,6 @@
 package software.amazon.event.ruler.input;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import static software.amazon.event.ruler.input.Parser.NINE_BYTE;
 import static software.amazon.event.ruler.input.Parser.ZERO_BYTE;
@@ -12,6 +10,12 @@ import static software.amazon.event.ruler.input.Parser.ZERO_BYTE;
  * multiple bytes.
  */
 public class MultiByte {
+
+    public static final byte MIN_FIRST_BYTE_FOR_ONE_BYTE_CHAR = (byte) 0x00;
+    public static final byte MAX_FIRST_BYTE_FOR_ONE_BYTE_CHAR = (byte) 0x7F;
+    public static final byte MIN_FIRST_BYTE_FOR_TWO_BYTE_CHAR = (byte) 0xC2;
+    public static final byte MAX_FIRST_BYTE_FOR_TWO_BYTE_CHAR = (byte) 0xDF;
+    public static final byte MAX_NON_FIRST_BYTE = (byte) 0xBF;
 
     private final byte[] bytes;
 
@@ -39,20 +43,6 @@ public class MultiByte {
 
     public boolean isNumeric() {
         return bytes.length == 1 && bytes[0] >= ZERO_BYTE && bytes[0] <= NINE_BYTE;
-    }
-
-    public MultiByte createNext() {
-        if (is((byte) 0x7F)) {
-            return new MultiByte((byte) 0xC2, (byte) 0x80);
-        } else if (is((byte) 0xC2, (byte) 0xBF)) {
-            return new MultiByte((byte) 0XC3, (byte) 0x80);
-        } else if (is((byte) 0xC3, (byte) 0xBF)) {
-            return new MultiByte((byte) 0x00);
-        } else {
-            byte[] copy = Arrays.copyOf(bytes, bytes.length);
-            copy[copy.length - 1]++;
-            return new MultiByte(copy);
-        }
     }
 
     public boolean isLessThan(MultiByte other) {

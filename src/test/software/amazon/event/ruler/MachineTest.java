@@ -800,9 +800,11 @@ public class MachineTest {
         Machine machine = new Machine();
 
         TestEvent e = new TestEvent("0", "", "a", "11", "b", "21", "c", "31", "gamma", "41", "zoo", "keeper");
-        // System.out.println(e.toString());
 
-        Rule rule, rule1, rule2, rule3;
+        Rule rule;
+        Rule rule1;
+        Rule rule2;
+        Rule rule3;
 
         rule = new Rule("R1");
         rule.setKeys("a", "b","c");
@@ -849,7 +851,8 @@ public class MachineTest {
 
         TestEvent e = new TestEvent("0", "", "a", "11", "b", "21", "c", "31", "gamma", "41", "zoo", "keeper");
 
-        Rule rule, rule1;
+        Rule rule;
+        Rule rule1;
         rule = new Rule("R1");
         rule.setKeys("a", "b", "c");
         rule.setExactMatchValues("11", "21", "31");
@@ -948,11 +951,13 @@ public class MachineTest {
                 int i = 0;
                 int n;
                 // this thread only return when match out 100 rules 100 times.
-                while(i < 100) {
+                while (i < 100) {
                     List<String> actual = machine.rulesForEvent(event);
                     // the number of matched rules will keep growing from 0 till to 100
                     n = actual.size();
-                    if (n == 100) i++;
+                    if (n == 100) {
+                        i++;
+                    }
                 }
             }
         }
@@ -1035,11 +1040,13 @@ public class MachineTest {
                 int i = 0;
                 int n;
                 // this thread only return when match out 100 rules 100 times.
-                while(i < 100) {
+                while (i < 100) {
                     List<String> actual = machine.rulesForEvent(event);
                     // the number of matched rules will keep growing from 0 till to 100
                     n = actual.size();
-                    if (n == 0) i++;
+                    if (n == 0) {
+                        i++;
+                    }
                 }
             }
         }

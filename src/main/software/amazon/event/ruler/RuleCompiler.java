@@ -32,6 +32,8 @@ public class RuleCompiler {
 
     private static final JsonFactory JSON_FACTORY = new JsonFactory();
 
+    private RuleCompiler() { }
+
     /**
      * Verify the syntax of a rule
      * @param source rule, as a Reader
@@ -545,7 +547,7 @@ public class RuleCompiler {
     }
 
     /**
-     * This is a rule parser which will parse rule of JSON format into a Map<List<String>, List<Patterns>> structure
+     * This is a rule parser which will parse rule of JSON format into a map of string list to Patterns list structure
      * which is suitable to be used by Ruler.matches.
      * The only difference in output between ListBasedRuleCompiler.flattenRule and Filter.compile is type and format of
      * Map.key.

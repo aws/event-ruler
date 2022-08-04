@@ -4,8 +4,10 @@ import org.junit.Test;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.FileInputStream;
 import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -13,6 +15,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.GZIPInputStream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -543,7 +546,9 @@ public class Benchmarks {
     private void readCityLots2() {
         try {
             System.out.println("Reading citylots2");
-            BufferedReader cl2Reader = new BufferedReader(new FileReader(CITYLOTS_2));
+            final FileInputStream fileInputStream = new FileInputStream(CITYLOTS_2);
+            final GZIPInputStream gzipInputStream = new GZIPInputStream(fileInputStream);
+            BufferedReader cl2Reader = new BufferedReader(new InputStreamReader(gzipInputStream));
             String line = cl2Reader.readLine();
             while (line != null) {
                 citylots2.add(line);
@@ -726,8 +731,10 @@ public class Benchmarks {
 
     private void openInput() {
         try {
-            cityLotsReader = new BufferedReader(new FileReader(CITYLOTS_JSON));
-        } catch (FileNotFoundException e) {
+            final FileInputStream fileInputStream = new FileInputStream(CITYLOTS_JSON);
+            final GZIPInputStream gzipInputStream = new GZIPInputStream(fileInputStream);
+            cityLotsReader = new BufferedReader(new InputStreamReader(gzipInputStream));
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

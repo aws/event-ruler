@@ -340,6 +340,21 @@ public class ByteMapTest {
         assertEquals(new HashSet<>(Arrays.asList(97, 98, 99, 100, 256)), map.getCeilings());
     }
 
+    @Test
+    public void testToString() {
+        map.addTransition((byte) 'a', trans1);
+        map.addTransition((byte) 'b', trans2);
+        map.addTransition((byte) 'b', trans3);
+        // Don't know which order the 'b' transitions will be listed, so accept either.
+        String toString = map.toString();
+        assertTrue(
+                toString.equals(String.format("a->ByteState/%s // b->ByteState/%s,ByteState/%s // ",
+                        trans1.hashCode(), trans2.hashCode(), trans3.hashCode())) ||
+                        toString.equals(String.format("a->ByteState/%s // b->ByteState/%s,ByteState/%s // ",
+                                trans1.hashCode(), trans3.hashCode(), trans2.hashCode()))
+        );
+    }
+
     private static void verifyMapEntry(Map.Entry<Integer, ByteTransition> entry, int ceiling,
                                        ByteTransition ... transitions) {
         assertEquals(ceiling, entry.getKey().intValue());

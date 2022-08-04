@@ -64,17 +64,6 @@ public class MultiByteTest {
     }
 
     @Test
-    public void testCreateNext() {
-        assertEquals(new MultiByte((byte) 'b'), new MultiByte((byte) 'a').createNext());
-        assertEquals(new MultiByte((byte) 0xC2, (byte) 0x80), new MultiByte((byte) 0x7F).createNext());
-        assertEquals(new MultiByte((byte) 0xC2, (byte) 0x81), new MultiByte((byte) 0xC2, (byte) 0x80).createNext());
-        assertEquals(new MultiByte((byte) 0XC3, (byte) 0x80), new MultiByte((byte) 0xC2, (byte) 0xBF).createNext());
-        assertEquals(new MultiByte((byte) 0XC3, (byte) 0x81), new MultiByte((byte) 0XC3, (byte) 0x80).createNext());
-        assertEquals(new MultiByte((byte) 0X00), new MultiByte((byte) 0xC3, (byte) 0xBF).createNext());
-        assertEquals(new MultiByte((byte) 0X01), new MultiByte((byte) 0x00).createNext());
-    }
-
-    @Test
     public void testIsLessThan() {
         assertFalse(new MultiByte((byte) 0x01, (byte) 0xA1).isLessThan(new MultiByte((byte) 0x01, (byte) 0xA1)));
         assertTrue(new MultiByte((byte) 0x01, (byte) 0xA1).isLessThan(new MultiByte((byte) 0x01, (byte) 0xA2)));
