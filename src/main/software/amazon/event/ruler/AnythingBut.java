@@ -1,5 +1,6 @@
 package software.amazon.event.ruler;
 
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 
@@ -17,7 +18,7 @@ public class AnythingBut extends Patterns {
 
     AnythingBut(final Set<String> values, final boolean isNumeric) {
         super(MatchType.ANYTHING_BUT);
-        this.values = values;
+        this.values = Collections.unmodifiableSet(values);
         this.isNumeric = isNumeric;
     }
 

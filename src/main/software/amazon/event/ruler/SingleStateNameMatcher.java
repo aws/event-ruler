@@ -1,7 +1,8 @@
 package software.amazon.event.ruler;
 
-import javax.annotation.Nonnull;
 import java.util.function.Supplier;
+
+import javax.annotation.Nonnull;
 
 /**
  * Implements the { [ "exists" : false] } pattern by performing a binary search

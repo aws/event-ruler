@@ -53,8 +53,8 @@ public final class CompoundByteTransition extends ByteTransition {
             }
         });
 
-        this.shortcutTransitions = shortcutTransitions;
-        this.matchableTransitions = matchableTransitions;
+        this.shortcutTransitions = Collections.unmodifiableSet(shortcutTransitions);
+        this.matchableTransitions = Collections.unmodifiableSet(matchableTransitions);
         if (nextByteStates.equals(byteTransitions)) {
             this.transitionForNextByteState = this;
         } else {

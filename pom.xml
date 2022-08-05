@@ -37,7 +37,7 @@
     <javadoc.plugin.version>3.4.0</javadoc.plugin.version>
     <source.plugin.version>3.2.1</source.plugin.version>
     <checkstyle.plugin.version>3.1.2</checkstyle.plugin.version>
-    <findbugs.plugin.version>3.0.5</findbugs.plugin.version>
+    <spotbugs.plugin.version>4.7.1.1</spotbugs.plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
@@ -161,12 +161,11 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <version>${findbugs.plugin.version}</version>
+        <groupId>com.github.spotbugs</groupId>
+        <artifactId>spotbugs-maven-plugin</artifactId>
+        <version>${spotbugs.plugin.version}</version>
         <configuration>
-          <effort>Max</effort>
-          <threshold>Low</threshold>
+          <omitVisitors>FindReturnRef</omitVisitors>
           <xmlOutput>true</xmlOutput>
         </configuration>
         <executions>
