@@ -36,8 +36,8 @@ To send us a pull request, please:
    3. Where possible stay consistent with the current code-style, patterns, and documentation language.
    4. Any changes (however minor, major, or ground-breaking) are welcomed, though reviewing them in isolation of any other changes helps us review them faster.
 3. Ensure local tests pass. Add new tests for any functionality you add / changed.
-4. Ensure there are no performance regressions by running [Benchmark Tests](https://github.com/aws/amazon-event-ruler/blob/main/src/test/software/amazon/event/ruler/Benchmarks.java).
-5. Commit to your fork using clear commit messages. [PULL_REQUEST_TEMPLATE.md](https://github.com/aws/amazon-event-ruler/blob/main/.github/PULL_REQUEST_TEMPLATE.md) shows the template we follow.
+4. Ensure there are no performance regressions by running [Benchmark Tests](https://github.com/aws/event-ruler/blob/main/src/test/software/amazon/event/ruler/Benchmarks.java).
+5. Commit to your fork using clear commit messages. [PULL_REQUEST_TEMPLATE.md](https://github.com/aws/event-ruler/blob/main/.github/PULL_REQUEST_TEMPLATE.md) shows the template we follow.
 6. Send us a pull request, answering any default questions in the pull request interface.
 7. Pay attention to any automated CI failures reported in the pull request, and stay involved in the conversation.
 
@@ -56,7 +56,7 @@ opensource-codeofconduct@amazon.com with any additional questions or comments.
 
 ## Governance
 
-This project has governance model can be found in [GOVERNANCE.md](https://github.com/aws/amazon-event-ruler/blob/main/GOVERNANCE.md).
+This project has governance model can be found in [GOVERNANCE.md](https://github.com/aws/event-ruler/blob/main/GOVERNANCE.md).
 
 ## Security issue notifications
 If you discover a potential security issue in this project we ask that you notify AWS/Amazon Security via our [vulnerability reporting page](http://aws.amazon.com/security/vulnerability-reporting/). Please do **not** create a public github issue.
