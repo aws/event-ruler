@@ -18,16 +18,16 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>software.amazon.event.ruler</groupId>
-  <artifactId>amazon-event-ruler</artifactId>
-  <name>Amazon Event Ruler</name>
+  <artifactId>event-ruler</artifactId>
+  <name>Event Ruler</name>
   <version>1.0.0</version>
-  <description>Amazon Event Ruler is a Java library that allows matching Rules to Events. An event is a list of fields,
+  <description>Event Ruler is a Java library that allows matching Rules to Events. An event is a list of fields,
     which may be given as name/value pairs or as a JSON object. A rule associates event field names with lists of
     possible values. There are two reasons to use Ruler: 1/ It's fast; the time it takes to match Events doesn't
     depend on the number of Rules. 2/ Customers like the JSON "query language" for expressing rules.
 
   </description>
-  <url>https://github.com/aws/amazon-event-ruler/</url>
+  <url>https://github.com/aws/event-ruler/</url>
 
   <properties>
     <jackson.version>2.13.3</jackson.version>
