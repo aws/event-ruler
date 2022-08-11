@@ -412,13 +412,21 @@ The matching time does not depend on the number of rules.  This is the best choi
 if you have multiple possible rules you want to select from, and especially
 if you have a way to store the compiled Machine.
 
+The matching time is impacted by the degree of non-determinism introduced by wildcard rules. Performance deteriorates as
+an increasing number of the wildcard rule prefixes match a theoretical worst-case event. To avoid this, wildcard rules
+pertaining to the same event field should avoid common prefixes leading up to their first wildcard character. If a
+common prefix is required, then use the minimum number of wildcard characters and limit repeating character sequences
+that occur following a wildcard character. MachineComplexityEvaluator can be used to evaluate a machine and determine
+the degree of non-determinism, or "complexity" (i.e. how many wildcard rule prefixes match a theoretical worst-case
+event). Here are some data points showing a typical decrease in performance for increasing complexity scores.
 
-The matching time is impacted by the degree of non-determinism introduced by wildcard rules. Performance deteriorates
-when an input value is matched by increasing numbers of wildcard rule prefixes. To avoid this, wildcard rules should use
-minimal numbers of wildcard characters, favor wildcards occurring later in the rule rather than earlier, limit the use
-of the character immediately following a wildcard throughout the remainder of the rule, and avoid rules containing
-common prefixes leading up to their first wildcard character. MachineComplexityEvaluator can be used to evaluate a
-machine and determine the degree of non-determinism (i.e. how much performance may be degraded).
+- Complexity = 1, Events per Second = 140,000
+- Complexity = 17, Events per Second = 12,500
+- Complexity = 34, Events per Second = 3500
+- Complexity = 50, Events per Second = 2500
+- Complexity = 100, Events per Second = 1250
+- Complexity = 275, Events per Second = 100 (extrapolated data point)
+- Complexity = 650, Events per Second = 10 (extrapolated data point)
 
 The main class you'll interact with implements state-machine based rule
 matching.  The interesting methods are:

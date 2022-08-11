@@ -409,33 +409,26 @@ class ByteMachine {
             return;
         }
 
-        final AbstractMap.SimpleImmutableEntry<Byte, ByteTransition> childStatePair = byteStateQueue.pollFirst();
-        if (childStatePair != null) {
-            Byte childByteKey = childStatePair.getKey();
-            ByteTransition childByteTransition = childStatePair.getValue();
-            while (!byteStateQueue.isEmpty()) {
-                final AbstractMap.SimpleImmutableEntry<Byte, ByteTransition> parentStatePair = byteStateQueue.pollFirst();
-                if (parentStatePair != null) {
-                    final Byte parentByteKey = parentStatePair.getKey();
-                    final ByteTransition parentByteTransition = parentStatePair.getValue();
-                    for (SingleByteTransition singleChild : childByteTransition.expand()) {
-                        for (SingleByteTransition singleParent : parentByteTransition.expand()) {
-                            if (singleChild != null && singleChild.getNextByteState().hasNoTransitions() && singleParent != null) {
-                                ByteTransition transition = getTransition(singleParent, childByteKey);
-                                for (SingleByteTransition eachTrans : transition.expand()) {
-                                    ByteState nextState = eachTrans.getNextByteState();
-                                    if (nextState != null && nextState.hasNoTransitions()) {
-                                        // the transition's next state has no transitions, compact the transition
-                                        putTransitionNextState(singleParent.getNextByteState(), getParser().parse(childByteKey), eachTrans, null);
-                                    }
-                                }
-                            }
-                        }
+        Byte childByteKey = byteStateQueue.pollFirst().getKey();
+        while (!byteStateQueue.isEmpty()) {
+            final AbstractMap.SimpleImmutableEntry<Byte, ByteTransition> parentStatePair = byteStateQueue.pollFirst();
+            final Byte parentByteKey = parentStatePair.getKey();
+            final ByteTransition parentByteTransition = parentStatePair.getValue();
+            for (SingleByteTransition singleParent : parentByteTransition.expand()) {
+
+                // Check all transitions from singleParent using childByteKey. Delete each transition that is a dead-end
+                // (i.e. transition that has no transitions itself).
+                ByteTransition transition = getTransition(singleParent, childByteKey);
+                for (SingleByteTransition eachTrans : transition.expand()) {
+                    ByteState nextState = eachTrans.getNextByteState();
+                    if (nextState != null && nextState.hasNoTransitions()) {
+                        putTransitionNextState(singleParent.getNextByteState(), getParser().parse(childByteKey),
+                                eachTrans, null);
                     }
-                    childByteKey = parentByteKey;
-                    childByteTransition = parentByteTransition;
                 }
+
             }
+            childByteKey = parentByteKey;
         }
     }
 
@@ -1220,16 +1213,13 @@ class ByteMachine {
         final InputCharacter character = getParser().parse(utf8bytes[currentIndex]);
         ByteTransition trans = getTransition(state, character);
 
-        Set<SingleByteTransition> singles = trans.expand();
-        SingleByteTransition single = singles.isEmpty() ? EmptyByteTransition.INSTANCE : singles.iterator().next();
-        ByteState nextState = single.getNextByteState();
+        ByteState nextState = trans.getNextByteState();
         if (nextState == null) {
             // the next state is null => create a new state, set the transition's next state to the new state
             nextState = new ByteState();
             nextState.setIndeterminatePrefix(state.hasIndeterminatePrefix());
-            putTransitionNextState(state, character, single, nextState);
+            putTransitionNextState(state, character, trans.expand().iterator().next(), nextState);
         }
-
         return nextState;
     }
 
