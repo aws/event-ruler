@@ -1405,11 +1405,6 @@ class ByteMachine {
             state = nextByteState;
         }
 
-        if (length > 1 && isWildcard(characters[length - 2])) {
-            // Second last character is '*'. This means we need to add a match to the previous state using final
-            // character so that empty substring can satisfy wildcard character.
-            nameState = insertMatch(characters, length - 1, prevState, nameState, pattern, null);
-        }
         return insertMatch(characters, length - 1, state, nameState, pattern, prevState);
     }
 
@@ -1431,16 +1426,7 @@ class ByteMachine {
         // we make a new NameState and hook it up
         NameState nameState = nextNameState == null ? new NameState() : nextNameState;
 
-        // If we're on the last character and the second last character was a wildcard, then there is already a match
-        // that we can find and re-use. Otherwise, create a new match.
-        if (prevState != null && currentIndex == characters.length - 1 &&
-                isWildcard(characters[characters.length - 2])) {
-            ByteTransition existingTrans = getTransition(prevState, character);
-            match = findMatch(existingTrans.getMatches(), pattern);
-        } else {
-            match = new ByteMatch(pattern, nameState);
-        }
-
+        match = new ByteMatch(pattern, nameState);
         addMatchReferences(match);
 
         if (isWildcard(character)) {
@@ -1462,6 +1448,13 @@ class ByteMachine {
             nextState.setIndeterminatePrefix(true);
         } else {
             addTransition(state, character, match);
+
+            // If second last char was wildcard, the previous state will also need to transition to the match so that
+            // empty substring matches wildcard.
+            if (prevState != null && currentIndex == characters.length - 1 &&
+                    isWildcard(characters[characters.length - 2])) {
+                addTransition(prevState, character, match);
+            }
         }
 
         return nameState;
