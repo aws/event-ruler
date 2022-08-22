@@ -8,6 +8,8 @@ import java.util.List;
  */
 class ACFinder {
 
+    private ACFinder() { }
+
     /**
      * Return any rules that match the fields in the event, but enforce array consistency, i.e. reject
      *  matches where different matches come from the different elements in the same array in the event.

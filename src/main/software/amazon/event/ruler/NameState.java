@@ -1,11 +1,11 @@
 package software.amazon.event.ruler;
 
-import javax.annotation.concurrent.ThreadSafe;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.annotation.concurrent.ThreadSafe;
 
 /**
  * Represents a state in the machine.
@@ -138,6 +138,18 @@ class NameState {
         }
 
         return nextNameStates;
+    }
+
+    public int evaluateComplexity(MachineComplexityEvaluator evaluator) {
+        int maxComplexity = evaluator.getMaxComplexity();
+        int complexity = 0;
+        for (ByteMachine byteMachine : valueTransitions.values()) {
+            complexity = Math.max(complexity, byteMachine.evaluateComplexity(evaluator));
+            if (complexity >= maxComplexity) {
+                return maxComplexity;
+            }
+        }
+        return complexity;
     }
 
     @Override

@@ -3,7 +3,15 @@ package software.amazon.event.ruler;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 public class CompositeByteTransitionTest {
 
@@ -20,8 +28,7 @@ public class CompositeByteTransitionTest {
 
     @Test
     public void getNextByteStateShouldReturnSetNextState() {
-        ByteState actualNextState = compositeTransition.getNextByteState();
-        assertSame(nextState, actualNextState);
+        assertSame(nextState, compositeTransition.getNextByteState());
     }
 
     @Test
@@ -32,6 +39,7 @@ public class CompositeByteTransitionTest {
 
     @Test
     public void setNextByteStateShouldReturnThisCompositeTransitionWhenGivenNextStateIsNotNull() {
+        compositeTransition = new CompositeByteTransition(null, match);
         ByteState nextState = new ByteState();
 
         ByteTransition transition = compositeTransition.setNextByteState(nextState);
@@ -42,8 +50,12 @@ public class CompositeByteTransitionTest {
 
     @Test
     public void getMatchShouldReturnSetMatch() {
-        ByteMatch actualMatch = compositeTransition.getMatch();
-        assertSame(match, actualMatch);
+        assertSame(match, compositeTransition.getMatch());
+    }
+
+    @Test
+    public void getMatchesShouldReturnSetMatch() {
+        assertEquals(new HashSet<>(Arrays.asList(match)), compositeTransition.getMatches());
     }
 
     @Test
@@ -56,9 +68,51 @@ public class CompositeByteTransitionTest {
     public void setMatchShouldReturnThisCompositeTransitionWhenGivenMatchIsNotNull() {
         ByteMatch match = new ByteMatch(Patterns.exactMatch("xyz"), new NameState());
 
-        ByteTransition transition = compositeTransition.setMatch(match);
+        SingleByteTransition transition = compositeTransition.setMatch(match);
 
         assertSame(compositeTransition, transition);
         assertSame(match, transition.getMatch());
+    }
+
+    @Test
+    public void getTransitionForAllBytesShouldReturnNull() {
+        assertNull(compositeTransition.getTransitionForAllBytes());
+    }
+
+    @Test
+    public void getTransitionsShouldReturnEmptySet() {
+        assertEquals(Collections.emptySet(), compositeTransition.getTransitions());
+    }
+
+    @Test
+    public void getShortcutsShouldReturnEmptySet() {
+        assertEquals(Collections.emptySet(), compositeTransition.getShortcuts());
+    }
+
+    @Test
+    public void isMatchTransShouldReturnTrue() {
+        assertTrue(compositeTransition.isMatchTrans());
+    }
+
+
+    @Test
+    public void expandShouldReturnComposite() {
+        assertEquals(new HashSet<>(Arrays.asList(compositeTransition)), compositeTransition.expand());
+    }
+
+    @Test
+    public void hasIndeterminatePrefixShouldReturnResultFromNextState() {
+        nextState.setIndeterminatePrefix(false);
+        assertFalse(compositeTransition.hasIndeterminatePrefix());
+        nextState.setIndeterminatePrefix(true);
+        assertTrue(compositeTransition.hasIndeterminatePrefix());
+        nextState.setIndeterminatePrefix(false);
+        assertFalse(compositeTransition.hasIndeterminatePrefix());
+    }
+
+    @Test
+    public void hasIndeterminatePrefixShouldReturnFalseIfNoNextState() {
+        compositeTransition = new CompositeByteTransition(null, match);
+        assertFalse(compositeTransition.hasIndeterminatePrefix());
     }
 }

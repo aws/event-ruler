@@ -1,5 +1,6 @@
 package software.amazon.event.ruler;
 
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 
@@ -17,7 +18,7 @@ public class AnythingBut extends Patterns {
 
     AnythingBut(final Set<String> values, final boolean isNumeric) {
         super(MatchType.ANYTHING_BUT);
-        this.values = values;
+        this.values = Collections.unmodifiableSet(values);
         this.isNumeric = isNumeric;
     }
 
@@ -35,9 +36,15 @@ public class AnythingBut extends Patterns {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
 
         AnythingBut that = (AnythingBut) o;
 

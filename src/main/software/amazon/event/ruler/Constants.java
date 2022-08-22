@@ -5,14 +5,18 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 class Constants {
+
+    private Constants() { }
+
     final static String EXACT_MATCH = "exactly";
+    final static String EQUALS_IGNORE_CASE = "equals-ignore-case";
     final static String PREFIX_MATCH = "prefix";
     final static String SUFFIX_MATCH = "suffix";
     final static String ANYTHING_BUT_MATCH = "anything-but";
     final static String EXISTS_MATCH = "exists";
+    final static String WILDCARD = "wildcard";
     final static String NUMERIC = "numeric";
     final static String CIDR = "cidr";
-    final static String EQUALS_IGNORE_CASE = "equals-ignore-case";
 
     // This is Ruler reserved words to represent the $or relationship among the fields.
     final static String OR_RELATIONSHIP_KEYWORD = "$or";
@@ -42,14 +46,15 @@ class Constants {
             SUFFIX_MATCH,
             ANYTHING_BUT_MATCH,
             EXISTS_MATCH,
+            WILDCARD,
             NUMERIC,
             CIDR,
             // Numeric comparisons
             EQ, LT, LE, GT, GE,
             // reserve below keywords for future extension
-            "wildcard", "regex",
+            "regex",
             // String Comparisons
-            "like", "not-like", "not-equals-ignore-case",
+            "not-wildcard", "not-equals-ignore-case",
             // Date/Time comparisons
             "date-after", "date-on-or-after", "date-before", "date-on-or-before", "in-date-range",
             // IP Address Comparison

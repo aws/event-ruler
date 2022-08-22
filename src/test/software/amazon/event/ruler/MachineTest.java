@@ -1,7 +1,5 @@
 package software.amazon.event.ruler;
 
-import org.junit.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringReader;
@@ -17,7 +15,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
+import org.junit.Test;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -141,8 +139,8 @@ public class MachineTest {
         machine.addRule("r2", rule2);
         machine.addRule("r3", rule3);
         assertEquals(Arrays.asList("r1"), machine.rulesForJSONEvent("{\"a\" : \"abc\"}"));
-        assertEquals(new HashSet<String>(Arrays.asList("r2", "r3")),
-                new HashSet<String>(machine.rulesForJSONEvent("{\"b\" : \"XYZ\"}")));
+        assertEquals(new HashSet<>(Arrays.asList("r2", "r3")),
+                new HashSet<>(machine.rulesForJSONEvent("{\"b\" : \"XYZ\"}")));
         assertEquals(Arrays.asList("r1"), machine.rulesForJSONEvent("{\"a\" : \"AbC\"}"));
         assertTrue(machine.rulesForJSONEvent("{\"b\" : \"xyzz\"}").isEmpty());
         assertTrue(machine.rulesForJSONEvent("{\"a\" : \"aabc\"}").isEmpty());
@@ -153,6 +151,48 @@ public class MachineTest {
 
         machine.deleteRule("r1", rule1);
         machine.deleteRule("r2", rule2);
+        assertTrue(machine.isEmpty());
+    }
+
+    @Test
+    public void testWildcardMatching() throws Exception {
+        Machine machine = new Machine();
+        String rule1 = "{ \"a\" : [ { \"wildcard\": \"*bc\" } ] }";
+        String rule2 = "{ \"b\" : [ { \"wildcard\": \"d*f\" } ] }";
+        String rule3 = "{ \"b\" : [ { \"wildcard\": \"d*ff\" } ] }";
+        String rule4 = "{ \"c\" : [ { \"wildcard\": \"xy*\" } ] }";
+        String rule5 = "{ \"c\" : [ { \"wildcard\": \"xy*\" } ] }";
+        String rule6 = "{ \"d\" : [ { \"wildcard\": \"12*4*\" } ] }";
+
+        machine.addRule("r1", rule1);
+        machine.addRule("r2", rule2);
+        machine.addRule("r3", rule3);
+        machine.addRule("r4", rule4);
+        machine.addRule("r5", rule5);
+        machine.addRule("r6", rule6);
+        assertEquals(Arrays.asList("r1"), machine.rulesForJSONEvent("{\"a\" : \"bc\"}"));
+        assertEquals(Arrays.asList("r1"), machine.rulesForJSONEvent("{\"a\" : \"abc\"}"));
+        assertEquals(Arrays.asList("r2"), machine.rulesForJSONEvent("{\"b\" : \"dexef\"}"));
+        assertEquals(new HashSet<>(Arrays.asList("r2", "r3")),
+                new HashSet<>(machine.rulesForJSONEvent("{\"b\" : \"dexeff\"}")));
+        assertEquals(new HashSet<>(Arrays.asList("r4", "r5")),
+                new HashSet<>(machine.rulesForJSONEvent("{\"c\" : \"xyzzz\"}")));
+        assertEquals(Arrays.asList("r6"), machine.rulesForJSONEvent("{\"d\" : \"12345\"}"));
+        assertTrue(machine.rulesForJSONEvent("{\"c\" : \"abc\"}").isEmpty());
+        assertTrue(machine.rulesForJSONEvent("{\"a\" : \"xyz\"}").isEmpty());
+        assertTrue(machine.rulesForJSONEvent("{\"c\" : \"abcxyz\"}").isEmpty());
+        assertTrue(machine.rulesForJSONEvent("{\"b\" : \"ef\"}").isEmpty());
+        assertTrue(machine.rulesForJSONEvent("{\"b\" : \"de\"}").isEmpty());
+        assertTrue(machine.rulesForJSONEvent("{\"d\" : \"1235\"}").isEmpty());
+
+        machine.deleteRule("r5", rule5);
+        assertEquals(Arrays.asList("r4"), machine.rulesForJSONEvent("{\"c\" : \"xy\"}"));
+
+        machine.deleteRule("r1", rule1);
+        machine.deleteRule("r2", rule2);
+        machine.deleteRule("r3", rule3);
+        machine.deleteRule("r4", rule4);
+        machine.deleteRule("r6", rule6);
         assertTrue(machine.isEmpty());
     }
 
@@ -760,9 +800,11 @@ public class MachineTest {
         Machine machine = new Machine();
 
         TestEvent e = new TestEvent("0", "", "a", "11", "b", "21", "c", "31", "gamma", "41", "zoo", "keeper");
-        // System.out.println(e.toString());
 
-        Rule rule, rule1, rule2, rule3;
+        Rule rule;
+        Rule rule1;
+        Rule rule2;
+        Rule rule3;
 
         rule = new Rule("R1");
         rule.setKeys("a", "b","c");
@@ -809,7 +851,8 @@ public class MachineTest {
 
         TestEvent e = new TestEvent("0", "", "a", "11", "b", "21", "c", "31", "gamma", "41", "zoo", "keeper");
 
-        Rule rule, rule1;
+        Rule rule;
+        Rule rule1;
         rule = new Rule("R1");
         rule.setKeys("a", "b", "c");
         rule.setExactMatchValues("11", "21", "31");
@@ -908,11 +951,13 @@ public class MachineTest {
                 int i = 0;
                 int n;
                 // this thread only return when match out 100 rules 100 times.
-                while(i < 100) {
+                while (i < 100) {
                     List<String> actual = machine.rulesForEvent(event);
                     // the number of matched rules will keep growing from 0 till to 100
                     n = actual.size();
-                    if (n == 100) i++;
+                    if (n == 100) {
+                        i++;
+                    }
                 }
             }
         }
@@ -995,11 +1040,13 @@ public class MachineTest {
                 int i = 0;
                 int n;
                 // this thread only return when match out 100 rules 100 times.
-                while(i < 100) {
+                while (i < 100) {
                     List<String> actual = machine.rulesForEvent(event);
                     // the number of matched rules will keep growing from 0 till to 100
                     n = actual.size();
-                    if (n == 0) i++;
+                    if (n == 0) {
+                        i++;
+                    }
                 }
             }
         }

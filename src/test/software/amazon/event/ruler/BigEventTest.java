@@ -1,9 +1,7 @@
 package software.amazon.event.ruler;
 
-import org.junit.Test;
-
 import java.util.List;
-
+import org.junit.Test;
 import static org.junit.Assert.assertTrue;
 
 public class BigEventTest {
@@ -17,7 +15,8 @@ public class BigEventTest {
         cut.addRule("test", rule);
         String event = GenericMachineTest.readData("bigEvent.json");
 
-        long start, latency;
+        long start;
+        long latency;
         List<String> list;
 
         // pre-warm the machine

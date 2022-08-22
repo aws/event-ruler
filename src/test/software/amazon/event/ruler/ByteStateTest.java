@@ -3,6 +3,12 @@ package software.amazon.event.ruler;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+
+import static software.amazon.event.ruler.CompoundByteTransition.coalesce;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
@@ -19,8 +25,7 @@ public class ByteStateTest {
 
     @Test
     public void getNextByteStateShouldReturnThisState() {
-        ByteState nextState = state.getNextByteState();
-        assertSame(state, nextState);
+        assertSame(state, state.getNextByteState());
     }
 
     @Test
@@ -39,8 +44,12 @@ public class ByteStateTest {
 
     @Test
     public void getMatchShouldReturnNull() {
-        ByteMatch match = state.getMatch();
-        assertNull(match);
+        assertNull(state.getMatch());
+    }
+
+    @Test
+    public void getMatchesShouldReturnEmptySet() {
+        assertEquals(Collections.emptySet(), state.getMatches());
     }
 
     @Test
@@ -57,7 +66,7 @@ public class ByteStateTest {
 
         assertTrue(transition instanceof CompositeByteTransition);
         assertSame(state, transition.getNextByteState());
-        assertSame(match, transition.getMatch());
+        assertEquals(new HashSet<>(Arrays.asList(match)), transition.getMatches());
     }
 
     @Test
@@ -68,7 +77,7 @@ public class ByteStateTest {
 
     @Test
     public void hasNoTransitionsShouldReturnFalseWhenThisStateHasTransitions() {
-        state.putTransition((byte) 'a', new ByteState());
+        state.addTransition((byte) 'a', new ByteState());
 
         boolean hasNoTransitions = state.hasNoTransitions();
 
@@ -83,7 +92,7 @@ public class ByteStateTest {
 
     @Test
     public void getTransitionShouldReturnNullWhenMappingDoesNotExistAndThisStateHasOneTransition() {
-        state.putTransition((byte) 'a', new ByteState());
+        state.addTransition((byte) 'a', new ByteState());
 
         ByteTransition transition = state.getTransition((byte) 'b');
 
@@ -93,11 +102,11 @@ public class ByteStateTest {
     @Test
     public void getTransitionShouldReturnTransitionWhenMappingExistsAndThisStateHasOneTransition() {
         byte b = 'a';
-        ByteState transition = new ByteState();
+        SingleByteTransition transition = new ByteState();
 
-        state.putTransition(b, transition);
+        this.state.addTransition(b, transition);
 
-        ByteTransition actualTransition = state.getTransition(b);
+        ByteTransition actualTransition = this.state.getTransition(b);
 
         assertSame(transition, actualTransition);
     }
@@ -106,11 +115,11 @@ public class ByteStateTest {
     public void getTransitionShouldReturnTransitionWhenMappingExistsAndThisStateHasTwoTransition() {
         byte b1 = 'a';
         byte b2 = 'b';
-        ByteState transition1 = new ByteState();
-        ByteState transition2 = new ByteState();
+        SingleByteTransition transition1 = new ByteState();
+        SingleByteTransition transition2 = new ByteState();
 
-        state.putTransition(b1, transition1);
-        state.putTransition(b2, transition2);
+        state.addTransition(b1, transition1);
+        state.addTransition(b2, transition2);
 
         ByteTransition actualTransition = state.getTransition(b1);
 
@@ -118,56 +127,59 @@ public class ByteStateTest {
     }
 
     @Test
-    public void putTransitionShouldCreateMappingWhenMappingDoesNotExistAndThisStateHasNoTransitions() {
+    public void addTransitionShouldCreateMappingWhenMappingDoesNotExistAndThisStateHasNoTransitions() {
         byte b = 'a';
-        ByteTransition transition = new ByteState();
+        SingleByteTransition transition = new ByteState();
 
-        state.putTransition(b, transition);
+        state.addTransition(b, transition);
 
         assertSame(transition, state.getTransition(b));
     }
 
     @Test
-    public void putTransitionShouldUpdateMappingWhenMappingExistsAndThisStateHasOneTransition() {
+    public void addTransitionShouldProduceCompoundByteStateWhenMappingExistsAndThisStateHasOneTransition() {
         byte b = 'a';
-        ByteTransition transition1 = new ByteState();
-        ByteTransition transition2 = new ByteState();
+        SingleByteTransition transition1 = new ByteState();
+        SingleByteTransition transition2 = new ByteState();
 
-        state.putTransition(b, transition1);
+        state.addTransition(b, transition1);
 
-        state.putTransition(b, transition2);
+        state.addTransition(b, transition2);
 
-        assertSame(transition2, state.getTransition(b));
+        ByteTransition resultantTransition = state.getTransition(b);
+        assertTrue(resultantTransition instanceof CompoundByteTransition);
+        CompoundByteTransition compoundByteTransition = (CompoundByteTransition) resultantTransition;
+        assertEquals(new HashSet<>(Arrays.asList(transition1, transition2)), compoundByteTransition.expand());
     }
 
     @Test
-    public void putTransitionShouldCreateMappingWhenMappingDoesNotExistAndThisStateHasOneTransition() {
+    public void addTransitionShouldCreateMappingWhenMappingDoesNotExistAndThisStateHasOneTransition() {
         byte b1 = 'a';
         byte b2 = 'b';
-        ByteTransition transition1 = new ByteState();
-        ByteTransition transition2 = new ByteState();
+        SingleByteTransition transition1 = new ByteState();
+        SingleByteTransition transition2 = new ByteState();
 
-        state.putTransition(b1, transition1);
+        state.addTransition(b1, transition1);
 
-        state.putTransition(b2, transition2);
+        state.addTransition(b2, transition2);
 
         assertSame(transition1, state.getTransition(b1));
         assertSame(transition2, state.getTransition(b2));
     }
 
     @Test
-    public void putTransitionShouldCreateMappingWhenMappingDoesNotExistAndThisStateHasTwoTransitions() {
+    public void addTransitionShouldCreateMappingWhenMappingDoesNotExistAndThisStateHasTwoTransitions() {
         byte b1 = 'a';
         byte b2 = 'b';
         byte b3 = 'c';
-        ByteTransition transition1 = new ByteState();
-        ByteTransition transition2 = new ByteState();
-        ByteTransition transition3 = new ByteState();
+        SingleByteTransition transition1 = new ByteState();
+        SingleByteTransition transition2 = new ByteState();
+        SingleByteTransition transition3 = new ByteState();
 
-        state.putTransition(b1, transition1);
-        state.putTransition(b2, transition2);
+        state.addTransition(b1, transition1);
+        state.addTransition(b2, transition2);
 
-        state.putTransition(b3, transition3);
+        state.addTransition(b3, transition3);
 
         assertSame(transition1, state.getTransition(b1));
         assertSame(transition2, state.getTransition(b2));
@@ -178,7 +190,7 @@ public class ByteStateTest {
     public void removeTransitionShouldDoNothingWhenMappingDoesNotExistAndThisStateHasNoTransitions() {
         byte b = 'a';
 
-        state.removeTransition(b);
+        state.removeTransition(b, new ByteState());
 
         assertNull(state.getTransition(b));
     }
@@ -186,11 +198,11 @@ public class ByteStateTest {
     @Test
     public void removeTransitionShouldDoNothingWhenMappingDoesNotExistAndThisStateHasOneTransition() {
         byte b = 'a';
-        ByteTransition transition = new ByteState();
+        SingleByteTransition transition = new ByteState();
 
-        state.putTransition(b, transition);
+        state.addTransition(b, transition);
 
-        state.removeTransition((byte) 'b');
+        state.removeTransition((byte) 'b', transition);
 
         assertSame(transition, state.getTransition(b));
     }
@@ -198,11 +210,11 @@ public class ByteStateTest {
     @Test
     public void removeTransitionShouldRemoveMappingWhenMappingExistsAndThisStateHasOneTransition() {
         byte b = 'a';
-        ByteTransition transition = new ByteState();
+        SingleByteTransition transition = new ByteState();
 
-        state.putTransition(b, transition);
+        state.addTransition(b, transition);
 
-        state.removeTransition(b);
+        state.removeTransition(b, transition);
 
         assertNull(state.getTransition(b));
     }
@@ -211,13 +223,13 @@ public class ByteStateTest {
     public void removeTransitionShouldDoNothingWhenMappingDoesNotExistAndThisStateHasTwoTransitions() {
         byte b1 = 'a';
         byte b2 = 'b';
-        ByteTransition transition1 = new ByteState();
-        ByteTransition transition2 = new ByteState();
+        SingleByteTransition transition1 = new ByteState();
+        SingleByteTransition transition2 = new ByteState();
 
-        state.putTransition(b1, transition1);
-        state.putTransition(b2, transition2);
+        state.addTransition(b1, transition1);
+        state.addTransition(b2, transition2);
 
-        state.removeTransition((byte) 'c');
+        state.removeTransition((byte) 'c', transition1);
 
         assertSame(transition1, state.getTransition(b1));
         assertSame(transition2, state.getTransition(b2));
@@ -227,13 +239,13 @@ public class ByteStateTest {
     public void removeTransitionShouldRemoveMappingWhenMappingExistsAndThisStateHasTwoTransitions() {
         byte b1 = 'a';
         byte b2 = 'b';
-        ByteTransition transition1 = new ByteState();
-        ByteTransition transition2 = new ByteState();
+        SingleByteTransition transition1 = new ByteState();
+        SingleByteTransition transition2 = new ByteState();
 
-        state.putTransition(b1, transition1);
-        state.putTransition(b2, transition2);
+        state.addTransition(b1, transition1);
+        state.addTransition(b2, transition2);
 
-        state.removeTransition(b1);
+        state.removeTransition(b1, transition1);
 
         assertNull(state.getTransition(b1));
         assertSame(transition2, state.getTransition(b2));
@@ -244,18 +256,82 @@ public class ByteStateTest {
         byte b1 = 'a';
         byte b2 = 'b';
         byte b3 = 'c';
-        ByteTransition transition1 = new ByteState();
-        ByteTransition transition2 = new ByteState();
-        ByteTransition transition3 = new ByteState();
+        SingleByteTransition transition1 = new ByteState();
+        SingleByteTransition transition2 = new ByteState();
+        SingleByteTransition transition3 = new ByteState();
 
-        state.putTransition(b1, transition1);
-        state.putTransition(b2, transition2);
-        state.putTransition(b3, transition3);
+        state.addTransition(b1, transition1);
+        state.addTransition(b2, transition2);
+        state.addTransition(b3, transition3);
 
-        state.removeTransition(b1);
+        state.removeTransition(b1, transition1);
 
         assertNull(state.getTransition(b1));
         assertSame(transition2, state.getTransition(b2));
         assertSame(transition3, state.getTransition(b3));
+    }
+
+    @Test
+    public void getShortcutsShouldReturnEmptySet() {
+        assertEquals(Collections.emptySet(), state.getShortcuts());
+    }
+
+    @Test
+    public void getTransitionForAllBytesShouldReturnExpectedTransition() {
+        SingleByteTransition trans1 = new ByteState();
+        SingleByteTransition trans2 = new ByteState();
+        SingleByteTransition trans3 = new ByteState();
+        SingleByteTransition trans4 = new ByteState();
+
+        state.addTransitionForAllBytes(trans1);
+        state.addTransitionForAllBytes(trans2);
+        state.addTransitionForAllBytes(trans3);
+        state.addTransition((byte) 'a', trans4);
+        state.removeTransition((byte) 'c', trans2);
+        assertEquals(coalesce(new HashSet<>(Arrays.asList(trans1, trans3))), state.getTransitionForAllBytes());
+    }
+
+    @Test
+    public void getTransitionsShouldReturnExpectedTransitions() {
+        SingleByteTransition trans1 = new ByteState();
+        SingleByteTransition trans2 = new ByteState();
+        SingleByteTransition trans3 = new ByteState();
+        SingleByteTransition trans4 = new ByteState();
+
+        state.addTransitionForAllBytes(trans1);
+        state.addTransitionForAllBytes(trans2);
+        state.addTransitionForAllBytes(trans3);
+        state.addTransition((byte) 'a', trans4);
+        state.removeTransition((byte) 'c', trans2);
+        assertEquals(new HashSet<>(Arrays.asList(coalesce(new HashSet<>(Arrays.asList(trans1, trans3))),
+                                                 coalesce(new HashSet<>(Arrays.asList(trans1, trans2, trans3))),
+                                                 coalesce(new HashSet<>(Arrays.asList(trans1, trans2, trans3, trans4)))
+                )), state.getTransitions());
+    }
+
+    @Test
+    public void testGetCeilingsShouldReturnExpectedCeilings() {
+        SingleByteTransition trans1 = new ByteState();
+        SingleByteTransition trans2 = new ByteState();
+
+        state.addTransition((byte) 'a', trans1);
+        state.addTransition((byte) 'c', trans2);
+        assertEquals(new HashSet<>(Arrays.asList(97, 98, 99, 100, 256)), state.getCeilings());
+    }
+
+    @Test
+    public void hasIndeterminatePrefixShouldReturnExpectedBoolean() {
+        assertFalse(state.hasIndeterminatePrefix());
+        state.setIndeterminatePrefix(true);
+        assertTrue(state.hasIndeterminatePrefix());
+    }
+
+    @Test
+    public void hasOnlySelfReferentialTransitionShouldReturnExpectedBoolean() {
+        assertFalse(state.hasOnlySelfReferentialTransition());
+        state.putTransition((byte) 'a', state);
+        assertTrue(state.hasOnlySelfReferentialTransition());
+        state.putTransition((byte) 'b', new ByteState());
+        assertFalse(state.hasOnlySelfReferentialTransition());
     }
 }

@@ -309,7 +309,9 @@ public class EventTest {
         Stack<String> stack = new Stack<>();
         stack.push("foo");
         Event.recordNameVal(map, stack, "bar");
-        stack.pop(); stack.push("x"); stack.push("y");
+        stack.pop();
+        stack.push("x");
+        stack.push("y");
         Event.recordNameVal(map, stack, "1");
         Event.recordNameVal(map, stack, "2");
 

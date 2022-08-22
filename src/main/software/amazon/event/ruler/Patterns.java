@@ -1,6 +1,5 @@
 package software.amazon.event.ruler;
 
-import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -86,7 +85,11 @@ public class Patterns implements Cloneable  {
 
     // Implement equals-ignore-case by doing lower-case comparisons
     public static ValuePatterns equalsIgnoreCaseMatch(final String value) {
-        return new ValuePatterns(MatchType.EQUALS_IGNORE_CASE, value.toLowerCase(Locale.ROOT));
+        return new ValuePatterns(MatchType.EQUALS_IGNORE_CASE, value);
+    }
+
+    public static ValuePatterns wildcardMatch(final String value) {
+        return new ValuePatterns(MatchType.WILDCARD, value);
     }
 
     @Override
@@ -103,7 +106,7 @@ public class Patterns implements Cloneable  {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof Patterns)) {
+        if (o == null || !o.getClass().equals(getClass())) {
             return false;
         }
 

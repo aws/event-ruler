@@ -13,6 +13,8 @@ public class CIDR {
 
     private final static byte[] TRAILING_MAX_BITS = { 0x0, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f };
 
+    private CIDR() { }
+
     private static boolean isIPv4OrIPv6(String ip) {
         return Constants.IPv4_REGEX.matcher(ip).matches() || Constants.IPv6_REGEX.matcher(ip).matches();
     }
@@ -72,30 +74,27 @@ public class CIDR {
         if (!isIPv4OrIPv6(ip)) {
             return null;
         }
-        try {
-            final byte[] digits = toHexDigits(ipToBytes(ip));
-            final byte[] bottom = digits.clone();
-            final byte[] top = digits.clone();
-            boolean openBottom, openTop;
-            byte lastByte = top[top.length - 1];
+        final byte[] digits = toHexDigits(ipToBytes(ip));
+        final byte[] bottom = digits.clone();
+        final byte[] top = digits.clone();
+        boolean openBottom;
+        boolean openTop;
+        byte lastByte = top[top.length - 1];
 
-            if (lastByte == MAX_DIGIT) {
-                bottom[top.length - 1] = (byte) (lastByte - 1);
-                openBottom = true;
-                openTop = false;
+        if (lastByte == MAX_DIGIT) {
+            bottom[top.length - 1] = (byte) (lastByte - 1);
+            openBottom = true;
+            openTop = false;
+        } else {
+            if (lastByte != HEX_DIGITS[9]) {
+                top[top.length - 1] = (byte) (lastByte + 1);
             } else {
-                if (lastByte != HEX_DIGITS[9]) {
-                    top[top.length - 1] = (byte) (lastByte + 1);
-                } else {
-                    top[top.length - 1] = HEX_DIGITS[10];
-                }
-                openBottom = false;
-                openTop = true;
+                top[top.length - 1] = HEX_DIGITS[10];
             }
-            return new Range(bottom, openBottom, top, openTop, true);
-        } catch (Exception e){
-            return null;
+            openBottom = false;
+            openTop = true;
         }
+        return new Range(bottom, openBottom, top, openTop, true);
     }
 
     private static byte[] toHexDigits(final byte[] address) {

@@ -114,6 +114,18 @@ Suffix matches only work on string-valued fields.
 ```
 Equals-ignore-case matches only work on string-valued fields.
 
+### Wildcard matching
+
+```javascript
+{
+  "source": [ { "wildcard": "Simple*Service" } ]
+}
+```
+Wildcard matches only work on string-valued fields. A single value can contain zero to many wildcard characters, but
+consecutive wildcard characters are not allowed. To match the asterisk character specifically, a wildcard character can
+be escaped with a backslash. Two consecutive backslashes (i.e. a backslash escaped with a backslash) represents the
+actual backslash character. A backslash escaping any character other than asterisk or backslash is not allowed.
+
 ### Anything-but matching
 
 Anything-but matching does what the name says: matches anything *except* what's provided in the rule.
@@ -400,6 +412,22 @@ The matching time does not depend on the number of rules.  This is the best choi
 if you have multiple possible rules you want to select from, and especially
 if you have a way to store the compiled Machine.
 
+The matching time is impacted by the degree of non-determinism introduced by wildcard rules. Performance deteriorates as
+an increasing number of the wildcard rule prefixes match a theoretical worst-case event. To avoid this, wildcard rules
+pertaining to the same event field should avoid common prefixes leading up to their first wildcard character. If a
+common prefix is required, then use the minimum number of wildcard characters and limit repeating character sequences
+that occur following a wildcard character. MachineComplexityEvaluator can be used to evaluate a machine and determine
+the degree of non-determinism, or "complexity" (i.e. how many wildcard rule prefixes match a theoretical worst-case
+event). Here are some data points showing a typical decrease in performance for increasing complexity scores.
+
+- Complexity = 1, Events per Second = 140,000
+- Complexity = 17, Events per Second = 12,500
+- Complexity = 34, Events per Second = 3500
+- Complexity = 50, Events per Second = 2500
+- Complexity = 100, Events per Second = 1250
+- Complexity = 275, Events per Second = 100 (extrapolated data point)
+- Complexity = 650, Events per Second = 10 (extrapolated data point)
+
 The main class you'll interact with implements state-machine based rule
 matching.  The interesting methods are:
 
@@ -521,6 +549,7 @@ public static ValuePatterns exactMatch(final String value);
 public static ValuePatterns prefixMatch(final String prefix);
 public static ValuePatterns suffixMatch(final String suffix);
 public static ValuePatterns equalsIgnoreCaseMatch(final String value);
+public static ValuePatterns wildcardMatch(final String value);
 public static AnythingBut anythingButMatch(final String anythingBut);
 public static AnythingBut anythingButPrefix(final String prefix);
 public static ValuePatterns numericEquals(final double val);
@@ -652,19 +681,17 @@ This behaviour may change in future version (to avoid any confusions) and should
 
 ## Performance
 
-We measured Ruler's performance in two modes:
+We measure Ruler's performance by compiling multiple rules into a Machine and matching events provided as JSON strings.
 
-1. Multiple Rules are compiled into a Machine and matching is done against an Event provided as a JSON string.
-2. As above, but the events are supplied as an array of pre-sorted name/value pairs.
-2. Individual Rules are checked against individual Events using the static `Ruler.matchesRule()` method.
+A benchmark which processes 213,068 JSON events with average size about 900 bytes against 5 each exact-match,
+prefix-match, suffix-match, equals-ignore-case-match, wildcard-match, numeric-match, and anything-but-match rules and
+counts the matches, yields the following on a 2019 MacBook:
 
-A benchmark which processes 213,068 JSON events with average size about 900 bytes against 5 each
-exact-match, prefix-match, suffix-match, equals-ignore-case-match, numeric-match, and anything-but-match rules and
-counts the matches, using the three modes above, yields the following on a 2019 MacBook Pro:
-
-1. Events are processed at over 175K/second except for anything-but matches, which are processed at over 125K/second.
-2. Events are processed at over 400K/second
-3. Events are processed at over 8K/second.
+Events are processed at over 220K/second except for:
+ - equals-ignore-case matches, which are processed at over 180K/second.
+ - wildcard matches, which are processed at over 170K/second.
+ - anything-but matches, which are processed at over 110K/second.
+ - numeric matches, which are processed at over 2.5K/second.
 
 ### Suggestions for better performance
 

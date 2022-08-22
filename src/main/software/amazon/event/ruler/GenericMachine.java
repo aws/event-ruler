@@ -2,8 +2,6 @@ package software.amazon.event.ruler;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
-
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -15,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 
 /**
  *  Represents a state machine used to match name/value patterns to rules.
@@ -162,7 +161,7 @@ public class GenericMachine<T> {
      *   r1 {a, [1,2]}
      *
      * @param name ARN of the rule
-     * @param namevals names & values which make up the rule
+     * @param namevals names and values which make up the rule
      */
     public void addRule(final T name, final Map<String, List<String>> namevals) {
         final Map<String, List<Patterns>> patternMap = new HashMap<>();
@@ -179,7 +178,7 @@ public class GenericMachine<T> {
      * or more sophisticated (like {anything-but : "1", range: { ... } })
      *
      * @param name ARN of the rule4
-     * @param namevals names & values which make up the rule
+     * @param namevals names and values which make up the rule
      */
     public void addPatternRule(final T name, final Map<String, List<Patterns>> namevals) {
 
@@ -266,6 +265,7 @@ public class GenericMachine<T> {
         if (byteMachine == null && nameMatcher == null) {
             return;
         }
+
         for (Patterns pattern : patterns.get(key)) {
             NameState nextNameState = null;
             if (isNamePattern(pattern)) {
@@ -522,6 +522,10 @@ public class GenericMachine<T> {
         for (String step : steps) {
             fieldStepsUsedRefCount.compute(step, (k, v) -> (v == 1) ? null : v - 1);
         }
+    }
+
+    public int evaluateComplexity(MachineComplexityEvaluator evaluator) {
+        return startState.evaluateComplexity(evaluator);
     }
 
     @Override

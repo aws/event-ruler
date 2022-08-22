@@ -30,6 +30,8 @@ import java.util.List;
 @ThreadSafe
 class Finder {
 
+    private Finder() { }
+
     /**
      * Return any rules that match the fields in the event.
      *

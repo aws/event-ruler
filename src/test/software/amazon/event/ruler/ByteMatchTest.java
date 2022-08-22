@@ -1,14 +1,18 @@
 package software.amazon.event.ruler;
 
-import org.junit.Before;
-import org.junit.Test;
-import software.amazon.event.ruler.Patterns;
-
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ByteMatchTest {
 
@@ -21,7 +25,7 @@ public class ByteMatchTest {
 
     @Test
     public void getNextByteStateShouldReturnNull() {
-        ByteState nextState = match.getNextByteState();
+        SingleByteTransition nextState = match.getNextByteState();
         assertNull(nextState);
     }
 
@@ -39,13 +43,19 @@ public class ByteMatchTest {
 
         assertTrue(transition instanceof CompositeByteTransition);
         assertSame(nextState, transition.getNextByteState());
-        assertSame(match, transition.getMatch());
+        assertEquals(Stream.of(match).collect(Collectors.toSet()), transition.getMatches());
     }
 
     @Test
     public void getMatchShouldReturnThisMatch() {
         ByteMatch actualMatch = match.getMatch();
-        assertSame(match, actualMatch);
+        assertEquals(match, actualMatch);
+    }
+
+    @Test
+    public void getMatchesShouldReturnThisMatch() {
+        Set<ByteMatch> actualMatches = match.getMatches();
+        assertEquals(Stream.of(match).collect(Collectors.toSet()), actualMatches);
     }
 
     @Test
@@ -61,45 +71,45 @@ public class ByteMatchTest {
     }
 
     @Test
+    public void expandShouldReturnMatch() {
+        assertEquals(Stream.of(match).collect(Collectors.toSet()), match.expand());
+    }
+
+    @Test
+    public void hasIndeterminatePrefixShouldReturnFalse() {
+        assertFalse(match.hasIndeterminatePrefix());
+    }
+
+    @Test
+    public void getTransitionShouldReturnNull() {
+        assertNull(match.getTransition((byte) 'a'));
+    }
+
+    @Test
+    public void getTransitionForAllBytesShouldReturnNull() {
+        assertNull(match.getTransitionForAllBytes());
+    }
+
+    @Test
+    public void getTransitionsShouldReturnEmptySet() {
+        assertEquals(Collections.emptySet(), match.getTransitions());
+    }
+
+    @Test
+    public void getShortcutsShouldReturnEmptySet() {
+        assertEquals(Collections.emptySet(), match.getShortcuts());
+    }
+
+    @Test
+    public void isMatchTransShouldReturnTrue() {
+        assertTrue(match.isMatchTrans());
+    }
+
+    @Test
     public void WHEN_MatchIsInitialized_THEN_GettersWork() {
         NameState ns = new NameState();
         ByteMatch cut = new ByteMatch(Patterns.anythingButMatch("foo"), ns);
         assertEquals(ns, cut.getNextNameState());
         assertEquals(Patterns.anythingButMatch("foo"), cut.getPattern());
-        assertNull(cut.getNextMatch());
-    }
-
-    @Test
-    public void WHEN_SettersAreCalled_THEN_GettersWork() {
-        NameState ns = new NameState();
-        ByteMatch cut = new ByteMatch(Patterns.anythingButMatch("foo"), ns);
-        ByteMatch s2 = new ByteMatch(Patterns.exactMatch("foo"), ns);
-        cut.setNextMatch(s2);
-        assertEquals(s2, cut.getNextMatch());
-        assertNull(s2.getNextMatch());
-    }
-
-    @Test
-    public void WHEN_MultipleMatchesAreSet_THEN_TheyChainProperly() {
-        NameState ns = new NameState();
-        ByteMatch cut = new ByteMatch(Patterns.anythingButMatch("foo"), ns);
-        ByteMatch s2 = new ByteMatch(Patterns.exactMatch("foo"), ns);
-        ByteMatch s3 = new ByteMatch(Patterns.prefixMatch("foo"), ns);
-        cut.setNextMatch(s2);
-        s2.setNextMatch(s3);
-        assertEquals(s2, cut.getNextMatch());
-        assertEquals(s3, s2.getNextMatch());
-        assertNull(s3.getNextMatch());
-    }
-
-    @Test
-    public void TEST_Match_Equal() {
-        NameState ns = new NameState();
-        ByteMatch s2 = new ByteMatch(Patterns.exactMatch("foo"), ns);
-        ByteMatch s3 = new ByteMatch(Patterns.prefixMatch("foo"), ns);
-
-        assertNotEquals(s2, s3);
-        assertEquals(s2, new ByteMatch(Patterns.exactMatch("foo"), ns));
-        assertEquals(s3, new ByteMatch(Patterns.prefixMatch("foo"), ns));
     }
 }

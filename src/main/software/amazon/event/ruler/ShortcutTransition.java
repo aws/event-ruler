@@ -1,5 +1,10 @@
 package software.amazon.event.ruler;
 
+import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 // Shortcut transition is designed mainly for exactly match by its memory consuming because the exactly match is always
 // in the last byte of value, while it will take a lots of memory if we build a traverse path byte by byte.
 // however, if we add another value like "ab"->match1. so we have two transitions separately, but, in term of memory
@@ -34,8 +39,7 @@ package software.amazon.event.ruler;
 // 2) the byte which has the shortcut transition must be always the next byte in the match which doesn't exist in existing
 //    byte path.
 // 3) shortcut Transition will only work for exactly match and should only have one match in one shortcut transition.
-
-public class ShortcutTransition extends ByteTransition {
+public class ShortcutTransition extends SingleByteTransition {
 
     private ByteMatch match;
 
@@ -45,8 +49,23 @@ public class ShortcutTransition extends ByteTransition {
     }
 
     @Override
-    ByteTransition setNextByteState(ByteState nextState) {
+    SingleByteTransition setNextByteState(ByteState nextState) {
+        return nextState;
+    }
+
+    @Override
+    public ByteTransition getTransition(byte utf8byte) {
         return null;
+    }
+
+    @Override
+    public ByteTransition getTransitionForAllBytes() {
+        return null;
+    }
+
+    @Override
+    public Set<ByteTransition> getTransitions() {
+        return Collections.EMPTY_SET;
     }
 
     @Override
@@ -55,9 +74,14 @@ public class ShortcutTransition extends ByteTransition {
     }
 
     @Override
-    ByteTransition setMatch(ByteMatch match) {
+    SingleByteTransition setMatch(ByteMatch match) {
         this.match = match;
         return this;
+    }
+
+    @Override
+    public Set<ShortcutTransition> getShortcuts() {
+        return Stream.of(this).collect(Collectors.toSet());
     }
 
     @Override

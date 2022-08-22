@@ -68,6 +68,35 @@ public class Benchmarks {
     };
     private final int[] EXACT_MATCHES = { 1, 101, 35, 655, 1 };
 
+    private final String[] WILDCARD_RULES = {
+            "{\n" +
+                    "  \"properties\": {\n" +
+                    "    \"MAPBLKLOT\": [ { \"wildcard\": \"143*\" } ]\n" +
+                    "  }" +
+                    "}",
+            "{\n" +
+                    "  \"properties\": {\n" +
+                    "    \"MAPBLKLOT\": [ { \"wildcard\": \"2*0*1*7\" } ]\n" +
+                    "  }\n" +
+                    "}",
+            "{\n" +
+                    "  \"properties\": {\n" +
+                    "    \"MAPBLKLOT\": [ { \"wildcard\": \"*218\" } ]\n" +
+                    "  }\n" +
+                    "}",
+            "{\n" +
+                    "  \"properties\": {\n" +
+                    "    \"MAPBLKLOT\": [ { \"wildcard\": \"3*5*2\" } ]\n" +
+                    "  }\n" +
+                    "}",
+            "{\n" +
+                    "  \"properties\": {\n" +
+                    "    \"MAPBLKLOT\": [ { \"wildcard\": \"VA*IL\" } ]\n" +
+                    "  }\n" +
+                    "}"
+    };
+    private final int[] WILDCARD_MATCHES = { 490, 713, 43, 2540, 1 };
+
     private final String[] PREFIX_RULES = {
       "{\n" +
               "  \"properties\": {\n" +
@@ -159,32 +188,42 @@ public class Benchmarks {
       "{\n" +
               "  \"geometry\": {\n" +
               "    \"type\": [ \"Polygon\" ],\n" +
-              "    \"x\": [ { \"numeric\": [ \"=\", -122.42916360922355 ] } ]\n" +
+              "    \"coordinates\": {\n" +
+              "      \"x\": [ { \"numeric\": [ \"=\", -122.42916360922355 ] } ]\n" +
+              "    }\n" +
               "  }\n" +
               "}",
       "{\n" +
               "  \"geometry\": {\n" +
               "    \"type\": [ \"MultiPolygon\" ],\n" +
-              "    \"y\": [ { \"numeric\": [ \"=\", 37.729900216217324 ] } ]\n" +
+              "    \"coordinates\": {\n" +
+              "      \"y\": [ { \"numeric\": [ \"=\", 37.729900216217324 ] } ]\n" +
+              "    }\n" +
               "  }\n" +
               "}",
       "{\n" +
               "  \"geometry\": {\n" +
-              "    \"x\": [ { \"numeric\": [ \"<\", -122.41600944012424 ] } ]\n" +
+              "    \"coordinates\": {\n" +
+              "      \"x\": [ { \"numeric\": [ \"<\", -122.41600944012424 ] } ]\n" +
+              "    }\n" +
               "  }\n" +
               "}",
       "{\n" +
               "  \"geometry\": {\n" +
-              "    \"x\": [ { \"numeric\": [ \">\", -122.41600944012424 ] } ]\n" +
+              "    \"coordinates\": {\n" +
+              "      \"x\": [ { \"numeric\": [ \">\", -122.41600944012424 ] } ]\n" +
+              "    }\n" +
               "  }\n" +
               "}",
       "{\n" +
               "  \"geometry\": {\n" +
-              "    \"x\": [ { \"numeric\": [ \">\",  -122.46471267081272, \"<\", -122.4063085128395 ] } ]\n" +
+              "    \"coordinates\": {\n" +
+              "      \"x\": [ { \"numeric\": [ \">\",  -122.46471267081272, \"<\", -122.4063085128395 ] } ]\n" +
+              "    }\n" +
               "  }\n" +
               "}"
     };
-    private final int[] NUMERIC_MATCHES = { 218, 1, 149446, 64368, 127485 };
+    private final int[] NUMERIC_MATCHES = { 227, 2, 149444, 64368, 127485 };
 
     private final String[] ANYTHING_BUT_RULES = {
       "{\n" +
@@ -394,11 +433,16 @@ public class Benchmarks {
         bm.run(citylots2);
 
         bm = new Benchmarker();
+
         bm.addRules(EXACT_RULES, EXACT_MATCHES);
         bm.run(citylots2);
-
-        bm.run(citylots2);
         System.out.println("EXACT events/sec: " + String.format("%.1f", bm.getEPS()));
+
+        bm = new Benchmarker();
+
+        bm.addRules(WILDCARD_RULES, WILDCARD_MATCHES);
+        bm.run(citylots2);
+        System.out.println("WILDCARD events/sec: " + String.format("%.1f", bm.getEPS()));
 
         bm = new Benchmarker();
 
@@ -475,9 +519,11 @@ public class Benchmarks {
             long after = System.currentTimeMillis();
             eps = (1000.0 / (1.0 * (after - before) / events.size()));
 
-
             for (String got : gotMatches.keySet()) {
                 assertEquals(wanted.get(got), gotMatches.get(got));
+            }
+            for (String want : wanted.keySet()) {
+                assertEquals(wanted.get(want), gotMatches.get(want) == null ? (Integer) 0 : gotMatches.get(want));
             }
         }
 

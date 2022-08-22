@@ -114,7 +114,7 @@ public class Range extends Patterns {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof Range)) {
+        if (o == null || !o.getClass().equals(getClass())) {
             return false;
         }
         if (!super.equals(o)) {
@@ -124,18 +124,18 @@ public class Range extends Patterns {
         Range range = (Range) o;
 
         return openBottom == range.openBottom &&
-                openTop == range.openTop &&
-                Arrays.equals(bottom, range.bottom) &&
-                Arrays.equals(top, range.top);
+               openTop == range.openTop &&
+               Arrays.equals(bottom, range.bottom) &&
+               Arrays.equals(top, range.top);
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + Arrays.hashCode(bottom);
-        result = 31 * result + (openBottom ? 1 : 0);
+        result = 31 * result + Boolean.hashCode(openBottom);
         result = 31 * result + Arrays.hashCode(top);
-        result = 31 * result + (openTop ? 1 : 0);
+        result = 31 * result + Boolean.hashCode(openTop);
         return result;
     }
 
