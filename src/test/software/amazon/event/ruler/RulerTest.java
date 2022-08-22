@@ -555,7 +555,7 @@ public class RulerTest {
         boolean[] result = {false, false, false, true };
 
         for (int i = 0; i< events.length; i++) {
-            assertEquals(events[i], result[i], Ruler.matches(events[i], rule));
+            assertEquals(events[i], result[i], Ruler.matchesRule(events[i], rule));
         }
     }
 }

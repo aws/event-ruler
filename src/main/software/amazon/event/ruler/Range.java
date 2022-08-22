@@ -133,9 +133,9 @@ public class Range extends Patterns {
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + Arrays.hashCode(bottom);
-        result = 31 * result + (openBottom ? 1 : 0);
+        result = 31 * result + Boolean.hashCode(openBottom);
         result = 31 * result + Arrays.hashCode(top);
-        result = 31 * result + (openTop ? 2 : 0);
+        result = 31 * result + Boolean.hashCode(openTop);
         return result;
     }
 

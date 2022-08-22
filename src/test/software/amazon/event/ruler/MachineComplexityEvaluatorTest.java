@@ -4,10 +4,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import static software.amazon.event.ruler.PermutationsGenerator.generateAllPermutations;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * For each test, for illustrative purposes, I will provide one input string that results in the maximum number of
@@ -424,14 +427,47 @@ public class MachineComplexityEvaluatorTest {
      * at runtime of O(n^2) where n=140,000.
      */
     @Test
-    public void testEvaluateBeyondMaxComplexity() {
+    public void testEvaluateBeyondMaxComplexity() throws InterruptedException {
+        Timer timer = new Timer();
         ByteMachine machine = new ByteMachine();
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < 10000; i++) {
             builder.append("F*e*a*t*u*r*e*");
         }
         machine.addPattern(Patterns.wildcardMatch(builder.toString()));
-        assertEquals(MAX_COMPLEXITY, machine.evaluateComplexity(evaluator));
+
+        // Start a complexity evaluation task.
+        final int[] complexity = { -1 };
+        TimerTask evaluationTask = new TimerTask() {
+            @Override
+            public void run() {
+                complexity[0] = machine.evaluateComplexity(evaluator);
+            }
+        };
+        timer.schedule(evaluationTask, 0);
+
+        // Start a timeout task that will fail the test if complexity evaluation takes over 60 seconds.
+        final boolean[] timedOut = { false };
+        TimerTask timeoutTask = new TimerTask() {
+            @Override
+            public void run() {
+                timedOut[0] = true;
+            }
+        };
+        timer.schedule(timeoutTask, 60000);
+
+        // Wait either for complexity evaluation to finish or for timeout to occur.
+        while (complexity[0] == -1 && !timedOut[0]) {
+            Thread.sleep(10);
+        }
+
+        if (timedOut[0]) {
+            fail("Complexity evaluation took over 60 seconds");
+        }
+        assertEquals(MAX_COMPLEXITY, complexity[0]);
+
+        // Cancel the timeoutTask in case it hasn't run yet.
+        timeoutTask.cancel();
     }
 
     private void testPatternPermutations(int expectedComplexity, Patterns ... patterns) {
