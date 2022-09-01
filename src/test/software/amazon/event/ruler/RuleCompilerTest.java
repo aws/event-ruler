@@ -103,6 +103,9 @@ public class RuleCompilerTest {
         j = "{\"a\": [ { \"prefix\": \"child\" } ] }";
         assertNull("Good prefix should parse", RuleCompiler.check(j));
 
+        j = "{\"a\": [ { \"suffix\": \"child\" } ] }";
+        assertNull("Good suffix should parse", RuleCompiler.check(j));
+
         j = "{\"a\": [ { \"anything-but\": \"child\" } ] }";
         assertNull("Good anything-but should parse", RuleCompiler.check(j));
 
@@ -142,10 +145,13 @@ public class RuleCompilerTest {
         String[] badPatternTypes = {
                 "{\"a\": [ { \"exactly\": 33 } ] }",
                 "{\"a\": [ { \"prefix\": \"child\", \"foo\": [] } ] }",
-                "{\"a\": [ { \"foo\": \"child\" } ] }",
-                "{\"a\": [ { \"cidr\": \"foo\" } ] }",
                 "{\"a\": [ { \"prefix\": 3 } ] }",
                 "{\"a\": [ { \"prefix\": [1, 2 3] } ] }",
+                "{\"a\": [ { \"suffix\": \"child\", \"foo\": [] } ] }",
+                "{\"a\": [ { \"suffix\": 3 } ] }",
+                "{\"a\": [ { \"suffix\": [1, 2 3] } ] }",
+                "{\"a\": [ { \"foo\": \"child\" } ] }",
+                "{\"a\": [ { \"cidr\": \"foo\" } ] }",
                 "{\"a\": [ { \"anything-but\": \"child\", \"foo\": [] } ] }",
                 "{\"a\": [ { \"anything-but\": [1, 2 3] } ] }",
                 "{\"a\": [ { \"anything-but\": \"child\", \"foo\": [] } ] }",
