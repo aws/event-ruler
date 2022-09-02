@@ -370,6 +370,16 @@ public class JsonRuleCompiler {
                 barf(parser, "Only one key allowed in match expression");
             }
             return pattern;
+        } else if (Constants.SUFFIX_MATCH.equals(matchTypeName)) {
+            final JsonToken suffixToken = parser.nextToken();
+            if (suffixToken != JsonToken.VALUE_STRING) {
+                barf(parser, "suffix match pattern must be a string");
+            }
+            final Patterns pattern = Patterns.suffixMatch(parser.getText() + '"'); // note no beginning quote
+            if (parser.nextToken() != JsonToken.END_OBJECT) {
+                barf(parser, "Only one key allowed in match expression");
+            }
+            return pattern;
         } else if (Constants.NUMERIC.equals(matchTypeName)) {
             final JsonToken numericalExpressionToken = parser.nextToken();
             if (numericalExpressionToken != JsonToken.START_ARRAY) {
