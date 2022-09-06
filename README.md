@@ -691,9 +691,11 @@ will compile to the same internal representation.
   "source": ["aws.s3"],
   "source": ["aws.sns"],
   "detail-type": ["AWS API Call via CloudTrail"],
-  "detail": [
-    { "eventSource": ["s3.amazonaws.com"] },
-    { "eventSource": ["sns.amazonaws.com"] }
+  "detail":  [
+    {
+      "eventSource": ["s3.amazonaws.com"],
+      "eventSource": ["sns.amazonaws.com"]
+    }
   ]
 }
 
