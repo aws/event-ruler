@@ -10,13 +10,13 @@ field names with lists of possible values.  There are two reasons to use Ruler:
 
 Contents:
 
-1. Ruler by Example
-2. And and Or With Ruler
-3. How to Use Ruler
-4. JSON Text Matching
-5. JSON Array Matching
-6. Compiling and Checking Rules
-7. Performance
+1. [Ruler by Example](#ruler-by-example)
+2. [And and Or With Ruler](#and-and-or-relationship-among-fields-with-ruler)
+3. [How to Use Ruler](#how-to-use-ruler)
+4. [JSON Text Matching](#json-text-matching)
+5. [JSON Array Matching](#json-array-matching)
+6. [Compiling and Checking Rules](#compiling-and-checking-rules)
+7. [Performance](#performance)
 
 It's easiest to explain by example.
 
