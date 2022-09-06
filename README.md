@@ -679,11 +679,11 @@ It also means that these rules will match against following two events :
 
 This behaviour may change in future version (to avoid any confusions) and should not be relied upon.
 
-#### Caveat: JSON parsing and duplicate Keys
+#### Caveat: JSON parsing and duplicate keys
 
-When Ruler deserializes Events or Rules containing duplicate JSON keys, it will only consider the
-final value in the document order. This means following two rules will compile to the same
-internal representation.
+Events or Rules containing duplicate JSON keys as invalid. When duplicate keys are passed Ruler 
+will only consider the final value in the document order. This means following two rules
+will compile to the same internal representation.
 
 ```javascript
 ## has duplicate keys
