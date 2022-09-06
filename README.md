@@ -682,8 +682,31 @@ This behaviour may change in future version (to avoid any confusions) and should
 #### Caveat: JSON parsing and duplicate keys
 
 Events or Rules containing duplicate JSON keys are invalid. When duplicate keys are passed Ruler 
-will only consider the final value in the document order. This means following two rules
-will compile to the same internal representation.
+will only consider the final value in the document order. 
+
+This means following two rules will compile to the same internal representation.
+
+```javascript
+## has duplicate keys
+{
+  "source": ["aws.s3"],
+  "source": ["aws.sns"],
+  "detail-type": ["AWS API Call via CloudTrail"],
+  "detail":  {
+      "eventSource": ["s3.amazonaws.com"],
+      "eventSource": ["sns.amazonaws.com"]
+  }
+}
+
+## has unique keys
+{
+  "source": ["aws.sns"],
+  "detail-type": ["AWS API Call via CloudTrail"],
+  "detail": { "eventSource": ["sns.amazonaws.com"] }
+}
+```
+
+Similarly, following two *events* will be treated the same
 
 ```javascript
 ## has duplicate keys

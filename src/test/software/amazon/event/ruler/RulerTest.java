@@ -558,4 +558,88 @@ public class RulerTest {
             assertEquals(events[i], result[i], Ruler.matchesRule(events[i], rule));
         }
     }
+
+    @Test // see "Caveat: JSON parsing and duplicate keys" in README
+    public void WHEN_wePassJSONDuplicateKeys_THEN_onlyFinalValueIsConsidered() throws Exception {
+        String eventsWithUniqueKeys = "{\n" +
+                "  \"source\": \"aws.sns\",\n" +
+                "  \"detail-type\": \"AWS API Call via CloudTrail\",\n" +
+                "  \"detail\": [\n" +
+                "    { \"eventSource\": \"sns.amazonaws.com\" }\n" +
+                "  ]\n" +
+                "}";
+        String[] eventsWithDuplicateKeys = {
+                "{\n" +
+                        "  \"source\": \"aws.s3\",\n" +
+                        "  \"source\": \"aws.sns\",\n" +
+                        "  \"detail-type\": \"AWS API Call via CloudTrail\",\n" +
+                        "  \"detail\": [\n" +
+                        "    { \"eventSource\": \"sns.amazonaws.com\" }\n" +
+                        "  ]\n" +
+                        "}",
+                "{\n" +
+                        "  \"source\": \"aws.sns\",\n" +
+                        "  \"detail-type\": \"AWS API Call via CloudTrail\",\n" +
+                        "  \"detail\": [\n" +
+                        "    { \"eventSource\": \"s3.amazonaws.com\" }\n" +
+                        "  ],\n" +
+                        "  \"detail\": [\n" +
+                        "    { \"eventSource\": \"sns.amazonaws.com\" }\n" +
+                        "  ]\n" +
+                        "}",
+
+                "{\n" +
+                        "  \"source\": \"aws.sns\",\n" +
+                        "  \"detail-type\": \"AWS API Call via CloudTrail\",\n" +
+                        "  \"detail\": [\n" +
+                        "    { \"eventSource\": \"s3.amazonaws.com\", \"eventSource\": \"sns.amazonaws.com\" }\n" +
+                        "  ]\n" +
+                        "}"
+        };
+
+        String ruleWithUniqueKeys = "{\n" +
+                "  \"source\": [\"aws.sns\"],\n" +
+                "  \"detail-type\": [\"AWS API Call via CloudTrail\"],\n" +
+                "  \"detail\":  { \"eventSource\": [\"sns.amazonaws.com\"] }\n" +
+                "}";
+        String[] rulesWithDuplicateKeys = {
+                "{\n" +
+                        "  \"source\": [\"aws.s3\"],\n" +
+                        "  \"source\": [\"aws.sns\"],\n" +
+                        "  \"detail-type\": [\"AWS API Call via CloudTrail\"],\n" +
+                        "  \"detail\":  {\n" +
+                        "      \"eventSource\": [\"sns.amazonaws.com\"]\n" +
+                        "    }\n" +
+                        "}",
+                "{\n" +
+                        "  \"source\": [\"aws.sns\"],\n" +
+                        "  \"detail-type\": [\"AWS API Call via CloudTrail\"],\n" +
+                        "  \"detail\": {\n" +
+                        "      \"eventSource\": [\"s3.amazonaws.com\"],\n" +
+                        "      \"eventSource\": [\"sns.amazonaws.com\"]\n" +
+                        "    }\n" +
+                        "}",
+                "{\n" +
+                        "  \"source\": [\"aws.sns\"],\n" +
+                        "  \"detail-type\": [\"AWS API Call via CloudTrail\"],\n" +
+                        "  \"detail\": {\n" +
+                        "      \"eventSource\": [\"s3.amazonaws.com\"]\n" +
+                        "    },\n" +
+                        "  \"detail\": {\n" +
+                        "      \"eventSource\": [\"sns.amazonaws.com\"]\n" +
+                        "    }\n" +
+                        "}"
+        };
+
+        Ruler.matchesRule(eventsWithUniqueKeys, ruleWithUniqueKeys);
+
+        for(String event: eventsWithDuplicateKeys) {
+            Ruler.matchesRule(event, ruleWithUniqueKeys);
+        }
+
+        for(String rule: rulesWithDuplicateKeys) {
+            Ruler.matchesRule(eventsWithUniqueKeys, rule);
+        }
+
+    }
 }
