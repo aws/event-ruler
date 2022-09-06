@@ -16,7 +16,7 @@ Contents:
 4. [JSON Text Matching](#json-text-matching)
 5. [JSON Array Matching](#json-array-matching)
 6. [Compiling and Checking Rules](#compiling-and-checking-rules)
-7. [Performance](##performance)
+7. [Performance](#performance)
 
 It's easiest to explain by example.
 
