@@ -679,6 +679,36 @@ It also means that these rules will match against following two events :
 
 This behaviour may change in future version (to avoid any confusions) and should not be relied upon.
 
+#### Caveat: JSON parsing and duplicate Keys
+
+When Ruler deserializes Events or Rules containing duplicate JSON keys, it will only consider the
+final value in the document order. This means following two rules will compile to the same
+internal representation.
+
+```javascript
+## has duplicate keys
+{
+  "source": ["aws.s3"],
+  "source": ["aws.sns"],
+  "detail-type": ["AWS API Call via CloudTrail"],
+  "detail": [
+    { "eventSource": ["s3.amazonaws.com"] },
+    { "eventSource": ["sns.amazonaws.com"] }
+  ]
+}
+
+## has unique keys
+{
+  "source": ["aws.sns"],
+  "detail-type": ["AWS API Call via CloudTrail"],
+  "detail": [
+    { "eventSource": ["sns.amazonaws.com"] }
+  ]
+}
+```
+
+This behaviour will change in future version (to avoid any confusions) and should not be relied upon.
+
 ## Performance
 
 We measure Ruler's performance by compiling multiple rules into a Machine and matching events provided as JSON strings.

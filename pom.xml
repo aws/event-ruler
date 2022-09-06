@@ -21,6 +21,7 @@
   <artifactId>event-ruler</artifactId>
   <name>Event Ruler</name>
   <version>1.0.0</version>
+  <packaging>jar</packaging>
   <description>Event Ruler is a Java library that allows matching Rules to Events. An event is a list of fields,
     which may be given as name/value pairs or as a JSON object. A rule associates event field names with lists of
     possible values. There are two reasons to use Ruler: 1/ It's fast; the time it takes to match Events doesn't
@@ -30,7 +31,7 @@
   <url>https://github.com/aws/event-ruler/</url>
 
   <properties>
-    <jackson.version>2.13.3</jackson.version>
+    <jackson.version>2.13.4</jackson.version>
     <jsr.version>3.0.2</jsr.version>
     <junit.version>4.13.2</junit.version>
     <compiler.plugin.version>3.10.1</compiler.plugin.version>
