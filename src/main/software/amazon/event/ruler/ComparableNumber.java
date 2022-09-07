@@ -1,6 +1,6 @@
 package software.amazon.event.ruler;
 
-import java.util.Locale;
+import java.nio.ByteBuffer;
 
 /**
  * Represents a number, turned into a comparable string
@@ -9,7 +9,7 @@ import java.util.Locale;
  *  They are all treated as floating point
  *  They are turned into strings by:
  *  1. Add 10**9 (so no negatives), then multiply by 10**6 to remove the decimal point
- *  2. Format with the format string %014x" because hex string converted from 5e9*1e6=10e15 has 14 characters.
+ *  2. Format to a 14 char string left padded with 0 because hex string converted from 5e9*1e6=10e15 has 14 characters.
  *  Note: We use Hex because of a) it can save 3 bytes memory per number than decimal b) it aligned IP address radix.
  *  If needed, we can consider to use 32 or 64 radix description to save more memory,e.g. the string length will be 10
  *  for 32 radix, and 9 for 64 radix.
@@ -39,7 +39,29 @@ class ComparableNumber {
             throw new IllegalArgumentException("Value must be between " + -Constants.FIVE_BILLION +
                     " and " + Constants.FIVE_BILLION + ", inclusive");
         }
-        return String.format("%014x", (long) (TEN_E_SIX * (Constants.FIVE_BILLION + f))).toUpperCase(Locale.ROOT);
+
+        return toHexStringSkippingFirstByte((long) (TEN_E_SIX * (Constants.FIVE_BILLION + f)));
     }
+
+    private static final String HEXES = "0123456789ABCDEF";
+
+    private static byte[] longToByteBuffer(long value) {
+        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+        buffer.putLong(value);
+        return buffer.array();
+    }
+
+    static String toHexStringSkippingFirstByte(Long value) {
+        byte[] raw = longToByteBuffer(value);
+        char[] chars = new char[14];
+        for (int i = 1; i < raw.length; i++) {
+            byte b = raw[i];
+            int pos = (i - 1) * 2;
+            chars[pos] = HEXES.charAt((b & 0xF0) >> 4);
+            chars[pos + 1] = HEXES.charAt((b & 0x0F));
+        }
+        return new String(chars);
+    }
+
 }
 
