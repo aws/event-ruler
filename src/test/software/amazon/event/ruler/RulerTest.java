@@ -568,6 +568,13 @@ public class RulerTest {
                 "    { \"eventSource\": \"sns.amazonaws.com\" }\n" +
                 "  ]\n" +
                 "}";
+        String eventsWithIgnoredKeys = "{\n" +
+                "  \"source\": \"aws.s3\",\n" +
+                "  \"detail-type\": \"AWS API Call via CloudTrail\",\n" +
+                "  \"detail\": [\n" +
+                "    { \"eventSource\": \"s3.amazonaws.com\" }\n" +
+                "  ]\n" +
+                "}";
         String[] eventsWithDuplicateKeys = {
                 "{\n" +
                         "  \"source\": \"aws.s3\",\n" +
@@ -602,6 +609,11 @@ public class RulerTest {
                 "  \"detail-type\": [\"AWS API Call via CloudTrail\"],\n" +
                 "  \"detail\":  { \"eventSource\": [\"sns.amazonaws.com\"] }\n" +
                 "}";
+        String ruleWithIgnoredKeys = "{\n" +
+                "  \"source\": [\"aws.s3\"],\n" +
+                "  \"detail-type\": [\"AWS API Call via CloudTrail\"],\n" +
+                "  \"detail\":  { \"eventSource\": [\"s3.amazonaws.com\"] }\n" +
+                "}";
         String[] rulesWithDuplicateKeys = {
                 "{\n" +
                         "  \"source\": [\"aws.s3\"],\n" +
@@ -631,15 +643,18 @@ public class RulerTest {
                         "}"
         };
 
-        Ruler.matchesRule(eventsWithUniqueKeys, ruleWithUniqueKeys);
+        assertTrue(Ruler.matchesRule(eventsWithUniqueKeys, ruleWithUniqueKeys));
+        assertFalse(Ruler.matchesRule(eventsWithIgnoredKeys, ruleWithUniqueKeys));
+        assertFalse(Ruler.matchesRule(eventsWithUniqueKeys, ruleWithIgnoredKeys));
 
         for(String event: eventsWithDuplicateKeys) {
-            Ruler.matchesRule(event, ruleWithUniqueKeys);
+            assertTrue(Ruler.matchesRule(event, ruleWithUniqueKeys));
+            assertFalse(Ruler.matchesRule(eventsWithIgnoredKeys, ruleWithUniqueKeys));
         }
 
         for(String rule: rulesWithDuplicateKeys) {
-            Ruler.matchesRule(eventsWithUniqueKeys, rule);
+            assertTrue(Ruler.matchesRule(eventsWithUniqueKeys, rule));
+            assertFalse(Ruler.matchesRule(eventsWithUniqueKeys, ruleWithIgnoredKeys));
         }
-
     }
 }
