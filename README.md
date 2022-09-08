@@ -684,7 +684,7 @@ This behaviour may change in future version (to avoid any confusions) and should
 Events or Rules containing duplicate JSON keys are invalid. When duplicate keys are passed Ruler 
 will only consider the final value in the document order. 
 
-This means following two rules will compile to the same internal representation.
+This means following two rules will match the same events.
 
 ```javascript
 ## has duplicate keys
