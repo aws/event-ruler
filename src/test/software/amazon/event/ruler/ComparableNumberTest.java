@@ -1,9 +1,11 @@
 package software.amazon.event.ruler;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -11,6 +13,21 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class ComparableNumberTest {
+
+    @Test
+    public void WHEN_BytesAreProvided_THEN_HexCharsAreReturned() {
+
+        for (int input = 0; input < 256; input++) {
+
+            char[] result = ComparableNumber.byteToHexChars((byte) input);
+
+            char[] expectedResult = String.format("%02x", input).toUpperCase(Locale.ROOT).toCharArray();
+
+            Assert.assertArrayEquals("byte to hex should match", expectedResult, result);
+
+        }
+
+    }
 
     @Test
     public void WHEN_WildlyVaryingNumberFormsAreProvided_THEN_TheGeneratedStringsAreSortable() {
