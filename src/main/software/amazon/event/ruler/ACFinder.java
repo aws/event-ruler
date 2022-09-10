@@ -29,19 +29,14 @@ class ACFinder {
         if (startState == null) {
             return Collections.emptyList();
         }
-        moveFrom(startState, 0, task, new ArrayMembership());
 
-        // each iteration removes a Step and adds zero or more new ones
-        while (task.stepsRemain()) {
-            tryStep(task);
-        }
+        moveFrom(startState, 0, task, new ArrayMembership());
 
         return task.getMatchedRules();
     }
 
     // remove a step from the work queue and see if there's a transition
-    private static void tryStep(final ACTask task) {
-        final ACStep step = task.nextStep();
+    private static void tryStep(final ACTask task, final ACStep step) {
         final Field field = task.event.fields.get(step.fieldIndex);
 
         // if we can step from where we are to the new field without violating array consistency
@@ -99,7 +94,7 @@ class ACFinder {
         tryMustNotExistMatch(fromState, task, fieldIndex, arrayMembership);
 
         while (fieldIndex < task.fieldCount) {
-            task.addStep(fieldIndex++, fromState, arrayMembership);
+            tryStep(task, new ACStep(fieldIndex++, fromState, arrayMembership));
         }
     }
 

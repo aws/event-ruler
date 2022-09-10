@@ -108,8 +108,9 @@ public class Range extends Patterns {
 
     private static int getHexByteIndex(byte value) {
         // ['0'-'9'] maps to [0-9] indexes
-        if (value >= 48 && value <= 57)
+        if (value >= 48 && value <= 57) {
             return value - 48;
+        }
         // ['A'-'F'] maps to [10-15] indexes
         return (value - 65) + 10;
     }
