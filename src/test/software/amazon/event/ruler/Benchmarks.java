@@ -184,7 +184,7 @@ public class Benchmarks {
     };
     private final int[] EQUALS_IGNORE_CASE_MATCHES = { 131, 211, 1758, 825, 116386 };
 
-    private final String[] NUMERIC_RULES = {
+    private final String[] COMPLEX_ARRAYS_RULES = {
       "{\n" +
               "  \"geometry\": {\n" +
               "    \"type\": [ \"Polygon\" ],\n" +
@@ -223,7 +223,48 @@ public class Benchmarks {
               "  }\n" +
               "}"
     };
-    private final int[] NUMERIC_MATCHES = { 227, 2, 149444, 64368, 127485 };
+    private final int[] COMPLEX_ARRAYS_MATCHES = { 227, 2, 149444, 64368, 127485 };
+
+    private final String[] NUMERIC_RULES = {
+            "{\n" +
+                    "  \"geometry\": {\n" +
+                    "    \"type\": [ \"Polygon\" ],\n" +
+                    "    \"firstCoordinates\": {\n" +
+                    "      \"x\": [ { \"numeric\": [ \"=\", -122.42916360922355 ] } ]\n" +
+                    "    }\n" +
+                    "  }\n" +
+                    "}",
+            "{\n" +
+                    "  \"geometry\": {\n" +
+                    "    \"type\": [ \"MultiPolygon\" ],\n" +
+                    "    \"firstCoordinates\": {\n" +
+                    "      \"z\": [ { \"numeric\": [ \"=\", 0 ] } ]\n" +
+                    "    }\n" +
+                    "  }\n" +
+                    "}",
+            "{\n" +
+                    "  \"geometry\": {\n" +
+                    "    \"firstCoordinates\": {\n" +
+                    "      \"x\": [ { \"numeric\": [ \"<\", -122.41600944012424 ] } ]\n" +
+                    "    }\n" +
+                    "  }\n" +
+                    "}",
+            "{\n" +
+                    "  \"geometry\": {\n" +
+                    "    \"firstCoordinates\": {\n" +
+                    "      \"x\": [ { \"numeric\": [ \">\", -122.41600944012424 ] } ]\n" +
+                    "    }\n" +
+                    "  }\n" +
+                    "}",
+            "{\n" +
+                    "  \"geometry\": {\n" +
+                    "    \"firstCoordinates\": {\n" +
+                    "      \"x\": [ { \"numeric\": [ \">\",  -122.46471267081272, \"<\", -122.4063085128395 ] } ]\n" +
+                    "    }\n" +
+                    "  }\n" +
+                    "}"
+    };
+    private final int[] NUMERIC_MATCHES = { 8, 120, 148943, 64120, 127053 };
 
     private final String[] ANYTHING_BUT_RULES = {
       "{\n" +
@@ -476,10 +517,28 @@ public class Benchmarks {
 
         bm = new Benchmarker();
 
+        bm.addRules(COMPLEX_ARRAYS_RULES, COMPLEX_ARRAYS_MATCHES);
+        bm.run(citylots2);
+        System.out.println("COMPLEX_ARRAYS events/sec: " + String.format("%.1f", bm.getEPS()));
+
+        // skips complex arrays matchers because their slowness can hide improvements
+        // and regressions for other matchers. Remove this once we find ways to make
+        // arrays fast enough to others matchers
+        bm = new Benchmarker();
+
         bm.addRules(NUMERIC_RULES, NUMERIC_MATCHES);
         bm.addRules(EXACT_RULES, EXACT_MATCHES);
         bm.addRules(PREFIX_RULES, PREFIX_MATCHES);
         bm.addRules(ANYTHING_BUT_RULES, ANYTHING_BUT_MATCHES);
+        bm.run(citylots2);
+        System.out.println("PARTIAL_COMBO events/sec: " + String.format("%.1f", bm.getEPS()));
+
+        bm = new Benchmarker();
+        bm.addRules(NUMERIC_RULES, NUMERIC_MATCHES);
+        bm.addRules(EXACT_RULES, EXACT_MATCHES);
+        bm.addRules(PREFIX_RULES, PREFIX_MATCHES);
+        bm.addRules(ANYTHING_BUT_RULES, ANYTHING_BUT_MATCHES);
+        bm.addRules(COMPLEX_ARRAYS_RULES, COMPLEX_ARRAYS_MATCHES);
         bm.run(citylots2);
         System.out.println("COMBO events/sec: " + String.format("%.1f", bm.getEPS()));
     }
