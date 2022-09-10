@@ -4,10 +4,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 import static software.amazon.event.ruler.CompoundByteTransition.coalesce;
 
@@ -193,7 +191,9 @@ class ByteMap {
      * @return All transitions contained in this map.
      */
     Set<ByteTransition> getTransitions() {
-        return map.values().stream().filter(Objects::nonNull).collect(Collectors.toSet());
+        Set<ByteTransition> result = new HashSet<>(map.values());
+        result.remove(null);
+        return result;
     }
 
     /**

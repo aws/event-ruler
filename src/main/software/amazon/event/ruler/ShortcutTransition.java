@@ -2,8 +2,6 @@ package software.amazon.event.ruler;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 // Shortcut transition is designed mainly for exactly match by its memory consuming because the exactly match is always
 // in the last byte of value, while it will take a lots of memory if we build a traverse path byte by byte.
@@ -81,7 +79,7 @@ public class ShortcutTransition extends SingleByteTransition {
 
     @Override
     public Set<ShortcutTransition> getShortcuts() {
-        return Stream.of(this).collect(Collectors.toSet());
+        return Collections.singleton(this);
     }
 
     @Override

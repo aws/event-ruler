@@ -1,8 +1,8 @@
 package software.amazon.event.ruler;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * The Patterns deal pre-processing of rules for the eventual matching against events.
@@ -50,12 +50,11 @@ public class Patterns implements Cloneable  {
     }
 
     public static AnythingBut anythingButMatch(final String anythingBut) {
-        return new AnythingBut(Stream.of(anythingBut).collect(Collectors.toSet()), false);
+        return new AnythingBut(Collections.singleton(anythingBut), false);
     }
 
     public static AnythingBut anythingButMatch(final double anythingBut) {
-        return new AnythingBut(Stream.of(anythingBut).map(ComparableNumber::generate).collect(Collectors.toSet()),
-                true);
+        return new AnythingBut(Collections.singleton(ComparableNumber.generate(anythingBut)), true);
     }
 
     public static AnythingBut anythingButMatch(final Set<String> anythingButs) {
@@ -63,8 +62,11 @@ public class Patterns implements Cloneable  {
     }
 
     public static AnythingBut anythingButNumberMatch(final Set<Double> anythingButs) {
-        return new AnythingBut(anythingButs.stream().map(ComparableNumber::generate).collect(Collectors.toSet()),
-                true);
+        Set<String> normalizedNumbers = new HashSet<>(anythingButs.size());
+        for (Double d : anythingButs) {
+            normalizedNumbers.add(ComparableNumber.generate(d));
+        }
+        return new AnythingBut(normalizedNumbers, true);
     }
 
     public static ValuePatterns anythingButPrefix(final String prefix) {
