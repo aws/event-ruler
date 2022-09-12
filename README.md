@@ -688,10 +688,11 @@ prefix-match, suffix-match, equals-ignore-case-match, wildcard-match, numeric-ma
 counts the matches, yields the following on a 2019 MacBook:
 
 Events are processed at over 220K/second except for:
- - equals-ignore-case matches, which are processed at over 180K/second.
+ - equals-ignore-case matches, which are processed at over 200K/second.
  - wildcard matches, which are processed at over 170K/second.
- - anything-but matches, which are processed at over 110K/second.
- - numeric matches, which are processed at over 2.5K/second.
+ - anything-but matches, which are processed at over 150K/second.
+ - numeric matches, which are processed at over 120K/second.
+ - complex array matches, which are processed at over 2.5K/second.
 
 ### Suggestions for better performance
 
