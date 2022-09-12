@@ -9,7 +9,6 @@ import java.util.Arrays;
  *  implementation, the number of digits in the top and bottom of the range is the same.
  */
 public class Range extends Patterns {
-
     /**
      * Bottom and top of the range. openBottom true means we're looking for > bottom, false means >=
      *  Similarly, openTop true means we're looking for < top, false means <= top.
@@ -20,6 +19,8 @@ public class Range extends Patterns {
     final boolean openTop;
 
     final boolean isCIDR;
+
+    private static final int HEX_DIGIT_A_DECIMAL_VALUE = 10;
 
     private Range(final double bottom, final boolean openBottom, final double top, final boolean openTop) {
         super(MatchType.NUMERIC_RANGE);
@@ -108,11 +109,11 @@ public class Range extends Patterns {
 
     private static int getHexByteIndex(byte value) {
         // ['0'-'9'] maps to [0-9] indexes
-        if (value >= 48 && value <= 57) {
-            return value - 48;
+        if (value >= '0' && value <= '9') {
+            return value - '0';
         }
         // ['A'-'F'] maps to [10-15] indexes
-        return (value - 65) + 10;
+        return (value - 'A') + HEX_DIGIT_A_DECIMAL_VALUE;
     }
 
     @Override
