@@ -37,7 +37,7 @@
     <javadoc.plugin.version>3.4.1</javadoc.plugin.version>
     <source.plugin.version>3.2.1</source.plugin.version>
     <checkstyle.plugin.version>3.2.0</checkstyle.plugin.version>
-    <spotbugs.plugin.version>4.7.1.1</spotbugs.plugin.version>
+    <spotbugs.plugin.version>4.7.2.0</spotbugs.plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
