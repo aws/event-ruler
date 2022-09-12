@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -191,8 +192,12 @@ class ByteMap {
      * @return All transitions contained in this map.
      */
     Set<ByteTransition> getTransitions() {
-        Set<ByteTransition> result = new HashSet<>(map.values());
-        result.remove(null);
+        Set<ByteTransition> result = new HashSet<>(map.values().size());
+        for (ByteTransition transition : map.values()) {
+            if (Objects.nonNull(transition)) {
+                result.add(transition);
+            }
+        }
         return result;
     }
 

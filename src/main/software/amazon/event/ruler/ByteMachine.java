@@ -12,6 +12,7 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -812,7 +813,7 @@ class ByteMachine {
         Set<NameState> nextNameStates = new HashSet<>(pattern.getValues().size());
         for (String value : pattern.getValues()) {
             NameState matchPattern = findMatchPattern(getParser().parse(pattern.type(), value), pattern);
-            if (matchPattern != null) {
+            if (Objects.nonNull(matchPattern)) {
                 nextNameStates.add(matchPattern);
             }
         }
