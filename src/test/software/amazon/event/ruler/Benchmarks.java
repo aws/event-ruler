@@ -1,5 +1,6 @@
 package software.amazon.event.ruler;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
 import java.io.BufferedReader;
@@ -9,6 +10,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -541,6 +543,66 @@ public class Benchmarks {
         bm.addRules(COMPLEX_ARRAYS_RULES, COMPLEX_ARRAYS_MATCHES);
         bm.run(citylots2);
         System.out.println("COMBO events/sec: " + String.format("%.1f", bm.getEPS()));
+    }
+
+    // make sure we can handle nasty deep events
+    @Test
+    public void DeepEventBenchmark() throws Exception {
+
+        // how many levels deep we want to go
+        int maxLevel = 100;
+        // we create a rule every time the number of events is a multiple of this number
+        int ruleEveryNEvents = 10;
+
+        ObjectMapper m = new ObjectMapper();
+
+        Map<String, Object> root = new HashMap<>();
+
+        Map<String, Object> ruleRoot = new HashMap<>();
+
+        List<String> deepEvents = new ArrayList<>();
+        List<String> deepRules = new ArrayList<>();
+        List<Integer> deepExpected = new ArrayList<>();
+
+        Map<String, Object> currentLevel = root;
+        Map<String, Object> currentRule = ruleRoot;
+
+        for (int i = 0; i < maxLevel; i++) {
+            currentLevel.put("numeric" + i, i * i);
+            currentLevel.put("string" + i, "value" + i);
+
+
+            if (i % ruleEveryNEvents == 0) {
+                currentRule.put("string" + i, Collections.singletonList("value" + i));
+                deepRules.add(m.writeValueAsString(ruleRoot));
+                currentRule.remove("string" + i);
+                // all the events generated below this point will match this rule.
+                deepExpected.add(maxLevel - i);
+            }
+
+            deepEvents.add(m.writeValueAsString(root));
+
+            HashMap<String, Object> newLevel = new HashMap<>();
+            currentLevel.put("level" + i, newLevel);
+            currentLevel = newLevel;
+
+            HashMap<String, Object> newRuleLevel = new HashMap<>();
+            currentRule.put("level" + i, newRuleLevel);
+            currentRule = newRuleLevel;
+        }
+
+        // warm up
+        Benchmarker bm = new Benchmarker();
+        bm.addRules(deepRules.toArray(new String[0]), deepExpected.stream().mapToInt(Integer::intValue).toArray());
+        bm.run(deepEvents);
+
+        // exercise
+        bm = new Benchmarker();
+        bm.addRules(deepRules.toArray(new String[0]), deepExpected.stream().mapToInt(Integer::intValue).toArray());
+        bm.run(deepEvents);
+
+        System.out.println("DEEP EXACT events/sec: " + String.format("%.1f", bm.getEPS()));
+
     }
 
     private final List<String> citylots2 = new ArrayList<>();

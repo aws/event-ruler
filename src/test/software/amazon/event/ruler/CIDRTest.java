@@ -61,39 +61,40 @@ public class CIDRTest {
     @Test
     public void TestDigitSequence() {
 
-        List<Byte> l = Range.digitSequence((byte) '4', (byte) 'C', false, false);
-        byte[] wanted = { '5', '6', '7', '8', '9', 'A', 'B' };
+        byte[] l = Range.digitSequence((byte) '4', (byte) 'C', false, false);
+        byte[] wanted = {'5', '6', '7', '8', '9', 'A', 'B'};
         for (int i = 0; i < wanted.length; i++) {
-            assertEquals(wanted[i], (byte) l.get(i));
+            assertEquals(wanted[i], l[i]);
         }
         l = Range.digitSequence((byte) '4', (byte) 'C', true, false);
-        byte[] wanted2 = { '4', '5', '6', '7', '8', '9', 'A', 'B' };
+        byte[] wanted2 = {'4', '5', '6', '7', '8', '9', 'A', 'B'};
         for (int i = 0; i < wanted2.length; i++) {
-            assertEquals(wanted2[i], (byte) l.get(i));
+            assertEquals(wanted2[i], l[i]);
         }
         l = Range.digitSequence((byte) '4', (byte) 'C', false, true);
-        byte[] wanted3 = { '5', '6', '7', '8', '9', 'A', 'B', 'C' };
+        byte[] wanted3 = {'5', '6', '7', '8', '9', 'A', 'B', 'C'};
         for (int i = 0; i < wanted3.length; i++) {
-            assertEquals(wanted3[i], (byte) l.get(i));
+            assertEquals(wanted3[i], l[i]);
         }
         l = Range.digitSequence((byte) '4', (byte) 'C', true, true);
-        byte[] wanted4 = { '4', '5', '6', '7', '8', '9', 'A', 'B', 'C' };
+        byte[] wanted4 = {'4', '5', '6', '7', '8', '9', 'A', 'B', 'C'};
         for (int i = 0; i < wanted4.length; i++) {
-            assertEquals(wanted4[i], (byte) l.get(i));
+            assertEquals(wanted4[i], l[i]);
         }
 
-        Byte F = (byte) 'F';
+        byte F = (byte) 'F';
         try {
-            List<Byte> got;
+            byte[] got;
             got = Range.digitSequence((byte) 'F', (byte) 'F', false, true);
-            assertEquals(1, got.size());
-            assertEquals(F, got.get(0));
+            assertEquals(1, got.length);
+            assertEquals(F, got[0]);
             Range.digitSequence((byte) 'F', (byte) 'F', true, false);
-            assertEquals(1, got.size());
-            assertEquals(F, got.get(0));
+            assertEquals(1, got.length);
+            assertEquals(F, got[0]);
         } catch (RuntimeException e) {
             fail("Blew up on F-F seq");
         }
+
     }
 
     @Test

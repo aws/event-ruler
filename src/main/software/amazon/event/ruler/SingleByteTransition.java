@@ -2,8 +2,6 @@ package software.amazon.event.ruler;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * This class represents a singular ByteTransition. This is in contrast to a compound ByteTransition that represents
@@ -43,7 +41,7 @@ abstract class SingleByteTransition extends ByteTransition {
         if (match == null) {
             return Collections.emptySet();
         }
-        return Stream.of(match).collect(Collectors.toSet());
+        return Collections.singleton(match);
     }
 
     /**
@@ -53,7 +51,7 @@ abstract class SingleByteTransition extends ByteTransition {
      */
     @Override
     Set<SingleByteTransition> expand() {
-        return Stream.of(this).collect(Collectors.toSet());
+        return Collections.singleton(this);
     }
 
     @Override
