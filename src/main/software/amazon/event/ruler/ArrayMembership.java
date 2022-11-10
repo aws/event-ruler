@@ -1,28 +1,38 @@
 package software.amazon.event.ruler;
 
+import it.unimi.dsi.fastutil.ints.Int2IntAVLTreeMap;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+
 /**
  * Represents which JSON arrays within an Event structure a particular field appears within, and at which position.
  *  The arrays are identified using integers.
  */
 class ArrayMembership {
-    private static final IntIntMap EMPTY = new IntIntMap();
+    private static final Int2IntAVLTreeMap EMPTY = createNewIntIntMap();
+    public static final int NO_VALUE = -1; // Keys and values may only be positive.
 
-    private IntIntMap membership;
+    private final Int2IntAVLTreeMap membership;
 
     ArrayMembership() {
-        membership = new IntIntMap();
+        this.membership = createNewIntIntMap();
     }
 
     ArrayMembership(final ArrayMembership membership) {
         if (membership.size() == 0) {
             this.membership = EMPTY;
         } else {
-            this.membership = (IntIntMap) membership.membership.clone();
+            this.membership = membership.membership.clone();
         }
     }
 
+    private static Int2IntAVLTreeMap createNewIntIntMap() {
+        final Int2IntAVLTreeMap membership = new Int2IntAVLTreeMap();
+        membership.defaultReturnValue(NO_VALUE);
+        return membership;
+    }
+
     void putMembership(int array, int index) {
-        if (index == IntIntMap.NO_VALUE) {
+        if (index == NO_VALUE) {
             membership.remove(array);
         } else {
             membership.put(array, index);
@@ -44,8 +54,8 @@ class ArrayMembership {
     // for debugging
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        for (IntIntMap.Entry entry : membership.entries()) {
-            sb.append(entry.getKey()).append('[').append(entry.getValue()).append("] ");
+        for (Int2IntMap.Entry entry : membership.int2IntEntrySet()) {
+            sb.append(entry.getIntKey()).append('[').append(entry.getIntValue()).append("] ");
         }
         return sb.toString();
     }
@@ -70,12 +80,12 @@ class ArrayMembership {
 
         // any change will come from memberships in the new field we're investigating. For each of its memberships
         ArrayMembership newMembership = null;
-        for (IntIntMap.Entry arrayEntry : fieldMembership.membership.entries()) {
-            final int array = arrayEntry.getKey();
-            final int indexInThisArrayOfThisField = arrayEntry.getValue();
+        for (Int2IntMap.Entry arrayEntry : fieldMembership.membership.int2IntEntrySet()) {
+            final int array = arrayEntry.getIntKey();
+            final int indexInThisArrayOfThisField = arrayEntry.getIntValue();
             final int indexInThisArrayPreviouslyAppearingInMatch = membershipSoFar.getMembership(array);
 
-            if (indexInThisArrayPreviouslyAppearingInMatch == IntIntMap.NO_VALUE) {
+            if (indexInThisArrayPreviouslyAppearingInMatch == NO_VALUE) {
 
                 // if there's no membership so far, this is an acceptable delta. Update the new memberships, first
                 //  creating it if necessary

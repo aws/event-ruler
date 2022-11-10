@@ -1,5 +1,7 @@
 package software.amazon.event.ruler;
 
+import it.unimi.dsi.fastutil.ints.Int2IntAVLTreeMap;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -22,7 +24,8 @@ public class IntIntMapTest {
 
     @Test
     public void put_replacesOriginalValue() {
-        IntIntMap map = new IntIntMap();
+        Int2IntAVLTreeMap map = new Int2IntAVLTreeMap();
+        map.defaultReturnValue(IntIntMap.NO_VALUE);
         Assert.assertEquals(IntIntMap.NO_VALUE, map.put(10, 100));
         Assert.assertEquals(1, map.size());
         Assert.assertEquals(100, map.put(10, 200));
@@ -51,7 +54,8 @@ public class IntIntMapTest {
 
     @Test
     public void get_canRetrieveValues() {
-        IntIntMap map = new IntIntMap();
+        Int2IntAVLTreeMap map = new Int2IntAVLTreeMap();
+        map.defaultReturnValue(IntIntMap.NO_VALUE);
         for (int key = 0; key < 1000; key++) {
             Assert.assertEquals(IntIntMap.NO_VALUE, map.put(key, key * 2));
         }
@@ -64,7 +68,9 @@ public class IntIntMapTest {
 
     @Test
     public void remove_canRemoveValues() {
-        IntIntMap map = new IntIntMap();
+        Int2IntAVLTreeMap map = new Int2IntAVLTreeMap();
+        map.defaultReturnValue(IntIntMap.NO_VALUE);
+
         Assert.assertEquals(IntIntMap.NO_VALUE, map.remove(0));
         map.put(1234, 5678);
         Assert.assertEquals(5678, map.remove(1234));
@@ -73,39 +79,42 @@ public class IntIntMapTest {
 
     @Test
     public void iterator_returnsAllValues() {
-        IntIntMap map = new IntIntMap();
+        Int2IntAVLTreeMap map = new Int2IntAVLTreeMap();
+        map.defaultReturnValue(IntIntMap.NO_VALUE);
         Map<Integer, Integer> baseline = new HashMap<>();
         for (int key = 0; key < 1000; key++) {
             map.put(key, key * 2);
             baseline.put(key, key * 2);
         }
 
-        List<IntIntMap.Entry> entries = new ArrayList<>();
-        map.entries().iterator().forEachRemaining(entries::add);
+        List<Int2IntMap.Entry> entries = new ArrayList<>();
+        map.int2IntEntrySet().iterator().forEachRemaining(entries::add);
 
         Assert.assertEquals(1000, entries.size());
-        for (IntIntMap.Entry entry : entries) {
-            Assert.assertEquals(map.get(entry.getKey()), entry.getValue());
-            Assert.assertEquals(baseline.get(entry.getKey()).intValue(), entry.getValue());
+        for (Int2IntMap.Entry entry : entries) {
+            Assert.assertEquals(map.get(entry.getIntKey()), entry.getIntValue());
+            Assert.assertEquals(baseline.get(entry.getIntKey()).intValue(), entry.getIntValue());
         }
     }
 
     @Test
     public void iterator_returnsEmptyIteratorForEmptyMap() {
-        IntIntMap map = new IntIntMap();
-        Iterator<IntIntMap.Entry> iter = map.entries().iterator();
+        Int2IntAVLTreeMap map = new Int2IntAVLTreeMap();
+        map.defaultReturnValue(IntIntMap.NO_VALUE);
+        Iterator<Int2IntMap.Entry> iter = map.int2IntEntrySet().iterator();
         Assert.assertFalse(iter.hasNext());
     }
 
     @Test
     public void iterator_throwsNoSuchElementExceptionWhenNextIsCalledWithNoMoreElements() {
-        IntIntMap map = new IntIntMap();
+        Int2IntAVLTreeMap map = new Int2IntAVLTreeMap();
+        map.defaultReturnValue(IntIntMap.NO_VALUE);
         map.put(1, 100);
-        Iterator<IntIntMap.Entry> iter = map.entries().iterator();
+        Iterator<Int2IntMap.Entry> iter = map.int2IntEntrySet().iterator();
         Assert.assertTrue(iter.hasNext());
-        IntIntMap.Entry entry = iter.next();
-        Assert.assertEquals(1, entry.getKey());
-        Assert.assertEquals(100, entry.getValue());
+        Int2IntMap.Entry entry = iter.next();
+        Assert.assertEquals(1, entry.getIntKey());
+        Assert.assertEquals(100, entry.getIntValue());
 
         try {
             iter.next();
@@ -117,10 +126,11 @@ public class IntIntMapTest {
 
     @Test
     public void clone_createsNewBackingTable() {
-        IntIntMap map = new IntIntMap();
+        Int2IntAVLTreeMap map = new Int2IntAVLTreeMap();
+        map.defaultReturnValue(IntIntMap.NO_VALUE);
         map.put(123, 456);
 
-        IntIntMap cloneMap = (IntIntMap) map.clone();
+        Int2IntMap cloneMap = (Int2IntMap) map.clone();
         cloneMap.put(123, 789);
 
         Assert.assertEquals(456, map.get(123));
@@ -135,7 +145,8 @@ public class IntIntMapTest {
 
         // set a high load factor to increase the chances that we'll see lots of hash collisions
         float loadFactor = 0.99f;
-        IntIntMap map = new IntIntMap(2, loadFactor);
+        Int2IntAVLTreeMap map = new Int2IntAVLTreeMap();
+        map.defaultReturnValue(IntIntMap.NO_VALUE);
 
         Map<Integer, Integer> baseline = new HashMap<>();
 
@@ -155,7 +166,7 @@ public class IntIntMapTest {
             Set<Integer> baselineKeys = new HashSet<>(baseline.keySet());
             for (Integer key : baselineKeys) {
                 if (random.nextBoolean()) {
-                    Assert.assertEquals(baseline.remove(key).intValue(), map.remove(key));
+                    Assert.assertEquals(baseline.remove(key).intValue(), map.remove(key.intValue()));
                 }
             }
             Assert.assertEquals(baseline.size(), map.size());
@@ -170,7 +181,8 @@ public class IntIntMapTest {
 
         for (int trial = 0; trial < 100_000; trial++) {
             // start the map off with the smallest possible initial capacity
-            IntIntMap map = new IntIntMap(1);
+            Int2IntAVLTreeMap map = new Int2IntAVLTreeMap();
+            map.defaultReturnValue(IntIntMap.NO_VALUE);
             Map<Integer, Integer> baseline = new HashMap<>();
 
             for (int i = 0 ; i < 16; i++) {
@@ -181,7 +193,7 @@ public class IntIntMapTest {
             }
 
             for (Integer key : baseline.keySet()) {
-                Assert.assertEquals(baseline.get(key).intValue(), map.get(key));
+                Assert.assertEquals(baseline.get(key).intValue(), map.get(key.intValue()));
             }
         }
     }
