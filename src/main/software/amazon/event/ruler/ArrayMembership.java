@@ -21,7 +21,8 @@ class ArrayMembership {
         if (membership.size() == 0) {
             this.membership = EMPTY;
         } else {
-            this.membership = membership.membership.clone();
+            this.membership = createNewIntIntMap();
+            this.membership.putAll(membership.membership);
         }
     }
 
