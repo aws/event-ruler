@@ -692,7 +692,7 @@ Events are processed at over 220K/second except for:
  - wildcard matches, which are processed at over 170K/second.
  - anything-but matches, which are processed at over 150K/second.
  - numeric matches, which are processed at over 120K/second.
- - complex array matches, which are processed at over 2.5K/second.
+ - complex array matches, which are processed at over 5K/second.
 
 ### Suggestions for better performance
 
