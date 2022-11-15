@@ -3,6 +3,7 @@ package software.amazon.event.ruler;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -249,6 +250,14 @@ public class CIDRTest {
             tryDeletingAsRule(m, c);
         }
         assertTrue(m.isEmpty());
+    }
+
+    @Test
+    public void testInvalidIPMatchedByIPv6Regex() throws Exception {
+        String invalidIpRule = "{ \"a\": [ \"08:23\" ] }";
+        Machine machine = new Machine();
+        machine.addRule("r1", invalidIpRule);
+        assertEquals(Arrays.asList("r1"), machine.rulesForJSONEvent("{ \"a\": [ \"08:23\" ] }"));
     }
 
     private void tryAddingAsRule(Machine m, Range r) {

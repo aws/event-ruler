@@ -65,8 +65,8 @@ public class CIDR {
     }
 
     /**
-     * Converts a string to an IP address literal to isCIDR format Range if this is possible.  If not
-     *  possible, returns null
+     * Converts a string to an IP address literal to isCIDR format Range if this is possible.
+     * If not possible, returns null.
      * @param ip String that might be an IP address literal
      * @return Range with isCIDR as true
      */
@@ -74,27 +74,31 @@ public class CIDR {
         if (!isIPv4OrIPv6(ip)) {
             return null;
         }
-        final byte[] digits = toHexDigits(ipToBytes(ip));
-        final byte[] bottom = digits.clone();
-        final byte[] top = digits.clone();
-        boolean openBottom;
-        boolean openTop;
-        byte lastByte = top[top.length - 1];
+        try {
+            final byte[] digits = toHexDigits(ipToBytes(ip));
+            final byte[] bottom = digits.clone();
+            final byte[] top = digits.clone();
+            boolean openBottom;
+            boolean openTop;
+            byte lastByte = top[top.length - 1];
 
-        if (lastByte == MAX_DIGIT) {
-            bottom[top.length - 1] = (byte) (lastByte - 1);
-            openBottom = true;
-            openTop = false;
-        } else {
-            if (lastByte != HEX_DIGITS[9]) {
-                top[top.length - 1] = (byte) (lastByte + 1);
+            if (lastByte == MAX_DIGIT) {
+                bottom[top.length - 1] = (byte) (lastByte - 1);
+                openBottom = true;
+                openTop = false;
             } else {
-                top[top.length - 1] = HEX_DIGITS[10];
+                if (lastByte != HEX_DIGITS[9]) {
+                    top[top.length - 1] = (byte) (lastByte + 1);
+                } else {
+                    top[top.length - 1] = HEX_DIGITS[10];
+                }
+                openBottom = false;
+                openTop = true;
             }
-            openBottom = false;
-            openTop = true;
+            return new Range(bottom, openBottom, top, openTop, true);
+        } catch (Exception e) {
+            return null;
         }
-        return new Range(bottom, openBottom, top, openTop, true);
     }
 
     private static byte[] toHexDigits(final byte[] address) {
