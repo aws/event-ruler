@@ -15,11 +15,12 @@ import java.util.Set;
 @ThreadSafe
 class Task {
 
-    // What we're trying to match rules to
+  public static final String[] INITIAL = new String[0];
+  // What we're trying to match rules to
     public final String[] event;
 
     // the rules, if we find any
-    private final HashSet<Object> rules = new HashSet<>();
+    private final Set<Object> rules = new HashSet<>();
 
     // Steps queued up for processing
     private final Queue<Step> stepQueue = new ArrayDeque<>();
@@ -37,7 +38,7 @@ class Task {
     private final GenericMachine<?> machine;
 
     Task(final List<String> event, final GenericMachine<?> machine) {
-        this(event.toArray(new String[0]), machine);
+        this(event.toArray(INITIAL), machine);
     }
 
     Task(final String[] event, final GenericMachine<?> machine) {
@@ -46,39 +47,39 @@ class Task {
     }
 
     NameState startState() {
-        return machine.getStartState();
+        return this.machine.getStartState();
     }
 
     // The field used means all steps in the field must be all used individually.
     boolean isFieldUsed(final String field) {
         if (field.contains(".")) {
-            String[] steps = field.split("\\.");
-            return Arrays.stream(steps).allMatch(machine::isFieldStepUsed);
+            final String[] steps = field.split("\\.");
+            return Arrays.stream(steps).allMatch(this.machine::isFieldStepUsed);
         }
-        return machine.isFieldStepUsed(field);
+        return this.machine.isFieldStepUsed(field);
     }
 
     Step nextStep() {
-        return stepQueue.remove();
+        return this.stepQueue.remove();
     }
 
     void addStep(final Step step) {
         // queue it up only if it's the first time we're trying to queue it up
         // otherwise bad things happen, see comment on seenSteps collection
-        if (seenSteps.add(step)) {
-            stepQueue.add(step);
+        if (this.seenSteps.add(step)) {
+          this.stepQueue.add(step);
         }
     }
 
     boolean stepsRemain() {
-        return !stepQueue.isEmpty();
+        return !this.stepQueue.isEmpty();
     }
 
     List<Object> getMatchedRules() {
-        return new ArrayList<>(rules);
+        return new ArrayList<>(this.rules);
     }
 
     void collectRules(final NameState nameState) {
-        rules.addAll(nameState.getRules());
+      this.rules.addAll(nameState.getRules());
     }
 }
