@@ -2,8 +2,8 @@ package software.amazon.event.ruler.input;
 
 import java.util.Arrays;
 
-import static software.amazon.event.ruler.input.Parser.NINE_BYTE;
-import static software.amazon.event.ruler.input.Parser.ZERO_BYTE;
+import static software.amazon.event.ruler.input.DefaultParser.NINE_BYTE;
+import static software.amazon.event.ruler.input.DefaultParser.ZERO_BYTE;
 
 /**
  * A grouping of multiple bytes. This can be used to represent a character that has a UTF-8 representation requiring

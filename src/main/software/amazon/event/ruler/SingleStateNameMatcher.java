@@ -28,7 +28,6 @@ public class SingleStateNameMatcher implements NameMatcher<NameState> {
         if (nameState == null) {
             nameState = resultSupplier.get();
         }
-
         return nameState;
     }
 

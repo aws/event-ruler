@@ -12,7 +12,8 @@ import static software.amazon.event.ruler.MatchType.WILDCARD;
  * rule's value will be treated by their byte representation, but certain characters, such as for wildcards or regexes,
  * need to be represented differently so the Machine understands their special meaning.
  */
-public class Parser {
+@SuppressWarnings("UseOfConcreteClass")
+public class DefaultParser implements MatchTypeParser, ByteParser {
 
     static final byte DOLLAR_SIGN_BYTE = 0x24;
     static final byte LEFT_PARENTHESIS_BYTE = 0x28;
@@ -32,33 +33,32 @@ public class Parser {
     static final byte LEFT_CURLY_BRACKET_BYTE = 0x7B;
     static final byte VERTICAL_LINE_BYTE = 0x7C;
     static final byte RIGHT_CURLY_BRACKET_BYTE = 0x7D;
-
-    private static final Parser SINGLETON = new Parser();
+    private static final DefaultParser SINGLETON = new DefaultParser();
     private final WildcardParser wildcardParser;
     private final EqualsIgnoreCaseParser equalsIgnoreCaseParser;
 
-    Parser() {
+    DefaultParser() {
         this(new WildcardParser(), new EqualsIgnoreCaseParser());
     }
 
-    Parser(WildcardParser wildcardParser, EqualsIgnoreCaseParser equalsIgnoreCaseParser) {
+    DefaultParser(WildcardParser wildcardParser, EqualsIgnoreCaseParser equalsIgnoreCaseParser) {
         this.wildcardParser = wildcardParser;
         this.equalsIgnoreCaseParser = equalsIgnoreCaseParser;
     }
 
-    public static Parser getParser() {
+    public static DefaultParser getParser() {
         return SINGLETON;
     }
 
-    public InputCharacter[] parse(MatchType type, String value) {
+    @Override
+    public InputCharacter[] parse(final MatchType type, final String value) {
         if (type == WILDCARD) {
-            return wildcardParser.parse(value);
+            return this.wildcardParser.parse(value);
         } else if (type == EQUALS_IGNORE_CASE) {
-            return equalsIgnoreCaseParser.parse(value);
+            return this.equalsIgnoreCaseParser.parse(value);
         }
-
-        byte[] utf8bytes = value.getBytes(StandardCharsets.UTF_8);
-        InputCharacter[] result = new InputCharacter[utf8bytes.length];
+        final byte[] utf8bytes = value.getBytes(StandardCharsets.UTF_8);
+        final InputCharacter[] result = new InputCharacter[utf8bytes.length];
         for (int i = 0; i < utf8bytes.length; i++) {
             byte utf8byte = utf8bytes[i];
             result[i] = new InputByte(utf8byte);
@@ -66,8 +66,8 @@ public class Parser {
         return result;
     }
 
-    public InputCharacter parse(byte utf8byte) {
+    @Override
+    public InputCharacter parse(final byte utf8byte) {
         return new InputByte(utf8byte);
     }
-
 }

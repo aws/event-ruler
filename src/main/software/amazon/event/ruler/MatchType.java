@@ -14,5 +14,6 @@ public enum MatchType {
     ANYTHING_BUT,        // black list effect
     ANYTHING_BUT_PREFIX, // anything that doesn't start with this
     EQUALS_IGNORE_CASE,  // case-insensitive string match
-    WILDCARD             // string match using one or more non-consecutive '*' wildcard characters
+    WILDCARD,             // string match using one or more non-consecutive '*' wildcard characters
+    NO
 }

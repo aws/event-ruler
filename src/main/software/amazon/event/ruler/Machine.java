@@ -12,7 +12,7 @@ package software.amazon.event.ruler;
  *  because each step of routing will check next State and transition map before moving forward.
  */
 public class Machine extends GenericMachine<String> {
+
     public Machine() {
     }
 }
-

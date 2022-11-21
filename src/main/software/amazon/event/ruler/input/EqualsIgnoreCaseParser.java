@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+import software.amazon.event.ruler.MatchType;
 
 /**
  * A parser to be used specifically for equals-ignore-case rules.
@@ -13,20 +14,22 @@ import java.util.Set;
  * One example where length differs by 4: ΰ, Ϋ́
  * To deal with differing byte lengths per Java character, we will parse each Java character into an InputMultiByteSet.
  */
-public class EqualsIgnoreCaseParser {
+@SuppressWarnings({"UseOfConcreteClass", "ObjectAllocationInLoop",
+    "CollectionWithoutInitialCapacity"})
+public class EqualsIgnoreCaseParser implements StringValueParser {
 
     EqualsIgnoreCaseParser() { }
 
-    public InputCharacter[] parse(String value) {
+    public InputCharacter[] parse(final MatchType type, final String value) {
         int i = 0;
-        InputCharacter[] result = new InputCharacter[value.length()];
+        final InputCharacter[] result = new InputCharacter[value.length()];
         for (char c : value.toCharArray()) {
-            byte[] lowerCaseUtf8bytes = String.valueOf(c).toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8);
-            byte[] upperCaseUtf8bytes = String.valueOf(c).toUpperCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8);
-            Set<MultiByte> multiBytes = new HashSet<>();
-            multiBytes.add(new MultiByte(lowerCaseUtf8bytes));
-            multiBytes.add(new MultiByte(upperCaseUtf8bytes));
-            result[i++] = new InputMultiByteSet(multiBytes);
+            byte[] lower = String.valueOf(c).toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8);
+            byte[] upper = String.valueOf(c).toUpperCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8);
+            Set<MultiByte> multi = new HashSet<>();
+            multi.add(new MultiByte(lower));
+            multi.add(new MultiByte(upper));
+            result[i++] = new InputMultiByteSet(multi);
         }
         return result;
     }

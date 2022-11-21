@@ -27,7 +27,7 @@ import static software.amazon.event.ruler.input.MultiByte.MAX_FIRST_BYTE_FOR_TWO
 import static software.amazon.event.ruler.input.MultiByte.MAX_NON_FIRST_BYTE;
 import static software.amazon.event.ruler.input.MultiByte.MIN_FIRST_BYTE_FOR_ONE_BYTE_CHAR;
 import static software.amazon.event.ruler.input.MultiByte.MIN_FIRST_BYTE_FOR_TWO_BYTE_CHAR;
-import static software.amazon.event.ruler.input.Parser.getParser;
+import static software.amazon.event.ruler.input.DefaultParser.getParser;
 
 /**
  * Represents a UTF8-byte-level state machine that matches a Ruler state machine's field values.
