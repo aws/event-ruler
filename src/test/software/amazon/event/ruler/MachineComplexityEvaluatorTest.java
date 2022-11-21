@@ -379,6 +379,17 @@ public class MachineComplexityEvaluatorTest {
                                     Patterns.wildcardMatch("Fea*tureFeature"));
     }
 
+    @Test
+    public void testEvaluateNestedMachinesViaNextNameStates() throws Exception {
+        Machine machine = new Machine();
+        machine.addRule("name", "{" +
+                "\"abc\": [ { \"prefix\": \"a\" }, \"abcdef\", { \"suffix\": \"z\" } ]," +
+                "\"def\": [ { \"prefix\": \"b\" }, { \"wildcard\": \"a*a*a*a*a*a*\" }, { \"suffix\": \"c\" } ]," +
+                "\"ghi\": [ { \"prefix\": \"a\" }, \"abcdef\", { \"suffix\": \"z\" } ]" +
+                "}");
+        assertEquals(11, machine.evaluateComplexity(evaluator));
+    }
+
     /**
      * I'm not going to try to determine the maximum complexity input string. This is here just to demonstrate that this
      * set of rules, which has proven problematic for Quamina in the past, is handled ok by Ruler.

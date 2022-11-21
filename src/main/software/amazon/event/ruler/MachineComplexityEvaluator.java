@@ -32,16 +32,19 @@ public class MachineComplexityEvaluator {
      * Returns the maximum possible number of wildcard rule prefixes that could match a theoretical input value for a
      * machine beginning with ByteState state. This value is equivalent to the maximum number of states a traversal
      * could be present in simultaneously, counting only states that can lead to a wildcard rule pattern. Caps out
-     * evaluation at maxComplexity to keep runtime under control. Otherwise, runtime would be O(N^2), where N is the
-     * number of states accessible from ByteState state.
+     * evaluation at maxComplexity to keep runtime under control. Otherwise, runtime for this machine would be O(N^2),
+     * where N is the number of states accessible from ByteState state. This function will also recursively evaluate all
+     * other machines accessible via next NameStates, and will return the maximum observed from any machine.
      *
      * @param state Evaluates a machine beginning at this state.
-     * @return The maximum possible number of wildcard rule prefixes, or maxComplexity, whichever is less.
+     * @return The lesser of maxComplexity and the maximum possible number of wildcard rule prefixes from any machines.
      */
     int evaluate(ByteState state) {
         // Upfront cost: generate the map of all the wildcard patterns accessible from every state in the machine.
-        Map<SingleByteTransition, Set<Patterns>> wildcardPatternsAccessibleFromEachTransition =
-                getWildcardPatternsAccessibleFromEachTransition(state);
+        // This also evaluates the complexity of all nested machines via next Namestates.
+        Map<SingleByteTransition, Set<Patterns>> wildcardPatternsAccessibleFromEachTransition = new HashMap<>();
+        int nextNameStateMaxSize = getAccessibleWildcardPatternsAndMaxNextNameStateComplexity(state,
+                wildcardPatternsAccessibleFromEachTransition);
 
         Set<ByteTransition> visited = new HashSet<>();
         visited.add(state);
@@ -90,19 +93,26 @@ public class MachineComplexityEvaluator {
             }
         }
 
-        return maxSize;
+        return Math.max(nextNameStateMaxSize, maxSize);
     }
 
     /**
-     * Creates and returns a map of SingleByteTransition to all the wildcard patterns accessible from the
-     * SingleByteTransition. The map includes all SingleByteTransitions accessible from ByteState state. This function
-     * is O(N), where N is the number of states accessible from ByteState state.
+     * Populates a map of SingleByteTransition to all the wildcard patterns accessible from the SingleByteTransition.
+     * The map includes all SingleByteTransitions accessible from ByteState state. Also recursively evaluates the
+     * complexity of all other machines accessible through any next NameStates from this machine's matches. This
+     * function is O(N), where N is the number of states accessible from ByteState state, plus the time to recursively
+     * evaluate all other machines, which caps out below O(N^2) for each machine.
      *
-     * @param state Create a map containing all SingleByteTransitions accessible from this state.
-     * @return A map of SingleByteTransition to all the wildcard patterns accessible from the SingleByteTransition.
+     * Note: this function has two purposes. Although we could split this into two separate functions, doing it this way
+     * saves a traversal.
+     *
+     * @param state Starting state.
+     * @param result Populate this map with all SingleByteTransitions mapped to all accessible wildcard patterns.
+     * @return The maximum complexity from all other machines accessible through any next NameStates.
      */
-    private Map<SingleByteTransition, Set<Patterns>> getWildcardPatternsAccessibleFromEachTransition(ByteState state) {
-        Map<SingleByteTransition, Set<Patterns>> result = new HashMap<>();
+    private int getAccessibleWildcardPatternsAndMaxNextNameStateComplexity(ByteState state,
+                                                                           Map<SingleByteTransition, Set<Patterns>> result) {
+        int maxComplexity = 0;
         Set<SingleByteTransition> visited = new HashSet<>();
         Stack<SingleByteTransition> stack = new Stack<>();
         stack.push(state);
@@ -135,10 +145,17 @@ public class MachineComplexityEvaluator {
 
             visited.add(transition);
 
-            // Add any patterns directly accessible from this transition.
+            // Consider all patterns directly accessible from this transition.
             for (ByteMatch match : transition.getMatches()) {
+                // Add pattern if it is a wildcard pattern.
                 if (match.getPattern().type() == WILDCARD) {
                     patterns.add(match.getPattern());
+                }
+
+                // Evaluate the complexity of any next NameState.
+                NameState nextNameState = match.getNextNameState();
+                if (nextNameState != null) {
+                    maxComplexity = Math.max(maxComplexity, nextNameState.evaluateComplexity(this));
                 }
             }
 
@@ -156,7 +173,7 @@ public class MachineComplexityEvaluator {
             }
         }
 
-        return result;
+        return maxComplexity;
     }
 
 }
