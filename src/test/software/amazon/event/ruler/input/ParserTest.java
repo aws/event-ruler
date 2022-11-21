@@ -3,7 +3,7 @@ package software.amazon.event.ruler.input;
 import software.amazon.event.ruler.MatchType;
 import org.junit.Test;
 
-import static software.amazon.event.ruler.input.Parser.getParser;
+import static software.amazon.event.ruler.input.DefaultParser.getParser;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -28,7 +28,7 @@ public class ParserTest {
     @Test
     public void testOtherMatchTypes() {
         final boolean[] parserInvoked = { false, false };
-        Parser parser = new Parser(
+        DefaultParser parser = new DefaultParser(
             new WildcardParser() {
                @Override
                public InputCharacter[] parse(String value) {

@@ -3,8 +3,8 @@ package software.amazon.event.ruler.input;
 import org.junit.Test;
 
 import static software.amazon.event.ruler.input.InputCharacterType.BYTE;
-import static software.amazon.event.ruler.input.Parser.ASTERISK_BYTE;
-import static software.amazon.event.ruler.input.Parser.BACKSLASH_BYTE;
+import static software.amazon.event.ruler.input.DefaultParser.ASTERISK_BYTE;
+import static software.amazon.event.ruler.input.DefaultParser.BACKSLASH_BYTE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
