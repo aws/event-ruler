@@ -12,7 +12,6 @@ import static software.amazon.event.ruler.MatchType.WILDCARD;
  * rule's value will be treated by their byte representation, but certain characters, such as for wildcards or regexes,
  * need to be represented differently so the Machine understands their special meaning.
  */
-@SuppressWarnings("UseOfConcreteClass")
 public class DefaultParser implements MatchTypeParser, ByteParser {
 
     static final byte DOLLAR_SIGN_BYTE = 0x24;
@@ -53,9 +52,9 @@ public class DefaultParser implements MatchTypeParser, ByteParser {
     @Override
     public InputCharacter[] parse(final MatchType type, final String value) {
         if (type == WILDCARD) {
-            return this.wildcardParser.parse(value);
+            return wildcardParser.parse(value);
         } else if (type == EQUALS_IGNORE_CASE) {
-            return this.equalsIgnoreCaseParser.parse(value);
+            return equalsIgnoreCaseParser.parse(value);
         }
         final byte[] utf8bytes = value.getBytes(StandardCharsets.UTF_8);
         final InputCharacter[] result = new InputCharacter[utf8bytes.length];

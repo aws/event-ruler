@@ -1,9 +1,5 @@
 package software.amazon.event.ruler.input;
 
-/**
- * @author Aliaksei Bialiauski (abialiauski@solvd.com)
- */
-@SuppressWarnings("UseOfConcreteClass")
 public interface ByteParser {
 
   /**

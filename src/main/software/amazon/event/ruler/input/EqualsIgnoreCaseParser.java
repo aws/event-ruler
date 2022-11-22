@@ -14,13 +14,11 @@ import software.amazon.event.ruler.MatchType;
  * One example where length differs by 4: ΰ, Ϋ́
  * To deal with differing byte lengths per Java character, we will parse each Java character into an InputMultiByteSet.
  */
-@SuppressWarnings({"UseOfConcreteClass", "ObjectAllocationInLoop",
-    "CollectionWithoutInitialCapacity"})
 public class EqualsIgnoreCaseParser implements StringValueParser {
 
     EqualsIgnoreCaseParser() { }
 
-    public InputCharacter[] parse(final MatchType type, final String value) {
+    public InputCharacter[] parse(final String value) {
         int i = 0;
         final InputCharacter[] result = new InputCharacter[value.length()];
         for (char c : value.toCharArray()) {

@@ -28,11 +28,13 @@ import com.fasterxml.jackson.core.JsonToken;
  *
  * Is public so clients can call the check() method to syntax-check filters
  */
-public class RuleCompiler {
+public final class RuleCompiler {
 
     private static final JsonFactory JSON_FACTORY = new JsonFactory();
 
-    private RuleCompiler() { }
+    private RuleCompiler() {
+      throw new UnsupportedOperationException();
+    }
 
     /**
      * Verify the syntax of a rule

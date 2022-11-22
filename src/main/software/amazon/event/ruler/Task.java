@@ -47,39 +47,39 @@ class Task {
     }
 
     NameState startState() {
-        return this.machine.getStartState();
+        return machine.getStartState();
     }
 
     // The field used means all steps in the field must be all used individually.
     boolean isFieldUsed(final String field) {
         if (field.contains(".")) {
             final String[] steps = field.split("\\.");
-            return Arrays.stream(steps).allMatch(this.machine::isFieldStepUsed);
+            return Arrays.stream(steps).allMatch(machine::isFieldStepUsed);
         }
-        return this.machine.isFieldStepUsed(field);
+        return machine.isFieldStepUsed(field);
     }
 
     Step nextStep() {
-        return this.stepQueue.remove();
+        return stepQueue.remove();
     }
 
     void addStep(final Step step) {
         // queue it up only if it's the first time we're trying to queue it up
         // otherwise bad things happen, see comment on seenSteps collection
-        if (this.seenSteps.add(step)) {
-          this.stepQueue.add(step);
+        if (seenSteps.add(step)) {
+          stepQueue.add(step);
         }
     }
 
     boolean stepsRemain() {
-        return !this.stepQueue.isEmpty();
+        return !stepQueue.isEmpty();
     }
 
     List<Object> getMatchedRules() {
-        return new ArrayList<>(this.rules);
+        return new ArrayList<>(rules);
     }
 
     void collectRules(final NameState nameState) {
-      this.rules.addAll(nameState.getRules());
+      rules.addAll(nameState.getRules());
     }
 }

@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 final class Constants {
 
   private Constants() {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException("You can't create instance of utility class.");
   }
 
   final static String EXACT_MATCH = "exactly";
