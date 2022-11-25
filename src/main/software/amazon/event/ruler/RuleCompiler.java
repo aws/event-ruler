@@ -33,7 +33,7 @@ public final class RuleCompiler {
     private static final JsonFactory JSON_FACTORY = new JsonFactory();
 
     private RuleCompiler() {
-      throw new UnsupportedOperationException();
+      throw new UnsupportedOperationException("You can't create instance of utility class.");
     }
 
     /**

@@ -1,5 +1,11 @@
 package software.amazon.event.ruler.input;
 
+/**
+ * Transforms UTF-8 formatted bytes into InputCharacter
+ *
+ * @see InputCharacter
+ *
+ */
 public interface ByteParser {
 
   /**
