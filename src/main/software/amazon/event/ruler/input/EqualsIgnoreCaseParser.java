@@ -4,7 +4,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
-import software.amazon.event.ruler.MatchType;
 
 /**
  * A parser to be used specifically for equals-ignore-case rules.
