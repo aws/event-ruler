@@ -4,8 +4,8 @@ import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
 
-import static software.amazon.event.ruler.input.Parser.NINE_BYTE;
-import static software.amazon.event.ruler.input.Parser.ZERO_BYTE;
+import static software.amazon.event.ruler.input.DefaultParser.NINE_BYTE;
+import static software.amazon.event.ruler.input.DefaultParser.ZERO_BYTE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
