@@ -1,5 +1,6 @@
 package software.amazon.event.ruler;
 
+import com.fasterxml.jackson.core.io.doubleparser.FastDoubleParser;
 import software.amazon.event.ruler.input.InputByte;
 import software.amazon.event.ruler.input.InputCharacter;
 import software.amazon.event.ruler.input.InputCharacterType;
@@ -18,7 +19,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.annotation.concurrent.ThreadSafe;
 
-import static com.fasterxml.jackson.core.io.NumberInput.parseDouble;
 import static software.amazon.event.ruler.CompoundByteTransition.coalesce;
 import static software.amazon.event.ruler.MatchType.EXACT;
 import static software.amazon.event.ruler.MatchType.EXISTS;
@@ -86,7 +86,7 @@ class ByteMachine {
         boolean fieldValueIsNumeric = false;
         if (hasNumeric.get() > 0) {
             try {
-                final double numerically = parseDouble(valString);
+                final double numerically = FastDoubleParser.parseDouble(valString);
                 valString = ComparableNumber.generate(numerically);
                 fieldValueIsNumeric = true;
             } catch (Exception e) {
