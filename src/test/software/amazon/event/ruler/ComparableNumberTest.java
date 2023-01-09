@@ -1,12 +1,12 @@
 package software.amazon.event.ruler;
 
-import com.fasterxml.jackson.core.io.doubleparser.FastDoubleParser;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import static org.junit.Assert.assertEquals;
@@ -138,47 +138,5 @@ public class ComparableNumberTest {
             m.deleteRule(r.getKey(), r.getValue());
         }
         assertTrue(m.isEmpty());
-    }
-
-    static String generateNew(String number) {
-        double f = FastDoubleParser.parseDouble(number);
-        return ComparableNumber.generate(f);
-    }
-
-    static String generateOriginal(String number) {
-        double f = Double.parseDouble(number);
-        return ComparableNumber.generate(f);
-    }
-    @Test()
-    public void benchmarkDoubleParsers() {
-        Random rand = new Random();
-        final String[] seeds = rand
-                .doubles(10_000_000, -Constants.FIVE_BILLION, Constants.FIVE_BILLION)
-                .mapToObj(Double::toString)
-                .toArray(String[]::new);
-
-        // check that there's no bug when converting (also maybe triggers any memory optimizations)
-        for(String seed : seeds) {
-
-            final String left = generateNew(seed);
-            final String right = generateOriginal(seed);
-            assertEquals(left, right);
-        }
-
-        // check for time in millis when converting all seed numbers to hex via proposed change
-        final Instant instant1 = Instant.now();
-        for(String seed : seeds) {
-            generateNew(seed);
-        }
-        final Instant instant2 = Instant.now();
-        System.out.println("fastDoubleParser.parseDouble exec time (ms) " + Duration.between(instant1, instant2).toMillis());
-
-        // check for time in millis when converting all seed numbers based on String.format
-        final Instant instant3 = Instant.now();
-        for(String seed : seeds) {
-            generateOriginal(seed);
-        }
-        final Instant instant4 = Instant.now();
-        System.out.println("Double.parseDouble exec time (ms) " + Duration.between(instant3, instant4).toMillis());
     }
 }
