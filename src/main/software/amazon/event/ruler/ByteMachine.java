@@ -1,5 +1,6 @@
 package software.amazon.event.ruler;
 
+import com.fasterxml.jackson.core.io.doubleparser.FastDoubleParser;
 import software.amazon.event.ruler.input.InputByte;
 import software.amazon.event.ruler.input.InputCharacter;
 import software.amazon.event.ruler.input.InputCharacterType;
@@ -85,7 +86,7 @@ class ByteMachine {
         boolean fieldValueIsNumeric = false;
         if (hasNumeric.get() > 0) {
             try {
-                final double numerically = Double.parseDouble(valString);
+                final double numerically = FastDoubleParser.parseDouble(valString);
                 valString = ComparableNumber.generate(numerically);
                 fieldValueIsNumeric = true;
             } catch (Exception e) {
