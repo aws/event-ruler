@@ -1278,6 +1278,29 @@ public class ACMachineTest {
     }
 
     @Test
+    public void testAnythingButSuffix() throws Exception {
+
+        String rule = "{\n" +
+                "\"a\": [ { \"anything-but\": {\"suffix\": \"$\"} } ]\n" +
+                "}";
+
+        Machine machine = new Machine();
+        machine.addRule("r1", rule);
+
+        String event1 = "{" +
+                "    \"a\": \"$value\"\n" +
+                "}\n";
+
+        String event2 = "{" +
+                "    \"a\": \"not$value\"\n" +
+                "}\n";
+
+        assertEquals(0, machine.rulesForJSONEvent(event1).size());
+        assertEquals(1, machine.rulesForJSONEvent(event2).size());
+
+    }
+
+    @Test
     public void testACWithExistFalseRule() throws Exception {
         // exists:false on leaf node of "interfaceName"
         String rule1 = "{\n" +

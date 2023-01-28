@@ -299,7 +299,8 @@ public final class RuleCompiler {
                     barf(parser, "Anything-But expression name not found");
                 }
                 final String anythingButObjectOp = parser.getCurrentName();
-                if (!Constants.PREFIX_MATCH.equals(anythingButObjectOp)) {
+                if (!Constants.PREFIX_MATCH.equals(anythingButObjectOp) &&
+                    !Constants.SUFFIX_MATCH.equals(anythingButObjectOp)) {
                     barf(parser, "Unsupported anything-but pattern: " + anythingButObjectOp);
                 }
                 final JsonToken anythingButPrefix = parser.nextToken();
