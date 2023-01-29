@@ -479,7 +479,7 @@ class ByteMachine {
                         case PREFIX:
                             transitionTo.add(match.getNextNameState());
                             break;
-
+                        case ANYTHING_BUT_SUFFIX:
                         case SUFFIX:
                         case EXISTS:
                             // we already harvested these matches via separate functions due to special matching
@@ -501,7 +501,6 @@ class ByteMachine {
                                 failedAnythingButs.add(match.getNextNameState());
                             }
                             break;
-                        case ANYTHING_BUT_SUFFIX:
                         case ANYTHING_BUT_PREFIX:
                             failedAnythingButs.add(match.getNextNameState());
                             break;
