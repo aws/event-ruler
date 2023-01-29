@@ -173,6 +173,16 @@ Anything-but prefix:
   }
 }
 ```
+
+Anything-but suffix:
+```javascript
+{
+  "detail": {
+    "instance-id": [ { "anything-but": { "suffix": "1234" } } ]
+  }
+}
+```
+
 ### Numeric matching
 ```javascript
 {

@@ -114,6 +114,9 @@ public class JsonRuleCompilerTest {
         j = "{\"a\": [ { \"anything-but\": { \"prefix\": \"foo\" } } ] }";
         assertNull("Good anything-but should parse", JsonRuleCompiler.check(j));
 
+        j = "{\"a\": [ { \"anything-but\": { \"suffix\": \"foo\" } } ] }";
+        assertNull("Good anything-but should parse", JsonRuleCompiler.check(j));
+
         j = "{\"a\": [ { \"exactly\": \"child\" } ] }";
         assertNull("Good exact-match should parse", JsonRuleCompiler.check(j));
 
@@ -152,6 +155,10 @@ public class JsonRuleCompilerTest {
                 "{\"a\": [ { \"anything-but\": { \"prefix\": \"\" } } ] }",
                 "{\"a\": [ { \"anything-but\": { \"prefix\": \"foo\", \"a\":1 } } ] }",
                 "{\"a\": [ { \"anything-but\": { \"prefix\": \"foo\" }, \"x\": 1 } ] }",
+                "{\"a\": [ { \"anything-but\": { \"suffix\": 27 } } ] }",
+                "{\"a\": [ { \"anything-but\": { \"suffix\": \"\" } } ] }",
+                "{\"a\": [ { \"anything-but\": { \"suffix\": \"foo\", \"a\":1 } } ] }",
+                "{\"a\": [ { \"anything-but\": { \"suffix\": \"foo\" }, \"x\": 1 } ] }",
                 "{\"a\": [ { \"equals-ignore-case\": 5 } ] }",
                 "{\"a\": [ { \"equals-ignore-case\": [ \"abc\" ] } ] }",
                 "{\"a\": [ { \"wildcard\": 5 } ] }",

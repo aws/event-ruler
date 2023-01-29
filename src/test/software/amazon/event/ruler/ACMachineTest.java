@@ -124,6 +124,11 @@ public class ACMachineTest {
                         "  \"detail\": {\n" +
                         "    \"state\": [ { \"anything-but\": { \"prefix\": \"init\" } } ]\n" +
                         "  }\n" +
+                        "}",
+                "{\n" +
+                        "  \"detail\": {\n" +
+                        "    \"instance-id\": [ { \"anything-but\": { \"suffix\": \"1234\" } } ]\n" +
+                        "  }\n" +
                         "}"
         };
 
@@ -1288,11 +1293,11 @@ public class ACMachineTest {
         machine.addRule("r1", rule);
 
         String event1 = "{" +
-                "    \"a\": \"$value\"\n" +
+                "    \"a\": \"value$\"\n" +
                 "}\n";
 
         String event2 = "{" +
-                "    \"a\": \"not$value\"\n" +
+                "    \"a\": \"notvalue\"\n" +
                 "}\n";
 
         assertEquals(0, machine.rulesForJSONEvent(event1).size());

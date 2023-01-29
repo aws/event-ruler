@@ -1765,6 +1765,15 @@ public class ByteMachineTest {
     }
 
     @Test
+    public void testWildcardWithAnythingButSuffixPatternEndsWithSuffix() {
+        String[] noMatches = new String[] { "going", "leaving", "ng", "gong" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.anythingButSuffix("ng"),
+                        "", "g", "gog", "x", "xx")
+        );
+    }
+
+    @Test
     public void testWildcardWithAnythingButPrefixPatternWildcardStartsWithHalfOfPrefix() {
         String[] noMatches = new String[] { "he", "hel", "hell", "hello", "hexxx" };
         testPatternPermutations(noMatches,
