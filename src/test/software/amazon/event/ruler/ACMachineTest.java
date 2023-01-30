@@ -1300,8 +1300,13 @@ public class ACMachineTest {
                 "    \"a\": \"notvalue\"\n" +
                 "}\n";
 
+        String event3 = "{" +
+                "    \"a\": \"$notvalue\"\n" +
+                "}\n";
+
         assertEquals(0, machine.rulesForJSONEvent(event1).size());
         assertEquals(1, machine.rulesForJSONEvent(event2).size());
+        assertEquals(1, machine.rulesForJSONEvent(event3).size());
 
     }
 
