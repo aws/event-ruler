@@ -408,7 +408,7 @@ public class JsonRuleCompiler {
                 }
                 final JsonToken anythingButParamType = parser.nextToken();
                 if (anythingButParamType != JsonToken.VALUE_STRING) {
-                    barf(parser, "prefix match pattern must be a string");
+                    barf(parser, "prefix/suffix match pattern must be a string");
                 }
                 final String text = parser.getText();
                 if (text.isEmpty()) {
