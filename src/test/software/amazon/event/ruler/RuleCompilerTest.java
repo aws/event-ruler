@@ -228,7 +228,7 @@ public class RuleCompilerTest {
                 "{ \"suffix\": \"child\" }," +
                 "{ \"anything-but\": [111,222,333]}," +
                 "{ \"anything-but\": { \"prefix\": \"foo\"}}," +
-                "{ \"anything-but\": { \"suffix\": \"oof\"}}" +
+                "{ \"anything-but\": { \"suffix\": \"ing\"}}" +
                 "]," +
                 "\"c2\": { \"d\": { \"e\": [" +
                 "{ \"exactly\": \"child\" }," +
@@ -248,7 +248,7 @@ public class RuleCompilerTest {
                 Patterns.suffixMatch("child\""),
                 Patterns.anythingButNumberMatch(Stream.of(111, 222, 333).map(Double::valueOf).collect(Collectors.toSet())),
                 Patterns.anythingButPrefix("\"foo"),
-                Patterns.anythingButSuffix("oof\"")
+                Patterns.anythingButSuffix("ing\"")
         ));
         expected.put(Arrays.asList("a2", "b", "c2", "d", "e"), Arrays.asList(
                 Patterns.exactMatch("\"child\""),
