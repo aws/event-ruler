@@ -121,6 +121,9 @@ public class Ruler {
                 }
                 return false;
 
+            case ANYTHING_BUT_SUFFIX:
+                valuePattern = (ValuePatterns) pattern;
+                return !(val.isTextual() && (val.asText() + '"').startsWith(valuePattern.pattern()));
             case ANYTHING_BUT_PREFIX:
                 valuePattern = (ValuePatterns) pattern;
                 return !(val.isTextual() && ('"' + val.asText()).startsWith(valuePattern.pattern()));

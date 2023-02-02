@@ -23,6 +23,8 @@ import static software.amazon.event.ruler.CompoundByteTransition.coalesce;
 import static software.amazon.event.ruler.MatchType.EXACT;
 import static software.amazon.event.ruler.MatchType.EXISTS;
 import static software.amazon.event.ruler.MatchType.SUFFIX;
+import static software.amazon.event.ruler.MatchType.ANYTHING_BUT_SUFFIX;
+
 import static software.amazon.event.ruler.input.MultiByte.MAX_FIRST_BYTE_FOR_ONE_BYTE_CHAR;
 import static software.amazon.event.ruler.input.MultiByte.MAX_FIRST_BYTE_FOR_TWO_BYTE_CHAR;
 import static software.amazon.event.ruler.input.MultiByte.MAX_NON_FIRST_BYTE;
@@ -135,6 +137,7 @@ class ByteMachine {
             case PREFIX:
             case SUFFIX:
             case ANYTHING_BUT_PREFIX:
+            case ANYTHING_BUT_SUFFIX:
             case EQUALS_IGNORE_CASE:
             case WILDCARD:
                 assert pattern instanceof ValuePatterns;
@@ -440,7 +443,7 @@ class ByteMachine {
         addExistenceMatch(transitionTo);
 
         // attempt to harvest the possible suffix match
-        addSuffixMatch(val, transitionTo);
+        addSuffixMatch(val, transitionTo, failedAnythingButs);
 
         if (startStateMatch != null) {
             transitionTo.add(startStateMatch.getNextNameState());
@@ -476,7 +479,7 @@ class ByteMachine {
                         case PREFIX:
                             transitionTo.add(match.getNextNameState());
                             break;
-
+                        case ANYTHING_BUT_SUFFIX:
                         case SUFFIX:
                         case EXISTS:
                             // we already harvested these matches via separate functions due to special matching
@@ -498,7 +501,6 @@ class ByteMachine {
                                 failedAnythingButs.add(match.getNextNameState());
                             }
                             break;
-
                         case ANYTHING_BUT_PREFIX:
                             failedAnythingButs.add(match.getNextNameState());
                             break;
@@ -551,7 +553,7 @@ class ByteMachine {
         }
     }
 
-    private void addSuffixMatch(final byte[] val, final Set<NameState> transitionTo) {
+    private void addSuffixMatch(final byte[] val, final Set<NameState> transitionTo, Set<NameState> failedAnythingButs) {
         // we only attempt to evaluate suffix matches when there is suffix match in current byte machine instance.
         // it works as performance level to avoid other type of matches from being affected by suffix checking.
         if (hasSuffix.get() > 0) {
@@ -562,8 +564,11 @@ class ByteMachine {
                 for (ByteMatch match : nextTrans.getMatches()) {
                     // given we are traversing in reverse order (from right to left), only suffix matches are eligible
                     // to be collected.
-                    if (match.getPattern().type() == SUFFIX) {
+                    MatchType patternType = match.getPattern().type();
+                    if (patternType == SUFFIX) {
                         transitionTo.add(match.getNextNameState());
+                    } else if(patternType == ANYTHING_BUT_SUFFIX) {
+                        failedAnythingButs.add(match.getNextNameState());
                     }
                 }
                 trans = nextTrans.getTransitionForNextByteStates();
@@ -614,6 +619,7 @@ class ByteMachine {
                 assert pattern instanceof AnythingBut;
                 return addAnythingButPattern((AnythingBut) pattern);
 
+            case ANYTHING_BUT_SUFFIX:
             case ANYTHING_BUT_PREFIX:
             case EXACT:
             case NUMERIC_EQ:
@@ -796,6 +802,7 @@ class ByteMachine {
         case NUMERIC_EQ:
         case PREFIX:
         case SUFFIX:
+        case ANYTHING_BUT_SUFFIX:
         case ANYTHING_BUT_PREFIX:
         case EQUALS_IGNORE_CASE:
         case WILDCARD:
@@ -1511,6 +1518,10 @@ class ByteMachine {
                 hasNumeric.incrementAndGet();
             }
             break;
+        case ANYTHING_BUT_SUFFIX:
+            hasSuffix.incrementAndGet();
+            anythingButs.add(match.getNextNameState());
+            break;
         case ANYTHING_BUT_PREFIX:
             anythingButs.add(match.getNextNameState());
             break;
@@ -1605,6 +1616,10 @@ class ByteMachine {
             if (((AnythingBut) pattern).isNumeric()) {
                 hasNumeric.decrementAndGet();
             }
+            break;
+        case ANYTHING_BUT_SUFFIX:
+            hasSuffix.decrementAndGet();
+            anythingButs.remove(match.getNextNameState());
             break;
         case ANYTHING_BUT_PREFIX:
             anythingButs.remove(match.getNextNameState());

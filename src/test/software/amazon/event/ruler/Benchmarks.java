@@ -297,6 +297,63 @@ public class Benchmarks {
     };
     private final int[] ANYTHING_BUT_MATCHES = { 211158, 210411, 96682, 120, 210615 };
 
+    private final String[] ANYTHING_BUT_PREFIX_RULES = {
+      "{\n" +
+              "  \"properties\": {\n" +
+              "    \"STREET\": [ { \"anything-but\": {\"prefix\": \"FULTO\" } } ]\n" +
+              "  }\n" +
+              "}",
+      "{\n" +
+              "  \"properties\": {\n" +
+              "    \"STREET\": [ { \"anything-but\": { \"prefix\": \"MASO\"} } ]\n" +
+              "  }\n" +
+              "}",
+      "{\n" +
+              "  \"properties\": {\n" +
+              "    \"ST_TYPE\": [ { \"anything-but\": {\"prefix\": \"S\"}  } ]\n" +
+              "  }\n" +
+              "}",
+      "{\n" +
+              "  \"geometry\": {\n" +
+              "    \"type\": [ {\"anything-but\": {\"prefix\": \"Poly\"} } ]\n" +
+              "  }\n" +
+              "}",
+      "{\n" +
+              "  \"properties\": {\n" +
+              "    \"FROM_ST\": [ { \"anything-but\": {\"prefix\": \"44\"} } ]\n" +
+              "  }\n" +
+              "}"
+    };
+    private final int[] ANYTHING_BUT_PREFIX_MATCHES = { 211158, 210118, 96667, 120, 209091 };
+
+    private final String[] ANYTHING_BUT_SUFFIX_RULES = {
+      "{\n" +
+              "  \"properties\": {\n" +
+              "    \"STREET\": [ { \"anything-but\": {\"suffix\": \"ULTON\" } } ]\n" +
+              "  }\n" +
+              "}",
+      "{\n" +
+              "  \"properties\": {\n" +
+              "    \"STREET\": [ { \"anything-but\": { \"suffix\": \"ASON\"} } ]\n" +
+              "  }\n" +
+              "}",
+      "{\n" +
+              "  \"properties\": {\n" +
+              "    \"ST_TYPE\": [ { \"anything-but\": {\"suffix\": \"T\"}  } ]\n" +
+              "  }\n" +
+              "}",
+      "{\n" +
+              "  \"geometry\": {\n" +
+              "    \"type\": [ {\"anything-but\": {\"suffix\": \"olygon\"} } ]\n" +
+              "  }\n" +
+              "}",
+      "{\n" +
+              "  \"properties\": {\n" +
+              "    \"FROM_ST\": [ { \"anything-but\": {\"suffix\": \"41\"} } ]\n" +
+              "  }\n" +
+              "}"
+    };
+    private final int[] ANYTHING_BUT_SUFFIX_MATCHES = { 211136, 210411, 94908, 0, 209055 };
 
     // This needs to be run with -Xms2g -Xmx2g (Dunno about the 2g but the same Xms and Xmx, and big enough
     //  to hold several copies of the 200M in citylots2
@@ -516,6 +573,18 @@ public class Benchmarks {
         bm.addRules(ANYTHING_BUT_RULES, ANYTHING_BUT_MATCHES);
         bm.run(citylots2);
         System.out.println("ANYTHING-BUT events/sec: " + String.format("%.1f", bm.getEPS()));
+
+        bm = new Benchmarker();
+
+        bm.addRules(ANYTHING_BUT_PREFIX_RULES, ANYTHING_BUT_PREFIX_MATCHES);
+        bm.run(citylots2);
+        System.out.println("ANYTHING-BUT-PREFIX events/sec: " + String.format("%.1f", bm.getEPS()));
+
+        bm = new Benchmarker();
+
+        bm.addRules(ANYTHING_BUT_SUFFIX_RULES, ANYTHING_BUT_SUFFIX_MATCHES);
+        bm.run(citylots2);
+        System.out.println("ANYTHING-BUT-SUFFIX events/sec: " + String.format("%.1f", bm.getEPS()));
 
         bm = new Benchmarker();
 

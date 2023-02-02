@@ -67,6 +67,51 @@ public class GenericMachineTest {
         }
     }
 
+    @Test
+    public void anythingButSuffixTest() throws Exception {
+        String event = "  {\n" +
+                "    \"a\": \"lorem\", " +
+                "    \"b\": \"ipsum\"" +
+                "  }";
+        String ruleTemplate = "{\n" +
+                "  \"a\": [ { \"anything-but\": { \"suffix\": \"FOO\" } } ]" +
+                "}";
+
+        String[] suffixes = { "m", "em", "rem", "orem", "lorem" };
+        List<String> ruleNames = new ArrayList<>();
+        Machine m = new Machine();
+        for (int i = 0; i < suffixes.length; i++) {
+            String ruleName = "r" + i;
+            ruleNames.add(ruleName);
+            String rule = ruleTemplate.replace("FOO", suffixes[i]);
+            m.addRule(ruleName, rule);
+        }
+        List<String> matches = m.rulesForJSONEvent(event);
+
+        assertEquals(0, matches.size());
+
+        String[] shouldMatch = { "run", "walk", "skip", "hop" };
+        for (String s : shouldMatch) {
+            String e = event.replace("lorem", s);
+            matches = m.rulesForJSONEvent(e);
+            assertEquals(ruleNames.size(), matches.size());
+            for (String rn : ruleNames) {
+                assertTrue(matches.contains(rn));
+            }
+        }
+
+        for (int i = 0; i < suffixes.length; i++) {
+            String ruleName = "r" + i;
+            String rule = ruleTemplate.replace("FOO", suffixes[i]);
+            m.deleteRule(ruleName, rule);
+        }
+        for (String s : shouldMatch) {
+            String e = event.replace("lorem", s);
+            matches = m.rulesForJSONEvent(e);
+            assertEquals(0, matches.size());
+        }
+    }
+
     public static String readData(String jsonName) throws Exception {
         String wd = System.getProperty("user.dir");
         Path path = FileSystems.getDefault().getPath(wd, "src", "test", "data", jsonName);

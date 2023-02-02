@@ -401,25 +401,30 @@ public class JsonRuleCompiler {
                     barf(parser, "Anything-But expression name not found");
                 }
                 final String anythingButObjectOp = parser.getCurrentName();
-                if (!Constants.PREFIX_MATCH.equals(anythingButObjectOp)) {
+                final boolean isPrefix = Constants.PREFIX_MATCH.equals(anythingButObjectOp);
+                final boolean isSuffix = Constants.SUFFIX_MATCH.equals(anythingButObjectOp);
+                if (!isPrefix && !isSuffix) {
                     barf(parser, "Unsupported anything-but pattern: " + anythingButObjectOp);
                 }
-                final JsonToken anythingButPrefix = parser.nextToken();
-                if (anythingButPrefix != JsonToken.VALUE_STRING) {
-                    barf(parser, "prefix match pattern must be a string");
+                final JsonToken anythingButParamType = parser.nextToken();
+                if (anythingButParamType != JsonToken.VALUE_STRING) {
+                    barf(parser, "prefix/suffix match pattern must be a string");
                 }
-                final String prefixText = parser.getText();
-                if (prefixText.isEmpty()) {
-                    barf(parser, "Null prefix not allowed");
-                }
-                final Patterns pattern = Patterns.anythingButPrefix('"' + prefixText); // note no trailing quote
-                if (parser.nextToken() != JsonToken.END_OBJECT) {
-                    barf(parser, "Only one key allowed in match expression");
+                final String text = parser.getText();
+                if (text.isEmpty()) {
+                    barf(parser, "Null prefix/suffix not allowed");
                 }
                 if (parser.nextToken() != JsonToken.END_OBJECT) {
                     barf(parser, "Only one key allowed in match expression");
                 }
-                return pattern;
+                if (parser.nextToken() != JsonToken.END_OBJECT) {
+                    barf(parser, "Only one key allowed in match expression");
+                }
+                if(isPrefix) {
+                    return  Patterns.anythingButPrefix('"' + text); // note no trailing quote
+                } else {
+                    return  Patterns.anythingButSuffix(text + '"'); // note no leading quote
+                }
             }
 
             if (anythingButExpressionToken != JsonToken.START_ARRAY &&

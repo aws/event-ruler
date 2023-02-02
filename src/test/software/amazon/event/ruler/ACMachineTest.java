@@ -124,6 +124,11 @@ public class ACMachineTest {
                         "  \"detail\": {\n" +
                         "    \"state\": [ { \"anything-but\": { \"prefix\": \"init\" } } ]\n" +
                         "  }\n" +
+                        "}",
+                "{\n" +
+                        "  \"detail\": {\n" +
+                        "    \"instance-id\": [ { \"anything-but\": { \"suffix\": \"1234\" } } ]\n" +
+                        "  }\n" +
                         "}"
         };
 
@@ -1275,6 +1280,34 @@ public class ACMachineTest {
         assertEquals(0, cut.rulesForJSONEvent(event).size());
         assertEquals(0, cut.rulesForJSONEvent(event1).size());
         assertTrue(cut.isEmpty());
+    }
+
+    @Test
+    public void testAnythingButSuffix() throws Exception {
+
+        String rule = "{\n" +
+                "\"a\": [ { \"anything-but\": {\"suffix\": \"$\"} } ]\n" +
+                "}";
+
+        Machine machine = new Machine();
+        machine.addRule("r1", rule);
+
+        String event1 = "{" +
+                "    \"a\": \"value$\"\n" +
+                "}\n";
+
+        String event2 = "{" +
+                "    \"a\": \"notvalue\"\n" +
+                "}\n";
+
+        String event3 = "{" +
+                "    \"a\": \"$notvalue\"\n" +
+                "}\n";
+
+        assertEquals(0, machine.rulesForJSONEvent(event1).size());
+        assertEquals(1, machine.rulesForJSONEvent(event2).size());
+        assertEquals(1, machine.rulesForJSONEvent(event3).size());
+
     }
 
     @Test

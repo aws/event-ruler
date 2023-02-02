@@ -73,6 +73,10 @@ public class Patterns implements Cloneable  {
         return new ValuePatterns(MatchType.ANYTHING_BUT_PREFIX, prefix);
     }
 
+    public static ValuePatterns anythingButSuffix(final String suffix) {
+        return new ValuePatterns(MatchType.ANYTHING_BUT_SUFFIX, new StringBuilder(suffix).reverse().toString());
+    }
+
     public static ValuePatterns numericEquals(final double val) {
         return new ValuePatterns(MatchType.NUMERIC_EQ, ComparableNumber.generate(val));
     }
