@@ -132,7 +132,7 @@ public class ACMachineTest {
                         "}",
                 "{\n" +
                         "  \"detail\": {\n" +
-                        "    \"instance-id\": [ { \"anything-but-ignore-case\": [\"i-00012345\", \"i-00098765\"] } ]\n" +
+                        "    \"state\": [ { \"anything-but-ignore-case\": [\"Stopped\", \"OverLoaded\"] } ]\n" +
                         "  }\n" +
                         "}"
         };
