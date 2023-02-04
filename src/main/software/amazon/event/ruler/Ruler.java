@@ -120,6 +120,13 @@ public class Ruler {
                             .noneMatch(v -> v.equals(ComparableNumber.generate(val.asDouble())));
                 }
                 return false;
+            case ANYTHING_BUT_IGNORE_CASE:
+                assert (pattern instanceof AnythingButIgnoreCase);
+                AnythingButIgnoreCase anythingButIgnoreCasePattern = (AnythingButIgnoreCase) pattern;
+                if (val.isTextual()) {
+                    return anythingButIgnoreCasePattern.getValues().stream().noneMatch(v -> v.equalsIgnoreCase('"' + val.asText() + '"'));
+                }
+                return false;
 
             case ANYTHING_BUT_SUFFIX:
                 valuePattern = (ValuePatterns) pattern;

@@ -61,6 +61,14 @@ public class Patterns implements Cloneable  {
         return new AnythingBut(anythingButs, false);
     }
 
+    public static AnythingButIgnoreCase anythingButIgnoreCaseMatch(final String anythingBut) {
+        return new AnythingButIgnoreCase(Collections.singleton(anythingBut));
+    }
+
+    public static AnythingButIgnoreCase anythingButIgnoreCaseMatch(final Set<String> anythingButs) {
+        return new AnythingButIgnoreCase(anythingButs);
+    }
+
     public static AnythingBut anythingButNumberMatch(final Set<Double> anythingButs) {
         Set<String> normalizedNumbers = new HashSet<>(anythingButs.size());
         for (Double d : anythingButs) {

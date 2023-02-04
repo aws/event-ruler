@@ -15,6 +15,7 @@ final class Constants {
   final static String PREFIX_MATCH = "prefix";
   final static String SUFFIX_MATCH = "suffix";
   final static String ANYTHING_BUT_MATCH = "anything-but";
+  final static String ANYTHING_BUT_IGNORE_CASE_MATCH = "anything-but-ignore-case";
   final static String EXISTS_MATCH = "exists";
   final static String WILDCARD = "wildcard";
   final static String NUMERIC = "numeric";
@@ -47,6 +48,7 @@ final class Constants {
       PREFIX_MATCH,
       SUFFIX_MATCH,
       ANYTHING_BUT_MATCH,
+      ANYTHING_BUT_IGNORE_CASE_MATCH,
       EXISTS_MATCH,
       WILDCARD,
       NUMERIC,

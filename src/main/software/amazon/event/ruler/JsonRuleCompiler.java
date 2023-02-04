@@ -390,10 +390,16 @@ public class JsonRuleCompiler {
                 tooManyElements(parser);
             }
             return range;
-        } else if (Constants.ANYTHING_BUT_MATCH.equals(matchTypeName)) {
+        } else if (Constants.ANYTHING_BUT_MATCH.equals(matchTypeName) ||
+                   Constants.ANYTHING_BUT_IGNORE_CASE_MATCH.equals(matchTypeName)) {
 
+            final boolean isIgnoreCase = Constants.ANYTHING_BUT_IGNORE_CASE_MATCH.equals(matchTypeName);
             final JsonToken anythingButExpressionToken = parser.nextToken();
             if (anythingButExpressionToken == JsonToken.START_OBJECT) {
+
+                if(isIgnoreCase) {
+                    barf(parser, "Anything-But-Ignore-Case does not support prefix/suffix");
+                }
 
                 // there are a limited set of things we can apply Anything-But to
                 final JsonToken anythingButObject = parser.nextToken();
@@ -437,9 +443,17 @@ public class JsonRuleCompiler {
 
             Patterns anythingBut;
             if (anythingButExpressionToken == JsonToken.START_ARRAY) {
-                anythingBut = processAnythingButListMatchExpression(parser);
+               if(isIgnoreCase) {
+                  anythingBut = processAnythingButIgnoreCaseListMatchExpression(parser);
+               } else {
+                  anythingBut = processAnythingButListMatchExpression(parser);
+               }
             } else {
-                anythingBut = processAnythingButMatchExpression(parser, anythingButExpressionToken);
+               if(isIgnoreCase) {
+                  anythingBut = processAnythingButIgnoreCaseMatchExpression(parser, anythingButExpressionToken);
+               } else {
+                  anythingBut = processAnythingButMatchExpression(parser, anythingButExpressionToken);
+               }
             }
 
             if (parser.nextToken() != JsonToken.END_OBJECT) {
@@ -517,6 +531,27 @@ public class JsonRuleCompiler {
         return AnythingBut.anythingButMatch(values, hasNumber);
     }
 
+    private static Patterns processAnythingButIgnoreCaseListMatchExpression(JsonParser parser) throws JsonParseException {
+        JsonToken token;
+        Set<String> values = new HashSet<>();
+        boolean hasNumber = false;
+        try {
+            while ((token = parser.nextToken()) != JsonToken.END_ARRAY) {
+                switch (token) {
+                    case VALUE_STRING:
+                        values.add('"' + parser.getText() + '"');
+                        break;
+                    default:
+                        barf(parser, "Inside anything but list, numberic|start|null|boolean is not supported.");
+                }
+            }
+        } catch (IllegalArgumentException | IOException e) {
+            barf(parser, e.getMessage());
+        }
+
+        return AnythingButIgnoreCase.anythingButIgnoreCaseMatch(values);
+    }
+
     private static Patterns processAnythingButMatchExpression(JsonParser parser,
                                                               JsonToken anythingButExpressionToken) throws IOException {
         Set<String> values = new HashSet<>();
@@ -534,6 +569,19 @@ public class JsonRuleCompiler {
                 barf(parser, "Inside anything-but list, start|null|boolean is not supported.");
         }
         return AnythingBut.anythingButMatch(values, hasNumber);
+    }
+
+    private static Patterns processAnythingButIgnoreCaseMatchExpression(JsonParser parser,
+                                                              JsonToken anythingButExpressionToken) throws IOException {
+        Set<String> values = new HashSet<>();
+        switch (anythingButExpressionToken) {
+            case VALUE_STRING:
+                values.add('"' + parser.getText() + '"');
+                break;
+            default:
+                barf(parser, "Inside anything-but-ignore-case list, number|start|null|boolean is not supported.");
+        }
+        return AnythingButIgnoreCase.anythingButIgnoreCaseMatch(values);
     }
 
     private static Patterns processNumericMatchExpression(final JsonParser parser) throws IOException {
