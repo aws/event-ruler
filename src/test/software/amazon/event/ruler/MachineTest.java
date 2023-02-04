@@ -1414,6 +1414,39 @@ public class MachineTest {
     }
 
     @Test
+    public void testAnythingButIgnoreCaseDeletion() throws Exception {
+        String rule = "{\n" +
+                "\"a\": [ { \"anything-but-ignore-case\": [ \"dad0\",\"dad1\",\"dad2\" ] } ],\n" +
+                "\"c\": [ { \"anything-but-ignore-case\": \"dad0\" } ],\n" +
+                "\"z\": [ { \"numeric\": [ \">\", 0, \"<\", 1 ] } ]\n" +
+                "}";
+        Machine cut = new Machine();
+    
+        // add the rule, ensure it matches
+        cut.addRule("r1", rule);
+        
+        String event = "{" +
+                "    \"a\": \"Child1\",\n" +
+                "    \"c\": \"chiLd1\",\n" +
+                "    \"z\": 0.001 \n" + 
+                "}\n";
+        String event1 = "{" +
+                "    \"a\": \"dAd4\",\n" +
+                "    \"c\": \"Child1\",\n" +
+                "    \"z\": 0.001 \n" +
+                "}\n";
+
+        assertEquals(1, cut.rulesForEvent(event).size());
+        assertEquals(1, cut.rulesForEvent(event1).size());
+
+        // delete partial rule 23, partial match
+        cut.deleteRule("r1", rule);
+        assertEquals(0, cut.rulesForEvent(event).size());
+        assertEquals(0, cut.rulesForEvent(event1).size());
+        assertTrue(cut.isEmpty());
+    }
+
+    @Test
     public void testIpExactMatch() throws Exception {
 
         String[] ipAddressesToBeMatched = {

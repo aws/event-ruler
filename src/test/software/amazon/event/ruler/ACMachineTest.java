@@ -129,6 +129,11 @@ public class ACMachineTest {
                         "  \"detail\": {\n" +
                         "    \"instance-id\": [ { \"anything-but\": { \"suffix\": \"1234\" } } ]\n" +
                         "  }\n" +
+                        "}",
+                "{\n" +
+                        "  \"detail\": {\n" +
+                        "    \"instance-id\": [ { \"anything-but-ignore-case\": [\"i-00012345\", \"i-00098765\"] } ]\n" +
+                        "  }\n" +
                         "}"
         };
 
@@ -1307,6 +1312,74 @@ public class ACMachineTest {
         assertEquals(0, machine.rulesForJSONEvent(event1).size());
         assertEquals(1, machine.rulesForJSONEvent(event2).size());
         assertEquals(1, machine.rulesForJSONEvent(event3).size());
+
+    }
+
+    @Test
+    public void testAnythingButIgnoreCase() throws Exception {
+
+        String rule = "{\n" +
+                "\"a\": [ { \"anything-but-ignore-case\": [\"yes\", \"please\"]  } ],\n" +
+                "\"b\": [ { \"anything-but-ignore-case\": \"no\"  } ]\n" +
+                "}";
+
+        Machine machine = new Machine();
+        machine.addRule("r1", rule);
+
+        String event1 = "{" +
+                "    \"a\": \"value\",\n" +
+                "    \"b\": \"nothing\"\n" +
+                "}\n";
+
+        String event2 = "{" +
+                "    \"a\": \"YES\",\n" +
+                "    \"b\": \"nothing\"\n" +
+                "}\n";
+
+        String event3 = "{" +
+                "    \"a\": \"yEs\",\n" +
+                "    \"b\": \"nothing\"\n" +
+                "}\n";
+
+        String event4 = "{" +
+                "    \"a\": \"pLease\",\n" +
+                "    \"b\": \"nothing\"\n" +
+                "}\n";
+
+        String event5 = "{" +
+                "    \"a\": \"PLEASE\",\n" +
+                "    \"b\": \"nothing\"\n" +
+                "}\n";
+
+        String event6 = "{" +
+                "    \"a\": \"please\",\n" +
+                "    \"b\": \"nothing\"\n" +
+                "}\n";
+
+        String event7 = "{" +
+                "    \"a\": \"please\",\n" +
+                "    \"b\": \"no\"\n" +
+                "}\n";
+
+        String event8 = "{" +
+                "    \"a\": \"please\",\n" +
+                "    \"b\": \"No\"\n" +
+                "}\n";
+
+        String event9 = "{" +
+                "    \"a\": \"please\",\n" +
+                "    \"b\": \"No!\"\n" +
+                "}\n";
+
+        assertEquals(1, machine.rulesForJSONEvent(event1).size());
+        assertEquals(0, machine.rulesForJSONEvent(event2).size());
+        assertEquals(0, machine.rulesForJSONEvent(event3).size());
+        assertEquals(0, machine.rulesForJSONEvent(event4).size());
+        assertEquals(0, machine.rulesForJSONEvent(event5).size());
+        assertEquals(0, machine.rulesForJSONEvent(event6).size());
+        assertEquals(0, machine.rulesForJSONEvent(event7).size());
+        assertEquals(0, machine.rulesForJSONEvent(event8).size());
+        assertEquals(0, machine.rulesForJSONEvent(event9).size());
 
     }
 
