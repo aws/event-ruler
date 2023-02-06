@@ -1416,8 +1416,8 @@ public class MachineTest {
     @Test
     public void testAnythingButIgnoreCaseDeletion() throws Exception {
         String rule = "{\n" +
-                "\"a\": [ { \"anything-but-ignore-case\": [ \"dad0\",\"dad1\",\"dad2\" ] } ],\n" +
-                "\"c\": [ { \"anything-but-ignore-case\": \"dad0\" } ],\n" +
+                "\"a\": [ { \"anything-but\": {\"ignore-case\": [ \"dad0\",\"dad1\",\"dad2\" ] } } ],\n" +
+                "\"c\": [ { \"anything-but\": {\"ignore-case\": \"dad0\" } } ],\n" +
                 "\"z\": [ { \"numeric\": [ \">\", 0, \"<\", 1 ] } ]\n" +
                 "}";
         Machine cut = new Machine();

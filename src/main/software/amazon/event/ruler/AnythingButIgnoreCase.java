@@ -5,7 +5,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Represents denylist like rule: any value matches if it's *not* in the anything-but-ignore-case list.
+ * Represents denylist like rule: any value matches if it's *not* in the anything-but/ignore-case list.
  * It supports lists whose members must be all strings.
  * Matching is case-insensitive
  */

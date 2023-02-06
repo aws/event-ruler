@@ -300,27 +300,27 @@ public class Benchmarks {
     private final String[] ANYTHING_BUT_IGNORE_CASE_RULES = {
       "{\n" +
               "  \"properties\": {\n" +
-              "    \"STREET\": [ { \"anything-but-ignore-case\": [ \"Fulton\" ] } ]\n" +
+              "    \"STREET\": [ { \"anything-but\": {\"ignore-case\": [ \"Fulton\" ] } } ]\n" +
               "  }\n" +
               "}", 
       "{\n" +
               "  \"properties\": {\n" +
-              "    \"STREET\": [ { \"anything-but-ignore-case\": [ \"Mason\" ] } ]\n" + 
+              "    \"STREET\": [ { \"anything-but\": {\"ignore-case\": [ \"Mason\" ] } } ]\n" + 
               "  }\n" +
               "}",
       "{\n" +
               "  \"properties\": {\n" +
-              "    \"ST_TYPE\": [ { \"anything-but-ignore-case\": [ \"st\" ] } ]\n" +
+              "    \"ST_TYPE\": [ { \"anything-but\": {\"ignore-case\": [ \"st\" ] } } ]\n" +
               "  }\n" +
               "}",
       "{\n" +
               "  \"geometry\": {\n" +
-              "    \"type\": [ {\"anything-but-ignore-case\": [ \"polygon\" ] } ]\n" +
+              "    \"type\": [ {\"anything-but\": {\"ignore-case\": [ \"polygon\" ] } } ]\n" +
               "  }\n" +
               "}",
       "{\n" +
               "  \"properties\": {\n" +
-              "    \"FROM_ST\": [ { \"anything-but-ignore-case\": [ \"441\" ] } ]\n" +
+              "    \"FROM_ST\": [ { \"anything-but\": {\"ignore-case\": [ \"441\" ] } } ]\n" +
               "  }\n" +  
               "}"   
     };              

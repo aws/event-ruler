@@ -132,7 +132,7 @@ public class ACMachineTest {
                         "}",
                 "{\n" +
                         "  \"detail\": {\n" +
-                        "    \"state\": [ { \"anything-but-ignore-case\": [\"Stopped\", \"OverLoaded\"] } ]\n" +
+                        "    \"state\": [ { \"anything-but\": {\"ignore-case\": [\"Stopped\", \"OverLoaded\"] } } ]\n" +
                         "  }\n" +
                         "}"
         };
@@ -1319,8 +1319,8 @@ public class ACMachineTest {
     public void testAnythingButIgnoreCase() throws Exception {
 
         String rule = "{\n" +
-                "\"a\": [ { \"anything-but-ignore-case\": [\"yes\", \"please\"]  } ],\n" +
-                "\"b\": [ { \"anything-but-ignore-case\": \"no\"  } ]\n" +
+                "\"a\": [ { \"anything-but\": {\"ignore-case\": [\"yes\", \"please\"]  } } ],\n" +
+                "\"b\": [ { \"anything-but\": {\"ignore-case\": \"no\"  } } ]\n" +
                 "}";
 
         Machine machine = new Machine();
