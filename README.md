@@ -187,7 +187,7 @@ Anything-but-ignore-case list (strings):
 ```javascript
 {
   "detail": {
-    "state": [ { "anything-but-ignore-case": [ "Stopped", "OverLoaded" ] } ]
+    "state": [ { "anything-but": {"ignore-case": [ "Stopped", "OverLoaded" ] } } ]
   }
 }
 
