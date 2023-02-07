@@ -294,9 +294,6 @@ public final class RuleCompiler {
             JsonToken anythingButExpressionToken = parser.nextToken();
             if (anythingButExpressionToken == JsonToken.START_OBJECT) {
 
-                if(isIgnoreCase) {
-                    barf(parser, "Anything-But-Ignore-Case does not support prefix/suffix");
-                }
                 // there are a limited set of things we can apply Anything-But to
                 final JsonToken anythingButObject = parser.nextToken();
                 if (anythingButObject != JsonToken.FIELD_NAME) {
@@ -330,6 +327,7 @@ public final class RuleCompiler {
                        return Patterns.anythingButSuffix(text + '"'); // note no leading quote
                     }
                 } else {
+                    // Step into the anything-but's ignore-case
                     anythingButExpressionToken = parser.nextToken();
                 }
 
@@ -449,7 +447,7 @@ public final class RuleCompiler {
                         values.add('"' + parser.getText() + '"');
                         break;
                     default:
-                        barf(parser, "Inside anything but list, numberic|start|null|boolean is not supported.");
+                        barf(parser, "Inside anything-but/ignore-case list, nummeric|start|null|boolean is not supported.");
                 }
             }
         } catch (IllegalArgumentException | IOException e) {
