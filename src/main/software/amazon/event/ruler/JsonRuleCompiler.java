@@ -429,6 +429,7 @@ public class JsonRuleCompiler {
                         return  Patterns.anythingButSuffix(text + '"'); // note no leading quote
                     }
                 } else {
+                    // Step into anything-but's ignore-case
                     anythingButExpressionToken = parser.nextToken();
                 }
             }
