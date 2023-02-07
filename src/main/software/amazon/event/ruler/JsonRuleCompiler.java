@@ -396,10 +396,6 @@ public class JsonRuleCompiler {
             JsonToken anythingButExpressionToken = parser.nextToken();
             if (anythingButExpressionToken == JsonToken.START_OBJECT) {
 
-                if(isIgnoreCase) {
-                    barf(parser, "Anything-But-Ignore-Case does not support prefix/suffix");
-                }
-
                 // there are a limited set of things we can apply Anything-But to
                 final JsonToken anythingButObject = parser.nextToken();
                 if (anythingButObject != JsonToken.FIELD_NAME) {
