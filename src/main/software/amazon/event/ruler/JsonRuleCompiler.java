@@ -548,7 +548,7 @@ public class JsonRuleCompiler {
                         values.add('"' + parser.getText() + '"');
                         break;
                     default:
-                        barf(parser, "Inside anything-but/equals-ignore-case list, numberic|start|null|boolean is not supported.");
+                        barf(parser, "Inside anything-but/equals-ignore-case list, number|start|null|boolean is not supported.");
                 }
             }
         } catch (IllegalArgumentException | IOException e) {
