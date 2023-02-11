@@ -404,7 +404,7 @@ public class JsonRuleCompiler {
                 final String anythingButObjectOp = parser.getCurrentName();
                 final boolean isPrefix = Constants.PREFIX_MATCH.equals(anythingButObjectOp);
                 final boolean isSuffix = Constants.SUFFIX_MATCH.equals(anythingButObjectOp);
-                isIgnoreCase = Constants.IGNORE_CASE_MATCH.equals(anythingButObjectOp);
+                isIgnoreCase = Constants.EQUALS_IGNORE_CASE.equals(anythingButObjectOp);
                 if(!isIgnoreCase) {
                     if (!isPrefix && !isSuffix) {
                         barf(parser, "Unsupported anything-but pattern: " + anythingButObjectOp);
@@ -429,7 +429,7 @@ public class JsonRuleCompiler {
                         return  Patterns.anythingButSuffix(text + '"'); // note no leading quote
                     }
                 } else {
-                    // Step into anything-but's ignore-case
+                    // Step into anything-but's equals-ignore-case
                     anythingButExpressionToken = parser.nextToken();
                 }
             }
@@ -460,7 +460,7 @@ public class JsonRuleCompiler {
             if (parser.nextToken() != JsonToken.END_OBJECT) {
                 tooManyElements(parser);
             }
-            // Complete the object closure for ignore-case
+            // Complete the object closure for equals-ignore-case
             if (isIgnoreCase && parser.nextToken() != JsonToken.END_OBJECT) {
                 tooManyElements(parser);
             }
@@ -548,7 +548,7 @@ public class JsonRuleCompiler {
                         values.add('"' + parser.getText() + '"');
                         break;
                     default:
-                        barf(parser, "Inside anything-but/ignore-case list, numberic|start|null|boolean is not supported.");
+                        barf(parser, "Inside anything-but/equals-ignore-case list, numberic|start|null|boolean is not supported.");
                 }
             }
         } catch (IllegalArgumentException | IOException e) {
@@ -585,7 +585,7 @@ public class JsonRuleCompiler {
                 values.add('"' + parser.getText() + '"');
                 break;
             default:
-                barf(parser, "Inside anything-but/ignore-case list, number|start|null|boolean is not supported.");
+                barf(parser, "Inside anything-but/equals-ignore-case list, number|start|null|boolean is not supported.");
         }
         return AnythingButIgnoreCase.anythingButIgnoreCaseMatch(values);
     }

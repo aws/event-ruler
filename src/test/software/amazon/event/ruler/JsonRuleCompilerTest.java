@@ -117,10 +117,10 @@ public class JsonRuleCompilerTest {
         j = "{\"a\": [ { \"anything-but\": { \"suffix\": \"foo\" } } ] }";
         assertNull("Good anything-but should parse", JsonRuleCompiler.check(j));
 
-        j = "{\"a\": [ { \"anything-but\": {\"ignore-case\": \"rule\" } } ] }";
+        j = "{\"a\": [ { \"anything-but\": {\"equals-ignore-case\": \"rule\" } } ] }";
         assertNull("Good anything-but/ignore-case should parse", JsonRuleCompiler.check(j));
 
-        j = "{\"a\": [ { \"anything-but\": {\"ignore-case\": [\"abc\", \"123\"] } } ] }";
+        j = "{\"a\": [ { \"anything-but\": {\"equals-ignore-case\": [\"abc\", \"123\"] } } ] }";
         assertNull("Good anything-but/ignore-case should parse", JsonRuleCompiler.check(j));
 
 
@@ -166,8 +166,8 @@ public class JsonRuleCompilerTest {
                 "{\"a\": [ { \"anything-but\": { \"suffix\": \"\" } } ] }",
                 "{\"a\": [ { \"anything-but\": { \"suffix\": \"foo\", \"a\":1 } } ] }",
                 "{\"a\": [ { \"anything-but\": { \"suffix\": \"foo\" }, \"x\": 1 } ] }",
-                "{\"a\": [ { \"anything-but\" : { \"ignore-case\": [1, 2 3] } } ] }",
-                "{\"a\": [ { \"anything-but\": {\"ignore-case\": [1, 2, 3] } } ] }", // no numbers
+                "{\"a\": [ { \"anything-but\" : { \"equals-ignore-case\": [1, 2 3] } } ] }",
+                "{\"a\": [ { \"anything-but\": {\"equals-ignore-case\": [1, 2, 3] } } ] }", // no numbers
                 "{\"a\": [ { \"equals-ignore-case\": 5 } ] }",
                 "{\"a\": [ { \"equals-ignore-case\": [ \"abc\" ] } ] }",
                 "{\"a\": [ { \"wildcard\": 5 } ] }",

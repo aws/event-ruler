@@ -302,7 +302,7 @@ public final class RuleCompiler {
                 final String anythingButObjectOp = parser.getCurrentName();
                 final boolean isPrefix = Constants.PREFIX_MATCH.equals(anythingButObjectOp);
                 final boolean isSuffix = Constants.SUFFIX_MATCH.equals(anythingButObjectOp);
-                isIgnoreCase = Constants.IGNORE_CASE_MATCH.equals(anythingButObjectOp);
+                isIgnoreCase = Constants.EQUALS_IGNORE_CASE.equals(anythingButObjectOp);
                 if(!isIgnoreCase) {
                     if (!isPrefix && !isSuffix) {
                         barf(parser, "Unsupported anything-but pattern: " + anythingButObjectOp);

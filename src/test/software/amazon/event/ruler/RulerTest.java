@@ -401,8 +401,8 @@ public class RulerTest {
                 "\"z\": [ { \"numeric\": [ \">\", 0, \"<\", 1 ] } ],\n" +
                 "\"w\": [ { \"anything-but\": { \"prefix\": \"zax\" } } ],\n" +
                 "\"n\": [ { \"anything-but\": { \"suffix\": \"ing\" } } ],\n" +
-                "\"o\": [ { \"anything-but\": {\"ignore-case\": \"CamelCase\" } } ],\n" +
-                "\"p\": [ { \"anything-but\": {\"ignore-case\": [\"CamelCase\", \"AbC\"] } } ]\n" +
+                "\"o\": [ { \"anything-but\": {\"equals-ignore-case\": \"CamelCase\" } } ],\n" +
+                "\"p\": [ { \"anything-but\": {\"equals-ignore-case\": [\"CamelCase\", \"AbC\"] } } ]\n" +
                 "}";
 
         String[] events = {
