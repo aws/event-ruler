@@ -344,13 +344,13 @@ public final class RuleCompiler {
             Patterns anythingBut;
             if (anythingButExpressionToken == JsonToken.START_ARRAY) {
                 if(isIgnoreCase) {
-                   anythingBut = processAnythingButIgnoreCaseListMatchExpression(parser);
+                   anythingBut = processAnythingButEqualsIgnoreCaseListMatchExpression(parser);
                 } else {
                    anythingBut = processAnythingButListMatchExpression(parser);
                 }
             } else {
                 if(isIgnoreCase) {
-                   anythingBut = processAnythingButIgnoreCaseMatchExpression(parser, anythingButExpressionToken);
+                   anythingBut = processAnythingButEqualsIgnoreCaseMatchExpression(parser, anythingButExpressionToken);
                 } else {
                    anythingBut = processAnythingButMatchExpression(parser, anythingButExpressionToken);
                 }
@@ -436,7 +436,7 @@ public final class RuleCompiler {
         return AnythingBut.anythingButMatch(values, hasNumber);
     }
 
-    private static Patterns processAnythingButIgnoreCaseListMatchExpression(JsonParser parser) throws JsonParseException {
+    private static Patterns processAnythingButEqualsIgnoreCaseListMatchExpression(JsonParser parser) throws JsonParseException {
         JsonToken token;
         Set<String> values = new HashSet<>();
         boolean hasNumber = false;
@@ -454,7 +454,7 @@ public final class RuleCompiler {
             barf(parser, e.getMessage());
         }
 
-        return AnythingButIgnoreCase.anythingButIgnoreCaseMatch(values);
+        return AnythingButEqualsIgnoreCase.anythingButIgnoreCaseMatch(values);
     }
 
 
@@ -477,7 +477,7 @@ public final class RuleCompiler {
         return AnythingBut.anythingButMatch(values, hasNumber);
     }
 
-    private static Patterns processAnythingButIgnoreCaseMatchExpression(JsonParser parser,
+    private static Patterns processAnythingButEqualsIgnoreCaseMatchExpression(JsonParser parser,
                                                               JsonToken anythingButExpressionToken) throws IOException {
         Set<String> values = new HashSet<>();
         switch (anythingButExpressionToken) {
@@ -487,7 +487,7 @@ public final class RuleCompiler {
             default:
                 barf(parser, "Inside anything-but/ignore-case list, number|start|null|boolean is not supported.");
         }
-        return AnythingButIgnoreCase.anythingButIgnoreCaseMatch(values);
+        return AnythingButEqualsIgnoreCase.anythingButIgnoreCaseMatch(values);
     }
 
     private static Patterns processNumericMatchExpression(final JsonParser parser) throws IOException {

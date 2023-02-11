@@ -133,8 +133,8 @@ class ByteMachine {
                 deleteAnythingButPattern((AnythingBut) pattern);
                 break;
             case ANYTHING_BUT_IGNORE_CASE:
-                assert pattern instanceof AnythingButIgnoreCase;
-                deleteAnythingButIgnoreCasePattern((AnythingButIgnoreCase) pattern);
+                assert pattern instanceof AnythingButEqualsIgnoreCase;
+                deleteAnythingButEqualsIgnoreCasePattern((AnythingButEqualsIgnoreCase) pattern);
                 break;
             case EXACT:
             case NUMERIC_EQ:
@@ -165,7 +165,7 @@ class ByteMachine {
             deleteMatchStep(startState, 0, pattern, getParser().parse(pattern.type(), value)));
     }
 
-    private void deleteAnythingButIgnoreCasePattern(AnythingButIgnoreCase pattern) {
+    private void deleteAnythingButEqualsIgnoreCasePattern(AnythingButEqualsIgnoreCase pattern) {
         pattern.getValues().forEach(value ->
             deleteMatchStep(startState, 0, pattern, getParser().parse(pattern.type(), value)));
     }
@@ -634,8 +634,8 @@ class ByteMachine {
                 assert pattern instanceof AnythingBut;
                 return addAnythingButPattern((AnythingBut) pattern);
             case ANYTHING_BUT_IGNORE_CASE:
-                assert pattern instanceof AnythingButIgnoreCase;
-                return addAnythingButIgnoreCasePattern((AnythingButIgnoreCase) pattern);
+                assert pattern instanceof AnythingButEqualsIgnoreCase;
+                return addAnythingButEqualsIgnoreCasePattern((AnythingButEqualsIgnoreCase) pattern);
 
             case ANYTHING_BUT_SUFFIX:
             case ANYTHING_BUT_PREFIX:
@@ -676,7 +676,7 @@ class ByteMachine {
         return nameStateToBeReturned;
     }
 
-    private NameState addAnythingButIgnoreCasePattern(AnythingButIgnoreCase pattern) {
+    private NameState addAnythingButEqualsIgnoreCasePattern(AnythingButEqualsIgnoreCase pattern) {
 
         NameState nameStateToBeReturned = null;
         NameState nameStateChecker = null;
@@ -834,8 +834,8 @@ class ByteMachine {
             assert pattern instanceof AnythingBut;
             return findAnythingButPattern((AnythingBut) pattern);
         case ANYTHING_BUT_IGNORE_CASE:
-            assert pattern instanceof AnythingButIgnoreCase;
-            return findAnythingButIgnoreCasePattern((AnythingButIgnoreCase) pattern);
+            assert pattern instanceof AnythingButEqualsIgnoreCase;
+            return findAnythingButEqualsIgnoreCasePattern((AnythingButEqualsIgnoreCase) pattern);
         case EXACT:
         case NUMERIC_EQ:
         case PREFIX:
@@ -869,7 +869,7 @@ class ByteMachine {
         return null;
     }
 
-    private NameState findAnythingButIgnoreCasePattern(AnythingButIgnoreCase pattern) {
+    private NameState findAnythingButEqualsIgnoreCasePattern(AnythingButEqualsIgnoreCase pattern) {
 
         Set<NameState> nextNameStates = new HashSet<>(pattern.getValues().size());
         for (String value : pattern.getValues()) {

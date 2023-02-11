@@ -121,8 +121,8 @@ public class Ruler {
                 }
                 return false;
             case ANYTHING_BUT_IGNORE_CASE:
-                assert (pattern instanceof AnythingButIgnoreCase);
-                AnythingButIgnoreCase anythingButIgnoreCasePattern = (AnythingButIgnoreCase) pattern;
+                assert (pattern instanceof AnythingButEqualsIgnoreCase);
+                AnythingButEqualsIgnoreCase anythingButIgnoreCasePattern = (AnythingButEqualsIgnoreCase) pattern;
                 if (val.isTextual()) {
                     return anythingButIgnoreCasePattern.getValues().stream().noneMatch(v -> v.equalsIgnoreCase('"' + val.asText() + '"'));
                 }

@@ -9,11 +9,11 @@ import java.util.Set;
  * It supports lists whose members must be all strings.
  * Matching is case-insensitive
  */
-public class AnythingButIgnoreCase extends Patterns {
+public class AnythingButEqualsIgnoreCase extends Patterns {
 
     private final Set<String> values;
 
-    AnythingButIgnoreCase(final Set<String> values) {
+    AnythingButEqualsIgnoreCase(final Set<String> values) {
         super(MatchType.ANYTHING_BUT_IGNORE_CASE);
         this.values = Collections.unmodifiableSet(values);
     }
@@ -34,7 +34,7 @@ public class AnythingButIgnoreCase extends Patterns {
             return false;
         }
 
-        AnythingButIgnoreCase that = (AnythingButIgnoreCase) o;
+        AnythingButEqualsIgnoreCase that = (AnythingButEqualsIgnoreCase) o;
 
         return (Objects.equals(values, that.values));
     }

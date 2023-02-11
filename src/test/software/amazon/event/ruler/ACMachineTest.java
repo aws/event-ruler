@@ -1316,7 +1316,7 @@ public class ACMachineTest {
     }
 
     @Test
-    public void testAnythingButIgnoreCase() throws Exception {
+    public void testAnythingButEqualsIgnoreCase() throws Exception {
 
         String rule = "{\n" +
                 "\"a\": [ { \"anything-but\": {\"equals-ignore-case\": [\"yes\", \"please\"]  } } ],\n" +

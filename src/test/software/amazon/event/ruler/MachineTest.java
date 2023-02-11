@@ -1414,7 +1414,7 @@ public class MachineTest {
     }
 
     @Test
-    public void testAnythingButIgnoreCaseDeletion() throws Exception {
+    public void testAnythingButEqualsIgnoreCaseDeletion() throws Exception {
         String rule = "{\n" +
                 "\"a\": [ { \"anything-but\": {\"equals-ignore-case\": [ \"dad0\",\"dad1\",\"dad2\" ] } } ],\n" +
                 "\"c\": [ { \"anything-but\": {\"equals-ignore-case\": \"dad0\" } } ],\n" +
