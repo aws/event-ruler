@@ -447,7 +447,7 @@ public final class RuleCompiler {
                         values.add('"' + parser.getText() + '"');
                         break;
                     default:
-                        barf(parser, "Inside anything-but/ignore-case list, nummeric|start|null|boolean is not supported.");
+                        barf(parser, "Inside anything-but/ignore-case list, number|start|null|boolean is not supported.");
                 }
             }
         } catch (IllegalArgumentException | IOException e) {
