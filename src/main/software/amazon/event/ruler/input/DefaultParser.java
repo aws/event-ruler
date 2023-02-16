@@ -5,6 +5,7 @@ import software.amazon.event.ruler.MatchType;
 import java.nio.charset.StandardCharsets;
 
 import static software.amazon.event.ruler.MatchType.EQUALS_IGNORE_CASE;
+import static software.amazon.event.ruler.MatchType.ANYTHING_BUT_IGNORE_CASE;
 import static software.amazon.event.ruler.MatchType.WILDCARD;
 
 /**
@@ -53,7 +54,7 @@ public class DefaultParser implements MatchTypeParser, ByteParser {
     public InputCharacter[] parse(final MatchType type, final String value) {
         if (type == WILDCARD) {
             return wildcardParser.parse(value);
-        } else if (type == EQUALS_IGNORE_CASE) {
+        } else if (type == EQUALS_IGNORE_CASE || type == ANYTHING_BUT_IGNORE_CASE) {
             return equalsIgnoreCaseParser.parse(value);
         }
         final byte[] utf8bytes = value.getBytes(StandardCharsets.UTF_8);

@@ -399,7 +399,10 @@ public class RulerTest {
                 "\"c\": [ { \"anything-but\": \"zdd\" } ],\n" +
                 "\"d\": [ { \"anything-but\": 444 } ],\n" +
                 "\"z\": [ { \"numeric\": [ \">\", 0, \"<\", 1 ] } ],\n" +
-                "\"w\": [ { \"anything-but\": { \"prefix\": \"zax\" } } ]\n" +
+                "\"w\": [ { \"anything-but\": { \"prefix\": \"zax\" } } ],\n" +
+                "\"n\": [ { \"anything-but\": { \"suffix\": \"ing\" } } ],\n" +
+                "\"o\": [ { \"anything-but\": {\"equals-ignore-case\": \"CamelCase\" } } ],\n" +
+                "\"p\": [ { \"anything-but\": {\"equals-ignore-case\": [\"CamelCase\", \"AbC\"] } } ]\n" +
                 "}";
 
         String[] events = {
@@ -409,7 +412,10 @@ public class RulerTest {
                         "    \"c\": \"child1\",\n" +
                         "    \"d\": 123,\n" +
                         "    \"w\": \"xaz\",\n" +
-                        "    \"z\": 0.001 \n" +
+                        "    \"z\": 0.001, \n" +
+                        "    \"n\": \"nomatch\", \n" +
+                        "    \"o\": \"nomatch\", \n" +
+                        "    \"p\": \"nomatch\" \n" +
                         "}\n",
                 "{" +
                         "    \"a\": \"dad789\",\n" +
@@ -417,7 +423,10 @@ public class RulerTest {
                         "    \"c\": \"zdd\",\n" +
                         "    \"d\": 123,\n" +
                         "    \"w\": \"xaz\",\n" +
-                        "    \"z\": 0.001 \n" +
+                        "    \"z\": 0.001, \n" +
+                        "    \"n\": \"nomatch\", \n" +
+                        "    \"o\": \"nomatch\", \n" +
+                        "    \"p\": \"nomatch\" \n" +
                         "}\n",
                 "{" +
                         "    \"a\": \"dad789\",\n" +
@@ -425,7 +434,10 @@ public class RulerTest {
                         "    \"c\": \"child1\",\n" +
                         "    \"d\": 123,\n" +
                         "    \"w\": \"xaz\",\n" +
-                        "    \"z\": 1.01 \n" +
+                        "    \"z\": 1.01, \n" +
+                        "    \"n\": \"nomatch\", \n" +
+                        "    \"o\": \"nomatch\", \n" +
+                        "    \"p\": \"nomatch\" \n" +
                         "}\n",
                 "{" +
                         "    \"a\": \"dad1\",\n" +
@@ -433,7 +445,10 @@ public class RulerTest {
                         "    \"c\": \"child1\",\n" +
                         "    \"d\": 123,\n" +
                         "    \"w\": \"xaz\",\n" +
-                        "    \"z\": 0.001 \n" +
+                        "    \"z\": 0.001, \n" +
+                        "    \"n\": \"nomatch\", \n" +
+                        "    \"o\": \"nomatch\", \n" +
+                        "    \"p\": \"nomatch\" \n" +
                         "}\n",
                 "{" +
                         "    \"a\": \"abc\",\n" +
@@ -441,7 +456,10 @@ public class RulerTest {
                         "    \"c\": \"child1\",\n" +
                         "    \"d\": 123,\n" +
                         "    \"w\": \"xaz\",\n" +
-                        "    \"z\": 0.001 \n" +
+                        "    \"z\": 0.001, \n" +
+                        "    \"n\": \"nomatch\", \n" +
+                        "    \"o\": \"nomatch\", \n" +
+                        "    \"p\": \"nomatch\" \n" +
                         "}\n",
                 "{" +
                         "    \"a\": \"dad1\",\n" +
@@ -449,7 +467,10 @@ public class RulerTest {
                         "    \"c\": \"child1\",\n" +
                         "    \"d\": 123,\n" +
                         "    \"w\": \"xaz\",\n" +
-                        "    \"z\": 0.001 \n" +
+                        "    \"z\": 0.001, \n" +
+                        "    \"n\": \"nomatch\", \n" +
+                        "    \"o\": \"nomatch\", \n" +
+                        "    \"p\": \"nomatch\" \n" +
                         "}\n",
                 "{" +
                         "    \"a\": \"abc\",\n" +
@@ -457,7 +478,10 @@ public class RulerTest {
                         "    \"c\": \"child1\",\n" +
                         "    \"d\": 444,\n" +
                         "    \"w\": \"xaz\",\n" +
-                        "    \"z\": 0.999999 \n" +
+                        "    \"z\": 0.999999, \n" +
+                        "    \"n\": \"nomatch\", \n" +
+                        "    \"o\": \"nomatch\", \n" +
+                        "    \"p\": \"nomatch\" \n" +
                         "}\n",
                 "{" +
                         "    \"a\": \"child1\",\n" +
@@ -465,11 +489,47 @@ public class RulerTest {
                         "    \"c\": \"child1\",\n" +
                         "    \"d\": 123,\n" +
                         "    \"w\": \"zaxonie\",\n" +
-                        "    \"z\": 0.001 \n" +
-                        "}\n"
+                        "    \"z\": 0.001, \n" +
+                        "    \"n\": \"nomatch\", \n" +
+                        "    \"o\": \"nomatch\", \n" +
+                        "    \"p\": \"nomatch\" \n" +
+                        "}\n",
+                "{" +
+                        "    \"a\": \"child1\",\n" +
+                        "    \"b\": \"444\",\n" +
+                        "    \"c\": \"child1\",\n" +
+                        "    \"d\": 123,\n" +
+                        "    \"w\": \"xaz\",\n" +
+                        "    \"z\": 0.001, \n" +
+                        "    \"n\": \"matching\", \n" +
+                        "    \"o\": \"nomatch\", \n" +
+                        "    \"p\": \"nomatch\" \n" +
+                        "}\n",
+                "{" +
+                        "    \"a\": \"child1\",\n" +
+                        "    \"b\": \"444\",\n" +
+                        "    \"c\": \"child1\",\n" +
+                        "    \"d\": 123,\n" +
+                        "    \"w\": \"xaz\",\n" +
+                        "    \"z\": 0.001, \n" +
+                        "    \"n\": \"nomatch\", \n" +
+                        "    \"o\": \"camelcase\", \n" +
+                        "    \"p\": \"nomatch\" \n" +
+                        "}\n",
+                "{" +
+                        "    \"a\": \"child1\",\n" +
+                        "    \"b\": \"444\",\n" +
+                        "    \"c\": \"child1\",\n" +
+                        "    \"d\": 123,\n" +
+                        "    \"w\": \"xaz\",\n" +
+                        "    \"z\": 0.001, \n" +
+                        "    \"n\": \"nomatch\", \n" +
+                        "    \"o\": \"nomatch\", \n" +
+                        "    \"p\": \"abc\" \n" +
+                        "}\n",
         };
 
-        boolean[] result = {true, false, false, false, false, false, false, false };
+        boolean[] result = {true, false, false, false, false, false, false, false, false, false, false };
 
         for (int i = 0; i< events.length; i++) {
             assertEquals(events[i], result[i], Ruler.matchesRule(events[i], rule));

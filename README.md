@@ -183,6 +183,16 @@ Anything-but suffix:
 }
 ```
 
+Anything-but-ignore-case list (strings):
+```javascript
+{
+  "detail": {
+    "state": [ { "anything-but": {"equals-ignore-case": [ "Stopped", "OverLoaded" ] } } ]
+  }
+}
+
+```
+
 ### Numeric matching
 ```javascript
 {

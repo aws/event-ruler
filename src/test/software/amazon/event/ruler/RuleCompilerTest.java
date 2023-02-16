@@ -127,6 +127,12 @@ public class RuleCompilerTest {
         j = "{\"a\": [ { \"anything-but\": { \"suffix\": \"foo\" } } ] }";
         assertNull("Good anything-but should parse", RuleCompiler.check(j));
 
+        j = "{\"a\": [ { \"anything-but\": {\"equals-ignore-case\": \"rule\" } } ] }";
+        assertNull("Good anything-but/ignore-case should parse", JsonRuleCompiler.check(j));
+
+        j = "{\"a\": [ { \"anything-but\": {\"equals-ignore-case\": [\"abc\", \"123\"] } } ] }";
+        assertNull("Good anything-but/ignore-case should parse", JsonRuleCompiler.check(j));
+
         j = "{\"a\": [ { \"exactly\": \"child\" } ] }";
         assertNull("Good exact-match should parse", RuleCompiler.check(j));
 
@@ -169,6 +175,8 @@ public class RuleCompilerTest {
                 "{\"a\": [ { \"anything-but\": { \"suffix\": \"\" } } ] }",
                 "{\"a\": [ { \"anything-but\": { \"suffix\": \"foo\", \"a\":1 } } ] }",
                 "{\"a\": [ { \"anything-but\": { \"suffix\": \"foo\" }, \"x\": 1 } ] }",
+                "{\"a\": [ { \"anything-but\": {\"equals-ignore-case\": [1, 2 3] } } ] }",
+                "{\"a\": [ { \"anything-but\": {\"equals-ignore-case\": [1, 2, 3] } } ] }", // no numbers allowed
                 "{\"a\": [ { \"equals-ignore-case\": 5 } ] }",
                 "{\"a\": [ { \"equals-ignore-case\": [ \"abc\" ] } ] }",
                 "{\"a\": [ { \"wildcard\": 5 } ] }",
@@ -228,7 +236,8 @@ public class RuleCompilerTest {
                 "{ \"suffix\": \"child\" }," +
                 "{ \"anything-but\": [111,222,333]}," +
                 "{ \"anything-but\": { \"prefix\": \"foo\"}}," +
-                "{ \"anything-but\": { \"suffix\": \"ing\"}}" +
+                "{ \"anything-but\": { \"suffix\": \"ing\"}}," +
+                "{ \"anything-but\": {\"equals-ignore-case\": \"def\" } }" +
                 "]," +
                 "\"c2\": { \"d\": { \"e\": [" +
                 "{ \"exactly\": \"child\" }," +
@@ -248,7 +257,8 @@ public class RuleCompilerTest {
                 Patterns.suffixMatch("child\""),
                 Patterns.anythingButNumberMatch(Stream.of(111, 222, 333).map(Double::valueOf).collect(Collectors.toSet())),
                 Patterns.anythingButPrefix("\"foo"),
-                Patterns.anythingButSuffix("ing\"")
+                Patterns.anythingButSuffix("ing\""),
+                Patterns.anythingButIgnoreCaseMatch("\"def\"")
         ));
         expected.put(Arrays.asList("a2", "b", "c2", "d", "e"), Arrays.asList(
                 Patterns.exactMatch("\"child\""),

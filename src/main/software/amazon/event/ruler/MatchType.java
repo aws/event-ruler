@@ -11,7 +11,8 @@ public enum MatchType {
     SUFFIX,              // string suffix
     NUMERIC_EQ,          // exact numeric match
     NUMERIC_RANGE,       // numeric range with high & low bound & </<=/>/>= options
-    ANYTHING_BUT,        // black list effect
+    ANYTHING_BUT,        // deny list effect
+    ANYTHING_BUT_IGNORE_CASE, // deny list effect (case insensitive)
     ANYTHING_BUT_PREFIX, // anything that doesn't start with this
     ANYTHING_BUT_SUFFIX, // anything that doesn't end with this
     EQUALS_IGNORE_CASE,  // case-insensitive string match

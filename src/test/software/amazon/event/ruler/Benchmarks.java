@@ -297,6 +297,36 @@ public class Benchmarks {
     };
     private final int[] ANYTHING_BUT_MATCHES = { 211158, 210411, 96682, 120, 210615 };
 
+    private final String[] ANYTHING_BUT_IGNORE_CASE_RULES = {
+      "{\n" +
+              "  \"properties\": {\n" +
+              "    \"STREET\": [ { \"anything-but\": {\"equals-ignore-case\": [ \"Fulton\" ] } } ]\n" +
+              "  }\n" +
+              "}", 
+      "{\n" +
+              "  \"properties\": {\n" +
+              "    \"STREET\": [ { \"anything-but\": {\"equals-ignore-case\": [ \"Mason\" ] } } ]\n" + 
+              "  }\n" +
+              "}",
+      "{\n" +
+              "  \"properties\": {\n" +
+              "    \"ST_TYPE\": [ { \"anything-but\": {\"equals-ignore-case\": [ \"st\" ] } } ]\n" +
+              "  }\n" +
+              "}",
+      "{\n" +
+              "  \"geometry\": {\n" +
+              "    \"type\": [ {\"anything-but\": {\"equals-ignore-case\": [ \"polygon\" ] } } ]\n" +
+              "  }\n" +
+              "}",
+      "{\n" +
+              "  \"properties\": {\n" +
+              "    \"FROM_ST\": [ { \"anything-but\": {\"equals-ignore-case\": [ \"441\" ] } } ]\n" +
+              "  }\n" +  
+              "}"   
+    };              
+    private final int[] ANYTHING_BUT_IGNORE_CASE_MATCHES = { 211158, 210411, 96682, 120, 210615 };
+
+
     private final String[] ANYTHING_BUT_PREFIX_RULES = {
       "{\n" +
               "  \"properties\": {\n" +
@@ -576,6 +606,12 @@ public class Benchmarks {
 
         bm = new Benchmarker();
 
+        bm.addRules(ANYTHING_BUT_IGNORE_CASE_RULES, ANYTHING_BUT_IGNORE_CASE_MATCHES);
+        bm.run(citylots2);
+        System.out.println("ANYTHING-BUT-IGNORE-CASE events/sec: " + String.format("%.1f", bm.getEPS()));
+
+        bm = new Benchmarker();
+
         bm.addRules(ANYTHING_BUT_PREFIX_RULES, ANYTHING_BUT_PREFIX_MATCHES);
         bm.run(citylots2);
         System.out.println("ANYTHING-BUT-PREFIX events/sec: " + String.format("%.1f", bm.getEPS()));
@@ -601,6 +637,9 @@ public class Benchmarks {
         bm.addRules(EXACT_RULES, EXACT_MATCHES);
         bm.addRules(PREFIX_RULES, PREFIX_MATCHES);
         bm.addRules(ANYTHING_BUT_RULES, ANYTHING_BUT_MATCHES);
+        bm.addRules(ANYTHING_BUT_IGNORE_CASE_RULES, ANYTHING_BUT_IGNORE_CASE_MATCHES);
+        bm.addRules(ANYTHING_BUT_PREFIX_RULES, ANYTHING_BUT_PREFIX_MATCHES);
+        bm.addRules(ANYTHING_BUT_SUFFIX_RULES, ANYTHING_BUT_SUFFIX_MATCHES);
         bm.run(citylots2);
         System.out.println("PARTIAL_COMBO events/sec: " + String.format("%.1f", bm.getEPS()));
 
@@ -609,6 +648,9 @@ public class Benchmarks {
         bm.addRules(EXACT_RULES, EXACT_MATCHES);
         bm.addRules(PREFIX_RULES, PREFIX_MATCHES);
         bm.addRules(ANYTHING_BUT_RULES, ANYTHING_BUT_MATCHES);
+        bm.addRules(ANYTHING_BUT_IGNORE_CASE_RULES, ANYTHING_BUT_IGNORE_CASE_MATCHES);
+        bm.addRules(ANYTHING_BUT_PREFIX_RULES, ANYTHING_BUT_PREFIX_MATCHES);
+        bm.addRules(ANYTHING_BUT_SUFFIX_RULES, ANYTHING_BUT_SUFFIX_MATCHES);
         bm.addRules(COMPLEX_ARRAYS_RULES, COMPLEX_ARRAYS_MATCHES);
         bm.run(citylots2);
         System.out.println("COMBO events/sec: " + String.format("%.1f", bm.getEPS()));
