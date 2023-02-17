@@ -9,6 +9,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import javax.annotation.concurrent.ThreadSafe;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Represents a state in the machine.
  *
@@ -189,8 +191,8 @@ class NameState {
         private final Patterns pattern;
 
         public RuleWithPattern(Object rule, Patterns pattern) {
-            this.rule = rule;
-            this.pattern = pattern;
+            this.rule = requireNonNull(rule);
+            this.pattern = requireNonNull(pattern);
         }
 
         @Override
