@@ -18,6 +18,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -2094,6 +2095,71 @@ public class ByteMachineTest {
         } catch (ParseException e) {
             assertEquals("Consecutive wildcard characters at pos 1", e.getMessage());
         }
+    }
+
+    @Test
+    public void testAddMatchPatternGivenNameStateReturned() {
+        NameState nameState = new NameState();
+        ByteMachine cut = new ByteMachine();
+        assertSame(nameState, cut.addPattern(Patterns.exactMatch("a"), nameState));
+    }
+
+    @Test
+    public void testAddMatchPatternNoNameStateGiven() {
+        ByteMachine cut = new ByteMachine();
+        assertNotNull(cut.addPattern(Patterns.exactMatch("a")));
+    }
+
+    @Test
+    public void testAddExistencePatternGivenNameStateReturned() {
+        NameState nameState = new NameState();
+        ByteMachine cut = new ByteMachine();
+        assertSame(nameState, cut.addPattern(Patterns.existencePatterns(), nameState));
+    }
+
+    @Test
+    public void testAddExistencePatternNoNameStateGiven() {
+        ByteMachine cut = new ByteMachine();
+        assertNotNull(cut.addPattern(Patterns.existencePatterns()));
+    }
+
+    @Test
+    public void testAddAnythingButPatternGivenNameStateReturned() {
+        NameState nameState = new NameState();
+        ByteMachine cut = new ByteMachine();
+        assertSame(nameState, cut.addPattern(Patterns.anythingButMatch("z"), nameState));
+    }
+
+    @Test
+    public void testAddAnythingButPatternNoNameStateGiven() {
+        ByteMachine cut = new ByteMachine();
+        assertNotNull(cut.addPattern(Patterns.anythingButMatch("z")));
+    }
+
+    @Test
+    public void testAddAnythingButEqualsIgnoreCasePatternGivenNameStateReturned() {
+        NameState nameState = new NameState();
+        ByteMachine cut = new ByteMachine();
+        assertSame(nameState, cut.addPattern(Patterns.anythingButIgnoreCaseMatch("z"), nameState));
+    }
+
+    @Test
+    public void testAddAnythingButEqualsIgnoreCasePatternNoNameStateGiven() {
+        ByteMachine cut = new ByteMachine();
+        assertNotNull(cut.addPattern(Patterns.anythingButIgnoreCaseMatch("z")));
+    }
+
+    @Test
+    public void testAddRangePatternGivenNameStateReturned() {
+        NameState nameState = new NameState();
+        ByteMachine cut = new ByteMachine();
+        assertSame(nameState, cut.addPattern(Range.lessThan(5), nameState));
+    }
+
+    @Test
+    public void testAddRangePatternNoNameStateGiven() {
+        ByteMachine cut = new ByteMachine();
+        assertNotNull(cut.addPattern(Range.lessThan(5)));
     }
 
     private void testPatternPermutations(PatternMatch ... patternMatches) {

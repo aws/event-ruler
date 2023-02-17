@@ -422,6 +422,8 @@ public class JsonRuleCompilerTest {
         assertTrue(found.contains("rule2"));
 
         machine.deleteRule("rule1", rule1);
+        found = machine.rulesForJSONEvent(event);
+        assertEquals(1, found.size());
         machine.deleteRule("rule2", rule2);
         found = machine.rulesForJSONEvent(event);
         assertEquals(0, found.size());
@@ -496,7 +498,6 @@ public class JsonRuleCompilerTest {
         assertTrue(rules.isArray());
         assertTrue(machine.isEmpty());
 
-        final int expectedSubRuleSize [] = {1, 1, 1, 1};
         final String expectedCompiledRules [] = {
                 "{$or=[0A000000/0A0000FF:false/false (T:NUMERIC_RANGE)]}",
                 "{$or.namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)], source=[VP:\"aws.cloudwatch\" (T:EXACT)], $or.metricType=[VP:\"MetricType\" (T:EXACT)]}",
@@ -505,7 +506,6 @@ public class JsonRuleCompilerTest {
         };
 
         int i = 0;
-        List<Map<String, List<Patterns>>> compiledRules = null;
 
         // verify the legacy rules with using "$or" as normal field can work correctly with legacy RuleCompiler
         for (final JsonNode rule : rules) {

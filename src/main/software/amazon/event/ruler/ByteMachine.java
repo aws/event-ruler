@@ -624,18 +624,28 @@ class ByteMachine {
         return false;
     }
 
-    // Adds one pattern to a byte machine.
     NameState addPattern(final Patterns pattern) {
+        return addPattern(pattern, null);
+    }
+
+    /**
+     * Adds one pattern to a byte machine.
+     *
+     * @param pattern The pattern to add.
+     * @param nameState If non-null, transition to this NameState from the ByteMatch.
+     * @return NameState transitioned to from ByteMatch. Will be equal to provided NameState if it wasn't null.
+     */
+    NameState addPattern(final Patterns pattern, final NameState nameState) {
         switch (pattern.type()) {
             case NUMERIC_RANGE:
                 assert pattern instanceof Range;
-                return addRangePattern((Range) pattern);
+                return addRangePattern((Range) pattern, nameState);
             case ANYTHING_BUT:
                 assert pattern instanceof AnythingBut;
-                return addAnythingButPattern((AnythingBut) pattern);
+                return addAnythingButPattern((AnythingBut) pattern, nameState);
             case ANYTHING_BUT_IGNORE_CASE:
                 assert pattern instanceof AnythingButEqualsIgnoreCase;
-                return addAnythingButEqualsIgnoreCasePattern((AnythingButEqualsIgnoreCase) pattern);
+                return addAnythingButEqualsIgnoreCasePattern((AnythingButEqualsIgnoreCase) pattern, nameState);
 
             case ANYTHING_BUT_SUFFIX:
             case ANYTHING_BUT_PREFIX:
@@ -646,22 +656,22 @@ class ByteMachine {
             case EQUALS_IGNORE_CASE:
             case WILDCARD:
                 assert pattern instanceof ValuePatterns;
-                return addMatchPattern((ValuePatterns) pattern);
+                return addMatchPattern((ValuePatterns) pattern, nameState);
 
             case EXISTS:
-                return addExistencePattern(pattern);
+                return addExistencePattern(pattern, nameState);
             default:
                 throw new AssertionError(pattern + " is not implemented yet");
         }
     }
 
-    private NameState addExistencePattern(Patterns pattern) {
-        return addMatchValue(pattern, Patterns.EXISTS_BYTE_STRING, null);
+    private NameState addExistencePattern(Patterns pattern, NameState nameState) {
+        return addMatchValue(pattern, Patterns.EXISTS_BYTE_STRING, nameState);
     }
 
-    private NameState addAnythingButPattern(AnythingBut pattern) {
+    private NameState addAnythingButPattern(AnythingBut pattern, NameState nameState) {
 
-        NameState nameStateToBeReturned = null;
+        NameState nameStateToBeReturned = nameState;
         NameState nameStateChecker = null;
         for(String value : pattern.getValues()) {
             nameStateToBeReturned = addMatchValue(pattern, value, nameStateToBeReturned);
@@ -676,9 +686,9 @@ class ByteMachine {
         return nameStateToBeReturned;
     }
 
-    private NameState addAnythingButEqualsIgnoreCasePattern(AnythingButEqualsIgnoreCase pattern) {
+    private NameState addAnythingButEqualsIgnoreCasePattern(AnythingButEqualsIgnoreCase pattern, NameState nameState) {
 
-        NameState nameStateToBeReturned = null;
+        NameState nameStateToBeReturned = nameState;
         NameState nameStateChecker = null;
         for(String value : pattern.getValues()) {
             nameStateToBeReturned = addMatchValue(pattern, value, nameStateToBeReturned);
@@ -1086,12 +1096,12 @@ class ByteMachine {
     //  add a numeric range expression to the byte machine.  Note; the code assumes that the patterns
     //  are encoded as pure strings containing only decimal digits, and that the top and bottom values
     //  are equal in length.
-    private NameState addRangePattern(final Range range) {
+    private NameState addRangePattern(final Range range, final NameState nameState) {
 
         // we prepare for one new NameSate here which will be used for range match to point to next NameSate.
         // however, it will not be used if match is already existing. in that case, we will reuse NameSate
         // from that match.
-        NameState nextNameState = new NameState();
+        NameState nextNameState = nameState == null ? new NameState() : nameState;
 
         ByteState forkState = startState;
         int forkOffset = 0;
@@ -1322,8 +1332,8 @@ class ByteMachine {
     }
 
     // add a match type pattern, i.e. anything but a numeric range, to the byte machine.
-    private NameState addMatchPattern(final ValuePatterns pattern) {
-        return addMatchValue(pattern, pattern.pattern(), null);
+    private NameState addMatchPattern(final ValuePatterns pattern, final NameState nameState) {
+        return addMatchValue(pattern, pattern.pattern(), nameState);
     }
 
     // We can reach to this function when we have checked the existing characters array from left to right and found we

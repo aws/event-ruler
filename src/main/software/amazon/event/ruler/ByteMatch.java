@@ -5,6 +5,10 @@ import java.util.Set;
 
 /**
  * Represents a place in a ByteMachine where we have to do something in addition to just transitioning to another step.
+ *
+ * ByteMatch will be saved in anythingBut ConcurrentSkipListSet which is threadsafe, ordering that require
+ * the element must implement comparable interface and override appropriate interface for deduplication and
+ * comparison.
  */
 final class ByteMatch extends SingleByteTransition  {
 

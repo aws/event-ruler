@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -279,20 +280,27 @@ public class GenericMachine<T> {
                 }
             }
             if (nextNameState != null) {
-                // if this was the last step, then reaching the last state means the rule matched.
+                // If this was the last step, then reaching the last state means the rule matched, and we should delete
+                // the rule from the next NameState.
                 final int nextKeyIndex = keyIndex + 1;
                 if (nextKeyIndex == keys.size()) {
-                    if (nextNameState.hasRule(ruleName)) {
-                        nextNameState.deleteRule(ruleName);
-                        // only when this state have no rules and no next transition, we could remove it.
-                        if (checkAndDeleteNameState(nextNameState, state, key, pattern)) {
+                    if (nextNameState.hasRuleWithPattern(ruleName, pattern)) {
+                        nextNameState.deleteRuleWithPattern(ruleName, pattern);
+                        // Only delete the pattern if:
+                        //   1. There are no other rules using the same pattern also leading to the next NameState, and
+                        //   2. The next NameState is a dead-end; it doesn't transition to a ByteMachine or NameMatcher.
+                        Set<Patterns> nextPatterns = nextNameState.getPatterns();
+                        boolean doesNextNameStateStillContainPattern = nextPatterns.contains(pattern);
+                        if (!doesNextNameStateStillContainPattern && !nextNameState.hasTransitions()
+                                && deletePattern(state, key, pattern)) {
                             deletedKeys.add(key);
                         }
                     }
                 } else {
                     deleteStep(nextNameState, keys, nextKeyIndex, patterns, ruleName, deletedKeys);
-                    // only when this state have no rules and no next transition, we could remove it.
-                    if (checkAndDeleteNameState(nextNameState, state, key, pattern)) {
+                    // Unwinding the key recursion, so we aren't on a rule match. Only delete the pattern if the next
+                    // NameState is a dead-end, meaning it doesn't transition to a ByteMachine or NameMatcher.
+                    if (!nextNameState.hasTransitions() && deletePattern(state, key, pattern)) {
                         deletedKeys.add(key);
                     }
                 }
@@ -302,23 +310,29 @@ public class GenericMachine<T> {
 
     }
 
-    private boolean checkAndDeleteNameState(final NameState currentNameState, final NameState parentNameState,
-            final String key, Patterns pattern) {
-        if (currentNameState.isEmpty()) {
-            if (isNamePattern(pattern)) {
-                NameMatcher<NameState> nameMatcher = parentNameState.getKeyTransitionOn(key);
-                nameMatcher.deletePattern(pattern);
-                if (nameMatcher.isEmpty()) {
-                    parentNameState.removeKeyTransition(key);
-                    return true;
-                }
-            } else {
-                ByteMachine byteMachine = parentNameState.getTransitionOn(key);
-                byteMachine.deletePattern(pattern);
-                if (byteMachine.isEmpty()) {
-                    parentNameState.removeTransition(key);
-                    return true;
-                }
+    /**
+     * Delete given pattern from either NameMatcher or ByteMachine. Remove the parent NameState's transition to
+     * NameMatcher or ByteMachine if empty after pattern deletion.
+     *
+     * @param parentNameState The NameState transitioning to the NameMatcher or ByteMachine.
+     * @param key The key we transition on.
+     * @param pattern The pattern to delete.
+     * @return True if and only if transition from parent NameState was removed.
+     */
+    private boolean deletePattern(final NameState parentNameState, final String key, Patterns pattern) {
+        if (isNamePattern(pattern)) {
+            NameMatcher<NameState> nameMatcher = parentNameState.getKeyTransitionOn(key);
+            nameMatcher.deletePattern(pattern);
+            if (nameMatcher.isEmpty()) {
+                parentNameState.removeKeyTransition(key);
+                return true;
+            }
+        } else {
+            ByteMachine byteMachine = parentNameState.getTransitionOn(key);
+            byteMachine.deletePattern(pattern);
+            if (byteMachine.isEmpty()) {
+                parentNameState.removeTransition(key);
+                return true;
             }
         }
         return false;
@@ -454,23 +468,29 @@ public class GenericMachine<T> {
         // for each pattern, we'll provisionally add it to the BMC, which may already have it.  Pass the states
         //  list in in case the BMC doesn't already have a next-step for this pattern and needs to make a new one
         //
+        NameState lastNextState = null;
+        Set<NameState> nameStates = new HashSet<>();
         for (Patterns pattern : patterns.get(key)) {
-            final NameState nextState;
-
             if (isNamePattern(pattern)) {
                 assert nameMatcher != null;
-                nextState = nameMatcher.addPattern(pattern, NameState::new);
+                final NameState nameStateForSupplier = lastNextState == null ? new NameState() : lastNextState;
+                lastNextState = nameMatcher.addPattern(pattern, () -> nameStateForSupplier);
             } else {
                 assert byteMachine != null;
-                nextState = byteMachine.addPattern(pattern);
+                lastNextState = byteMachine.addPattern(pattern, lastNextState);
             }
+            nameStates.add(lastNextState);
+        }
 
+        for (NameState nameState : nameStates) {
             // if this was the last step, then reaching the last state means the rule matched.
             final int nextKeyIndex = keyIndex + 1;
             if (nextKeyIndex == keys.size()) {
-                nextState.addRule(ruleName);
+                for (Patterns pattern : patterns.get(key)) {
+                    nameState.addRuleWithPattern(ruleName, pattern);
+                }
             } else {
-                addStep(nextState, keys, nextKeyIndex, patterns, ruleName, addedKeys);
+                addStep(nameState, keys, nextKeyIndex, patterns, ruleName, addedKeys);
             }
         }
 
