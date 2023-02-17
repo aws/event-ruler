@@ -1537,4 +1537,68 @@ public class MachineTest {
 
         assertTrue(machine.isEmpty());
     }
+
+    @Test
+    public void testAddAndDeleteTwoRulesSamePattern() throws Exception {
+        final Machine machine = new Machine();
+        String event = "{\n" +
+                "  \"x\": \"y\"\n" +
+                "}";
+
+        String rule1 = "{\n" +
+                "  \"x\": [ \"y\" ]\n" +
+                "}";
+
+        String rule2 = "{\n" +
+                "  \"x\": [ \"y\" ]\n" +
+                "}";
+
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        List<String> found = machine.rulesForJSONEvent(event);
+        assertEquals(2, found.size());
+        assertTrue(found.contains("rule1"));
+        assertTrue(found.contains("rule2"));
+
+        machine.deleteRule("rule1", rule1);
+        found = machine.rulesForJSONEvent(event);
+        assertEquals(1, found.size());
+        machine.deleteRule("rule2", rule2);
+        found = machine.rulesForJSONEvent(event);
+        assertEquals(0, found.size());
+        assertTrue(machine.isEmpty());
+    }
+
+    @Test
+    public void testAddAndDeleteTwoRulesSameCaseInsensitivePatternEqualsIgnoreCase() throws Exception {
+        final Machine machine = new Machine();
+        String event = "{\n" +
+                "  \"x\": \"y\"\n" +
+                "}";
+
+        String rule1 = "{\n" +
+                "  \"x\": [ { \"equals-ignore-case\": \"y\" } ]\n" +
+                "}";
+
+        String rule2 = "{\n" +
+                "  \"x\": [ { \"equals-ignore-case\": \"Y\" } ]\n" +
+                "}";
+
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        List<String> found = machine.rulesForJSONEvent(event);
+        assertEquals(2, found.size());
+        assertTrue(found.contains("rule1"));
+        assertTrue(found.contains("rule2"));
+
+        machine.deleteRule("rule1", rule1);
+        found = machine.rulesForJSONEvent(event);
+        assertEquals(1, found.size());
+        machine.deleteRule("rule2", rule2);
+        found = machine.rulesForJSONEvent(event);
+        assertEquals(0, found.size());
+        assertTrue(machine.isEmpty());
+    }
 }

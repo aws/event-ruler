@@ -3,8 +3,10 @@ package software.amazon.event.ruler;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import javax.annotation.concurrent.ThreadSafe;
 
 /**
@@ -29,22 +31,26 @@ class NameState {
     // while add/delete Rule is active in another thread, without any locks.
     private final Map<String, NameMatcher<NameState>> mustNotExistMatchers = new ConcurrentHashMap<>(1);
 
-    private final Set<Object> rules = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Set<RuleWithPattern> ruleWithPatterns = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     ByteMachine getTransitionOn(final String token) {
         return valueTransitions.get(token);
     }
 
     Set<Object> getRules() {
-        return rules;
+        return ruleWithPatterns.stream().map(r -> r.rule).collect(Collectors.toSet());
+    }
+
+    Set<Patterns> getPatterns() {
+        return ruleWithPatterns.stream().map(r -> r.pattern).collect(Collectors.toSet());
     }
 
     // TODO: unit-test these two methods
-    boolean hasRule(final Object name) {
-        return rules.contains(name);
+    boolean hasRuleWithPattern(final Object rule, final Patterns pattern) {
+        return ruleWithPatterns.contains(new RuleWithPattern(rule, pattern));
     }
-    void deleteRule(final Object name) {
-        rules.remove(name);
+    void deleteRuleWithPattern(final Object rule, final Patterns pattern) {
+        ruleWithPatterns.remove(new RuleWithPattern(rule, pattern));
     }
 
     void removeTransition(String name) {
@@ -55,12 +61,16 @@ class NameState {
         mustNotExistMatchers.remove(name);
     }
 
-    boolean isEmpty() {
-        return valueTransitions.isEmpty() && rules.isEmpty() && mustNotExistMatchers.isEmpty();
+    boolean hasTransitions() {
+        return !valueTransitions.isEmpty() || !mustNotExistMatchers.isEmpty();
     }
 
-    void addRule(final Object rule) {
-        rules.add(rule);
+    boolean isEmpty() {
+        return valueTransitions.isEmpty() && ruleWithPatterns.isEmpty() && mustNotExistMatchers.isEmpty();
+    }
+
+    void addRuleWithPattern(final Object rule, final Patterns pattern) {
+        ruleWithPatterns.add(new RuleWithPattern(rule, pattern));
     }
 
     void addTransition(final String key, final ByteMachine to) {
@@ -107,7 +117,7 @@ class NameState {
         return nextNameStates;
     }
 
-   Set<NameState> getNameTransitions(final Event event, final ArrayMembership membership) {
+    Set<NameState> getNameTransitions(final Event event, final ArrayMembership membership) {
 
         final Set<NameState> nextNameStates = new HashSet<>();
 
@@ -157,7 +167,31 @@ class NameState {
         return "NameState{" +
                 "valueTransitions=" + valueTransitions +
                 ", mustNotExistMatchers=" + mustNotExistMatchers +
-                ", rules=" + rules +
+                ", ruleWithPatterns=" + ruleWithPatterns +
                 '}';
+    }
+
+    private static class RuleWithPattern {
+        private final Object rule;
+        private final Patterns pattern;
+
+        public RuleWithPattern(Object rule, Patterns pattern) {
+            this.rule = rule;
+            this.pattern = pattern;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == null || !(o instanceof RuleWithPattern)) {
+                return false;
+            }
+            RuleWithPattern otherRuleWithPattern = (RuleWithPattern) o;
+            return rule.equals(otherRuleWithPattern.rule) && pattern.equals(otherRuleWithPattern.pattern);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(rule, pattern);
+        }
     }
 }
