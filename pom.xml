@@ -35,7 +35,7 @@
     <jsr.version>3.0.2</jsr.version>
     <junit.version>4.13.2</junit.version>
     <compiler.plugin.version>3.10.1</compiler.plugin.version>
-    <javadoc.plugin.version>3.4.1</javadoc.plugin.version>
+    <javadoc.plugin.version>3.5.0</javadoc.plugin.version>
     <source.plugin.version>3.2.1</source.plugin.version>
     <gpg.plugin.version>3.0.1</gpg.plugin.version>
     <staging.plugin.version>1.6.13</staging.plugin.version>
