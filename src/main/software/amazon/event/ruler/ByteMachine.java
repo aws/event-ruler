@@ -1920,8 +1920,8 @@ class ByteMachine {
         if (!objectSet.contains(this)) { // stops looping
             objectSet.add(this);
             startState.gatherObjects(objectSet);
-            for (ByteMatch byteMatch : anythingButs) {
-                byteMatch.gatherObjects(objectSet);
+            for (NameState states : anythingButs) {
+                states.gatherObjects(objectSet);
             }
         }
     }
