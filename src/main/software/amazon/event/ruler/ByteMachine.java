@@ -1916,6 +1916,16 @@ class ByteMachine {
         return (startStateMatch != null ? 1 : 0) + evaluator.evaluate(startState);
     }
 
+    public void gatherObjects(Set<Object> objectSet) {
+        if (!objectSet.contains(this)) { // stops looping
+            objectSet.add(this);
+            startState.gatherObjects(objectSet);
+            for (ByteMatch byteMatch : anythingButs) {
+                byteMatch.gatherObjects(objectSet);
+            }
+        }
+    }
+
     public static final class EmptyByteTransition extends SingleByteTransition {
 
         static final EmptyByteTransition INSTANCE = new EmptyByteTransition();
@@ -1960,6 +1970,10 @@ class ByteMachine {
             return match;
         }
 
+        @Override
+        public void gatherObjects(Set<Object> objectSet) {
+            objectSet.add(this);
+        }
     }
 
     @Override

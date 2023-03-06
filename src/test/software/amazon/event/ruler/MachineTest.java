@@ -1537,4 +1537,137 @@ public class MachineTest {
 
         assertTrue(machine.isEmpty());
     }
+
+    @Test
+    public void testApproxSizeForSimplestPossibleMachine() throws Exception {
+        String rule1 = "{ \"a\" : [ 1 ] }";
+        String rule2 = "{ \"b\" : [ 2 ] }";
+        String rule3 = "{ \"c\" : [ 3 ] }";
+
+        Machine machine = new Machine();
+        assertEquals(1, machine.approximateObjectCount());
+
+        machine.addRule("r1", rule1);
+        assertEquals(20, machine.approximateObjectCount());
+
+        machine.addRule("r2", rule2);
+        assertEquals(40, machine.approximateObjectCount());
+
+        machine.addRule("r3", rule3);
+        assertEquals(60, machine.approximateObjectCount());
+    }
+
+    @Test(timeout = 500)
+    public void testApproximateSizeDoNotTakeForeverForRulesWithNumericMatchers() throws Exception {
+        Machine machine = new Machine();
+        machine.addRule("rule",
+                "{\n" +
+                        "    \"a\": [{  \"numeric\": [\"<\", 0] }],\n" +
+                        "    \"b\": { \"b1\": [{ \"numeric\": [\"=\", 3] }] },\n" +
+                        "    \"c\": [{ \"numeric\": [\">\", 50] }]\n" +
+                        "}");
+
+        assertEquals(514, machine.approximateObjectCount());
+    }
+
+    @Test
+    public void testApproximateSizeForDifferentBasicRules() throws Exception {
+        Machine machine = new Machine();
+        assertEquals(1, machine.approximateObjectCount());
+
+
+        machine.addRule("single-rule", "{ \"key\" :  [ \"value\" ] }");
+        assertEquals(7, machine.approximateObjectCount());
+
+        // every new rule also is considered as part of the end-state
+        machine = new Machine();
+        for(int i = 0 ; i < 1000; i ++) {
+            machine.addRule("lots-rule-" + i, "{ \"key\" :  [ \"value\" ] }");
+        }
+        assertEquals(1006, machine.approximateObjectCount());
+
+        // new unique rules create new states
+        machine = new Machine();
+        for(int i = 0 ; i < 1000; i ++) {
+            machine.addRule("lots-key-values-" + i, "{ \"many-kv-" + i + "\" :  [ \"value" + i + "\" ] }");
+        }
+        assertEquals(6001, machine.approximateObjectCount());
+
+        // new unique rule keys create same states as unique rules
+        machine = new Machine();
+        for(int i = 0 ; i < 1000; i ++) {
+            machine.addRule("lots-keys-" + i, "{ \"many-key-" + i + "\" :  [ \"value\" ] }");
+        }
+        assertEquals(6001, machine.approximateObjectCount());
+
+        // new unique rule with many values are smaller
+        machine = new Machine();
+        for(int i = 0 ; i < 1000; i ++) {
+            machine.addRule("lots-values-" + i, "{ \"many-values-key\" :  [ \"value" + i + " \" ] }");
+        }
+        assertEquals(4108, machine.approximateObjectCount());
+    }
+
+    @Test
+    public void testApproximateSizeForRulesManyEventNameArrayElements() throws Exception {
+        Machine machine = new Machine();
+        machine.addRule("rule-with-three-element",
+                "{\n" +
+                        "    \"source\": [\"Source\"],\n" +
+                        "    \"detail\": {\n" +
+                        "        \"eventName\": [\"Name1\",\"Name2\",\"Name3\"]\n" +
+                        "    }\n" +
+                        "}");
+        assertEquals(33, machine.approximateObjectCount());
+
+        machine.addRule("rule-with-six-elements",
+                "{\n" +
+                        "    \"source\": [\"Source\"],\n" +
+                        "    \"detail\": {\n" +
+                        "        \"eventName\": [\"Name1\",\"Name2\",\"Name3\",\"Name4\",\"Name5\",\"Name6\"]\n" +
+                        "    }\n" +
+                        "}");
+        assertEquals(58, machine.approximateObjectCount());
+
+
+        machine.addRule("rule-with-six-more-elements",
+                "{\n" +
+                        "    \"source\": [\"Source\"],\n" +
+                        "    \"detail\": {\n" +
+                        "        \"eventName\": [\"Name7\",\"Name8\",\"Name9\",\"Name10\",\"Name11\",\"Name12\"]\n" +
+                        "    }\n" +
+                        "}");
+        assertEquals(107, machine.approximateObjectCount());
+    }
+
+    @Test
+    public void testApproximateSizeForRulesManySouceAndEventNameArrayElements() throws Exception {
+        Machine machine = new Machine();
+        machine.addRule("first-rule",
+                "{\n" +
+                        "    \"source\": [\"Source1\",\"Source2\"],\n" +
+                        "    \"detail\": {\n" +
+                        "        \"eventName\": [\"Name1\",\"Name2\",\"Name3\"]\n" +
+                        "    }\n" +
+                        "}");
+        assertEquals(63, machine.approximateObjectCount());
+
+        machine.addRule("rule-with-two-more-source-and-eventNames",
+                "{\n" +
+                        "    \"source\": [\"Source1\",\"Source2\", \"Source3\",\"Source4\"],\n" +
+                        "    \"detail\": {\n" +
+                        "        \"eventName\": [\"Name1\",\"Name2\",\"Name3\",\"Name4\",\"Name5\"]\n" +
+                        "    }\n" +
+                        "}");
+        assertEquals(130, machine.approximateObjectCount());
+
+        machine.addRule("rule-with-more-unique-source-and-eventNames",
+                "{\n" +
+                        "    \"source\": [\"Source5\",\"Source6\", \"Source7\",\"Source8\"],\n" +
+                        "    \"detail\": {\n" +
+                        "        \"eventName\": [\"Name6\",\"Name7\",\"Name8\",\"Name9\",\"Name10\"]\n" +
+                        "    }\n" +
+                        "}");
+        assertEquals(251, machine.approximateObjectCount());
+    }
 }

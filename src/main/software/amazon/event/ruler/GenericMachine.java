@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -526,6 +527,27 @@ public class GenericMachine<T> {
 
     public int evaluateComplexity(MachineComplexityEvaluator evaluator) {
         return startState.evaluateComplexity(evaluator);
+    }
+
+    /**
+     * Gives roughly the number of objects within the machine. This is useful to identify large rule-machines
+     * that potentially require loads of memory. The method performs all of its calculation at runtime to avoid
+     * taking up memory and making the impact of large rule-machines worse. When calculating this value; we
+     * consider any transitions, states, byte-machines, and rules. There's are also a checks to ensure we're
+     * not stuck in endless loops (that's possible for wildcard matches) or taking a long time for numeric range
+     * matchers.
+     *
+     * NOTEs:
+     * 1. As this method is dependent on number of internal objects, as ruler evolves this will also
+     * give different results.
+     * 2. It will also give you different results based on the order in which you add or remove rules as in
+     * some-cases Ruler takes short-cuts for exact matches (see ShortcutTransition for more details).
+     * 3. This method isn't thread safe, and so is prefixed with approximate.
+     */
+    public int approximateObjectCount() {
+        final HashSet<Object> objectSet = new HashSet<>();
+        startState.gatherObjects(objectSet);
+        return objectSet.size();
     }
 
     @Override

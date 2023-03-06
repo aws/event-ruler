@@ -529,6 +529,18 @@ names* section, you would have to call `deleteRule()` the same number of times,
 with the same associated patterns, to remove all references to that rule name
 from the machine.
 
+### approximateObjectCount()
+
+This method roughly the number of objects within the machine. It's value only varies as rule are added or
+removed. This is useful to identify large machines that potentially require loads of memory.
+As this method is dependent on number of internal objects, this counts may change when ruler library internals
+are changed. The method performs all of its calculation at runtime to avoid taking up memory and making the
+impact of large rule-machines worse. Its computation is intentionally NOT thread-safe to avoid blocking rule
+evaluations and machine changes. It means that if a parallel process is adding or removing from the machine,
+you may get a different results compared to when such parallel processes are complete. Also, as the library
+makes optimizations to its internals for some patterns (see `ShortcutTransition.java` for more details), you
+may also get different results depending on the order in which rules were added or removed.
+
 ### rulesForEvent() / rulesForJSONEvent()
 
 This method returns a `List<String>` for Machine (and `List<T>` for GenericMachine) which contains
