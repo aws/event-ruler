@@ -152,6 +152,19 @@ class NameState {
         return complexity;
     }
 
+    public void gatherObjects(Set<Object> objectSet) {
+        if (!objectSet.contains(this)) { // stops looping
+            objectSet.add(this);
+            for (ByteMachine byteMachine : valueTransitions.values()) {
+                byteMachine.gatherObjects(objectSet);
+            }
+            for (Map.Entry<String, NameMatcher<NameState>> mustNotExistEntry : mustNotExistMatchers.entrySet()) {
+                mustNotExistEntry.getValue().getNextState().gatherObjects(objectSet);
+            }
+            objectSet.addAll(rules);
+        }
+    }
+
     @Override
     public String toString() {
         return "NameState{" +

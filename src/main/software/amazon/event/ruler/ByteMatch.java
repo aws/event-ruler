@@ -67,6 +67,14 @@ final class ByteMatch extends SingleByteTransition  {
     }
 
     @Override
+    public void gatherObjects(Set<Object> objectSet) {
+        if (!objectSet.contains(this)) { // stops looping
+            objectSet.add(this);
+            nextNameState.gatherObjects(objectSet);
+        }
+    }
+
+    @Override
     public String toString() {
         return "BM: HC=" + hashCode() + " P=" + pattern  + "(" + pattern.pattern() + ") NNS=" + nextNameState;
     }

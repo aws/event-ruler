@@ -106,6 +106,19 @@ abstract class ByteTransition implements Cloneable {
         return false;
     }
 
+    public void gatherObjects(Set<Object> objectSet) {
+        if (!objectSet.contains(this)) { // stops looping
+            objectSet.add(this);
+            for (ByteTransition byteMachine : getTransitions()) {
+                byteMachine.gatherObjects(objectSet);
+            }
+            final ByteState nextByteState = getNextByteState();
+            if (nextByteState != null) {
+                nextByteState.gatherObjects(objectSet);
+            }
+        }
+    }
+
     @Override
     public ByteTransition clone() {
         try {

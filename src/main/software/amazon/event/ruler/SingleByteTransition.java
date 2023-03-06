@@ -59,4 +59,22 @@ abstract class SingleByteTransition extends ByteTransition {
         return getNextByteState();
     }
 
+    @Override
+    public void gatherObjects(Set<Object> objectSet) {
+        if (!objectSet.contains(this)) { // stops looping
+            objectSet.add(this);
+            final ByteMatch match = getMatch();
+            if (match != null) {
+                match.gatherObjects(objectSet);
+            }
+            for (ByteTransition transition : getTransitions()) {
+                transition.gatherObjects(objectSet);
+            }
+            final ByteTransition nextByteStates = getTransitionForNextByteStates();
+            if (nextByteStates != null) {
+                nextByteStates.gatherObjects(objectSet);
+            }
+        }
+    }
+
 }

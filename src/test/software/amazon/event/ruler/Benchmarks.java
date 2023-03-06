@@ -426,15 +426,18 @@ public class Benchmarks {
 
         System.gc();
         long memBefore = Runtime.getRuntime().freeMemory();
-        System.out.printf("Before: %.1f\n", 1.0 * memBefore / 1000000);
+        int sizeBefore = mm.approximateObjectCount();
+        System.out.printf("Before: %.1f (%d)\n", 1.0 * memBefore / 1000000, sizeBefore);
         for (int i = 0; i < rules.size(); i++) {
             mm.addRule("mm" + i, rules.get(i));
         }
         System.gc();
         long memAfter = Runtime.getRuntime().freeMemory();
-        System.out.printf("After: %.1f\n", 1.0 * memAfter / 1000000);
-        int perRule = (int) ((1.0 * (memBefore - memAfter)) / rules.size());
-        System.out.println("Per rule: " + perRule);
+        int sizeAfter = mm.approximateObjectCount();
+        System.out.printf("After: %.1f (%d)\n", 1.0 * memAfter / 1000000, sizeAfter);
+        int perRuleMem = (int) ((1.0 * (memAfter - memBefore)) / rules.size());
+        int perRuleSize = (int) ((1.0 * (sizeAfter - sizeBefore)) / rules.size());
+        System.out.println("Per rule: " + perRuleMem + " (" + perRuleSize + ")");
         rules.clear();
     }
 
@@ -470,15 +473,18 @@ public class Benchmarks {
 
         System.gc();
         long memBefore = Runtime.getRuntime().freeMemory();
-        System.out.printf("Before: %.1f\n", 1.0 * memBefore / 1000000);
+        int sizeBefore = mm.approximateObjectCount();
+        System.out.printf("Before: %.1f (%d)\n", 1.0 * memBefore / 1000000, sizeBefore);
         for (int i = 0; i < rules.size(); i++) {
             mm.addRule("mm" + i, rules.get(i));
         }
         System.gc();
         long memAfter = Runtime.getRuntime().freeMemory();
-        System.out.printf("After: %.1f\n", 1.0 * memAfter / 1000000);
-        int perRule = (int) ((1.0 * (memBefore - memAfter)) / rules.size());
-        System.out.println("Per rule: " + perRule);
+        int sizeAfter = mm.approximateObjectCount();
+        System.out.printf("After: %.1f (%d)\n", 1.0 * memAfter / 1000000, sizeAfter);
+        int perRuleMem = (int) ((1.0 * (memAfter - memBefore)) / rules.size());
+        int perRuleSize = (int) ((1.0 * (sizeAfter - sizeBefore)) / rules.size());
+        System.out.println("Per rule: " + perRuleMem + " (" + perRuleSize + ")");
         rules.clear();
     }
 
