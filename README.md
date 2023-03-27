@@ -600,6 +600,9 @@ public void addPatternRule(final String name, final Map<String, List<Patterns>> 
 public void deletePatternRule(final String name, final Map<String, List<Patterns>> namevals);
 ```
 
+NOTE: The cautions listed in [`deleteRule()`](#deleterule) apply
+to `deletePatternRule()` as well.
+
 ## JSON text matching
 
 The field values in rules must be provided in their JSON representations.
