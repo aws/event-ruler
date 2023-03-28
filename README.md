@@ -593,11 +593,15 @@ public static Range between(final double bottom, final boolean openBottom, final
 ```
 
 Once you have constructed appropriate `Patterns` matchers with these methods, you can use the
-following form of `Machine.addRule()` to add them to your machine:
+following methods to add to or delete from your machine:
 
 ```java
 public void addPatternRule(final String name, final Map<String, List<Patterns>> namevals);
+public void deletePatternRule(final String name, final Map<String, List<Patterns>> namevals);
 ```
+
+NOTE: The cautions listed in [`deleteRule()`](#deleterule) apply
+to `deletePatternRule()` as well.
 
 ## JSON text matching
 

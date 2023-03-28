@@ -227,7 +227,7 @@ public class GenericMachine<T> {
      * @param name ARN of the rule
      * @param namevals names & values which make up the rule
      */
-    void deletePatternRule(final T name, final Map<String, List<Patterns>> namevals) {
+    public void deletePatternRule(final T name, final Map<String, List<Patterns>> namevals) {
         if (namevals.size() > MAXIMUM_RULE_SIZE) {
             throw new RuntimeException("Size of rule '" + name + "' exceeds max value of " + MAXIMUM_RULE_SIZE);
         }
