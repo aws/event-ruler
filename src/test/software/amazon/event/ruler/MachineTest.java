@@ -1562,17 +1562,17 @@ public class MachineTest {
         Machine m = new Machine();
         String rule = "{\n" +
                 "   \"status\": {\n" +
-                "       \"weatherText\": [{\"suffix\": \"雨\"}]\n" +
+                "       \"weatherText\": [{\"suffix\": \"统治者\"}]\n" +
                 "    }\n" +
                 "}";
         String eventStr ="{\n" +
                 "  \"status\": {\n" +
-                "    \"weatherText\": \"大雨\",\n" +
+                "    \"weatherText\": \"事件统治者\",\n" +
                 "    \"pm25\": 23\n" +
                 "  }\n" +
                 "}";
         m.addRule("r1", rule);
-        List<String> matchRules = m.rulesForJSONEvent(eventStr);
+        List<String> matchRules = m.rulesForEvent(eventStr);
         assertEquals(1, matchRules.size());
     }
 
