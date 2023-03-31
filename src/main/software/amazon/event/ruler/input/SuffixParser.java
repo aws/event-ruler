@@ -17,9 +17,6 @@ public class SuffixParser implements StringValueParser {
         final byte[] utf8bytes = new StringBuilder(value).reverse()
                 .toString().getBytes(StandardCharsets.UTF_8);
         final InputCharacter[] result = new InputCharacter[utf8bytes.length];
-//        if(utf8bytes[utf8bytes.length - 1] != 34) {
-//            throw new ParseException("Suffix matchers expect to end with '\"' character");
-//        }
         for (int i = 0; i < utf8bytes.length; i++) {
             byte utf8byte = utf8bytes[utf8bytes.length - i - 1];
             result[i] = new InputByte(utf8byte);
