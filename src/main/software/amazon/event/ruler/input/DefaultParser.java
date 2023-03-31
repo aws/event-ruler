@@ -4,8 +4,10 @@ import software.amazon.event.ruler.MatchType;
 
 import java.nio.charset.StandardCharsets;
 
+import static software.amazon.event.ruler.MatchType.ANYTHING_BUT_SUFFIX;
 import static software.amazon.event.ruler.MatchType.EQUALS_IGNORE_CASE;
 import static software.amazon.event.ruler.MatchType.ANYTHING_BUT_IGNORE_CASE;
+import static software.amazon.event.ruler.MatchType.SUFFIX;
 import static software.amazon.event.ruler.MatchType.WILDCARD;
 
 /**
@@ -36,14 +38,16 @@ public class DefaultParser implements MatchTypeParser, ByteParser {
     private static final DefaultParser SINGLETON = new DefaultParser();
     private final WildcardParser wildcardParser;
     private final EqualsIgnoreCaseParser equalsIgnoreCaseParser;
+    private final SuffixParser suffixParser;
 
     DefaultParser() {
-        this(new WildcardParser(), new EqualsIgnoreCaseParser());
+        this(new WildcardParser(), new EqualsIgnoreCaseParser(), new SuffixParser());
     }
 
-    DefaultParser(WildcardParser wildcardParser, EqualsIgnoreCaseParser equalsIgnoreCaseParser) {
+    DefaultParser(WildcardParser wildcardParser, EqualsIgnoreCaseParser equalsIgnoreCaseParser, SuffixParser suffixParser) {
         this.wildcardParser = wildcardParser;
         this.equalsIgnoreCaseParser = equalsIgnoreCaseParser;
+        this.suffixParser = suffixParser;
     }
 
     public static DefaultParser getParser() {
@@ -56,7 +60,10 @@ public class DefaultParser implements MatchTypeParser, ByteParser {
             return wildcardParser.parse(value);
         } else if (type == EQUALS_IGNORE_CASE || type == ANYTHING_BUT_IGNORE_CASE) {
             return equalsIgnoreCaseParser.parse(value);
+        } else if (type == SUFFIX || type == ANYTHING_BUT_SUFFIX) {
+            return suffixParser.parse(value);
         }
+
         final byte[] utf8bytes = value.getBytes(StandardCharsets.UTF_8);
         final InputCharacter[] result = new InputCharacter[utf8bytes.length];
         for (int i = 0; i < utf8bytes.length; i++) {

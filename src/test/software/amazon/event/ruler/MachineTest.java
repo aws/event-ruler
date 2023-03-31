@@ -1557,6 +1557,25 @@ public class MachineTest {
         assertEquals(60, machine.approximateObjectCount());
     }
 
+    @Test
+    public void testSuffixChineseMatch() throws Exception {
+        Machine m = new Machine();
+        String rule = "{\n" +
+                "   \"status\": {\n" +
+                "       \"weatherText\": [{\"suffix\": \"雨\"}]\n" +
+                "    }\n" +
+                "}";
+        String eventStr ="{\n" +
+                "  \"status\": {\n" +
+                "    \"weatherText\": \"大雨\",\n" +
+                "    \"pm25\": 23\n" +
+                "  }\n" +
+                "}";
+        m.addRule("r1", rule);
+        List<String> matchRules = m.rulesForJSONEvent(eventStr);
+        assertEquals(1, matchRules.size());
+    }
+
     @Test(timeout = 500)
     public void testApproximateSizeDoNotTakeForeverForRulesWithNumericMatchers() throws Exception {
         Machine machine = new Machine();

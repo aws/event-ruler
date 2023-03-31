@@ -27,30 +27,44 @@ public class ParserTest {
 
     @Test
     public void testOtherMatchTypes() {
-        final boolean[] parserInvoked = { false, false };
+        final int[] parserInvokedCount = { 0, 0, 0 };
         DefaultParser parser = new DefaultParser(
             new WildcardParser() {
                @Override
                public InputCharacter[] parse(String value) {
-                   parserInvoked[0] = true;
+                   parserInvokedCount[0] +=1;
                    return null;
                }
             },
             new EqualsIgnoreCaseParser() {
                 @Override
                 public InputCharacter[] parse(String value) {
-                    parserInvoked[1] = true;
+                    parserInvokedCount[1] += 1;
+                    return null;
+                }
+            },
+            new SuffixParser() {
+                @Override
+                public InputCharacter[] parse(String value) {
+                    parserInvokedCount[2] += 1;
                     return null;
                 }
             }
         );
 
         assertNull(parser.parse(MatchType.WILDCARD, "abc"));
-        assertTrue(parserInvoked[0]);
-        assertFalse(parserInvoked[1]);
+        assertEquals(parserInvokedCount[0], 1);
+        assertEquals(parserInvokedCount[1], 0);
+        assertEquals(parserInvokedCount[2], 0);
 
         assertNull(parser.parse(MatchType.EQUALS_IGNORE_CASE, "abc"));
-        assertTrue(parserInvoked[0]);
-        assertTrue(parserInvoked[1]);
+        assertEquals(parserInvokedCount[0], 1);
+        assertEquals(parserInvokedCount[1], 1);
+        assertEquals(parserInvokedCount[2], 0);
+
+        assertNull(parser.parse(MatchType.SUFFIX, "abc"));
+        assertEquals(parserInvokedCount[0], 1);
+        assertEquals(parserInvokedCount[1], 1);
+        assertEquals(parserInvokedCount[2], 1);
     }
 }
