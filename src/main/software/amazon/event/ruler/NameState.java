@@ -264,7 +264,14 @@ class NameState {
             for (Map.Entry<String, NameMatcher<NameState>> mustNotExistEntry : mustNotExistMatchers.entrySet()) {
                 mustNotExistEntry.getValue().getNextState().gatherObjects(objectSet);
             }
-            objectSet.addAll(rules);
+            for (Map.Entry<Patterns, Set<SubRule>> entry : patternToTerminalSubRules.entrySet()) {
+                objectSet.add(entry.getKey());
+                objectSet.addAll(entry.getValue());
+            }
+            for (Map.Entry<Patterns, Set<SubRule>> entry : patternToNonTerminalSubRules.entrySet()) {
+                objectSet.add(entry.getKey());
+                objectSet.addAll(entry.getValue());
+            }
         }
     }
 

@@ -1936,7 +1936,7 @@ class ByteMachine {
         if (!objectSet.contains(this)) { // stops looping
             objectSet.add(this);
             startState.gatherObjects(objectSet);
-            for (NameState states : anythingButs) {
+            for (NameState states : anythingButs.keySet()) {
                 states.gatherObjects(objectSet);
             }
         }

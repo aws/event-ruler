@@ -2013,13 +2013,13 @@ public class MachineTest {
         assertEquals(1, machine.approximateObjectCount());
 
         machine.addRule("r1", rule1);
-        assertEquals(20, machine.approximateObjectCount());
+        assertEquals(22, machine.approximateObjectCount());
 
         machine.addRule("r2", rule2);
-        assertEquals(40, machine.approximateObjectCount());
+        assertEquals(43, machine.approximateObjectCount());
 
         machine.addRule("r3", rule3);
-        assertEquals(60, machine.approximateObjectCount());
+        assertEquals(64, machine.approximateObjectCount());
     }
 
     @Test
@@ -2051,7 +2051,7 @@ public class MachineTest {
                         "    \"c\": [{ \"numeric\": [\">\", 50] }]\n" +
                         "}");
 
-        assertEquals(514, machine.approximateObjectCount());
+        assertEquals(517, machine.approximateObjectCount());
     }
 
     @Test
@@ -2061,35 +2061,35 @@ public class MachineTest {
 
 
         machine.addRule("single-rule", "{ \"key\" :  [ \"value\" ] }");
-        assertEquals(7, machine.approximateObjectCount());
+        assertEquals(8, machine.approximateObjectCount());
 
         // every new rule also is considered as part of the end-state
         machine = new Machine();
         for(int i = 0 ; i < 1000; i ++) {
             machine.addRule("lots-rule-" + i, "{ \"key\" :  [ \"value\" ] }");
         }
-        assertEquals(1006, machine.approximateObjectCount());
+        assertEquals(1007, machine.approximateObjectCount());
 
         // new unique rules create new states
         machine = new Machine();
         for(int i = 0 ; i < 1000; i ++) {
             machine.addRule("lots-key-values-" + i, "{ \"many-kv-" + i + "\" :  [ \"value" + i + "\" ] }");
         }
-        assertEquals(6001, machine.approximateObjectCount());
+        assertEquals(7001, machine.approximateObjectCount());
 
         // new unique rule keys create same states as unique rules
         machine = new Machine();
         for(int i = 0 ; i < 1000; i ++) {
             machine.addRule("lots-keys-" + i, "{ \"many-key-" + i + "\" :  [ \"value\" ] }");
         }
-        assertEquals(6001, machine.approximateObjectCount());
+        assertEquals(6002, machine.approximateObjectCount());
 
         // new unique rule with many values are smaller
         machine = new Machine();
         for(int i = 0 ; i < 1000; i ++) {
             machine.addRule("lots-values-" + i, "{ \"many-values-key\" :  [ \"value" + i + " \" ] }");
         }
-        assertEquals(4108, machine.approximateObjectCount());
+        assertEquals(5108, machine.approximateObjectCount());
     }
 
     @Test
@@ -2102,7 +2102,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name1\",\"Name2\",\"Name3\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(33, machine.approximateObjectCount());
+        assertEquals(25, machine.approximateObjectCount());
 
         machine.addRule("rule-with-six-elements",
                 "{\n" +
@@ -2111,7 +2111,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name1\",\"Name2\",\"Name3\",\"Name4\",\"Name5\",\"Name6\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(58, machine.approximateObjectCount());
+        assertEquals(35, machine.approximateObjectCount());
 
 
         machine.addRule("rule-with-six-more-elements",
@@ -2121,7 +2121,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name7\",\"Name8\",\"Name9\",\"Name10\",\"Name11\",\"Name12\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(107, machine.approximateObjectCount());
+        assertEquals(60, machine.approximateObjectCount());
     }
 
     @Test
@@ -2134,7 +2134,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name1\",\"Name2\",\"Name3\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(63, machine.approximateObjectCount());
+        assertEquals(35, machine.approximateObjectCount());
 
         machine.addRule("rule-with-two-more-source-and-eventNames",
                 "{\n" +
@@ -2143,7 +2143,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name1\",\"Name2\",\"Name3\",\"Name4\",\"Name5\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(130, machine.approximateObjectCount());
+        assertEquals(48, machine.approximateObjectCount());
 
         machine.addRule("rule-with-more-unique-source-and-eventNames",
                 "{\n" +
@@ -2152,7 +2152,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name6\",\"Name7\",\"Name8\",\"Name9\",\"Name10\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(251, machine.approximateObjectCount());
+        assertEquals(87, machine.approximateObjectCount());
     }
 
 }
