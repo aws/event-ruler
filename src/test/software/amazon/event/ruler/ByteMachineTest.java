@@ -67,7 +67,7 @@ public class ByteMachineTest {
           "foo1",
           "foossssss2sssssssssssss4ssssssssssssss5sssssssssssssss7ssssssssssssssssssssssssssssssssssssssss"
         };
-        Set<NameState> matches;
+        Set<NameStateWithPattern> matches;
         for (String s : shouldMatch) {
             matches = bm.transitionOn(s);
             assertEquals(1, matches.size());
@@ -153,7 +153,7 @@ public class ByteMachineTest {
             cut.addPattern(Range.lessThan(data[i]));
             for (double aData : data) {
                 String num = String.format("%f", aData);
-                Set<NameState> matched = cut.transitionOn(num);
+                Set<NameStateWithPattern> matched = cut.transitionOn(num);
                 if (aData < data[i]) {
                     assertEquals(num + " should match < " + data[i], 1, matched.size());
                 } else {
@@ -161,7 +161,7 @@ public class ByteMachineTest {
                 }
             }
             cut.deletePattern(Range.lessThan(data[i]));
-            assertTrue("bytMachine must be empty after delete pattern", cut.isEmpty());
+            assertTrue("byteMachine must be empty after delete pattern", cut.isEmpty());
         }
 
         // <=
@@ -170,7 +170,7 @@ public class ByteMachineTest {
             cut.addPattern(Range.lessThanOrEqualTo(data[i]));
             for (double aData : data) {
                 String num = String.format("%f", aData);
-                Set<NameState> matched = cut.transitionOn(num);
+                Set<NameStateWithPattern> matched = cut.transitionOn(num);
                 if (aData <= data[i]) {
                     assertEquals(num + " should match <= " + data[i], 1, matched.size());
                 } else {
@@ -178,7 +178,7 @@ public class ByteMachineTest {
                 }
             }
             cut.deletePattern(Range.lessThanOrEqualTo(data[i]));
-            assertTrue("bytMachine must be empty after delete pattern", cut.isEmpty());
+            assertTrue("byteMachine must be empty after delete pattern", cut.isEmpty());
         }
 
         // >
@@ -187,7 +187,7 @@ public class ByteMachineTest {
             cut.addPattern(Range.greaterThan(data[i]));
             for (double aData : data) {
                 String num = String.format("%f", aData);
-                Set<NameState> matched = cut.transitionOn(num);
+                Set<NameStateWithPattern> matched = cut.transitionOn(num);
                 if (aData > data[i]) {
                     assertEquals(num + " should match > " + data[i], 1, matched.size());
                 } else {
@@ -195,7 +195,7 @@ public class ByteMachineTest {
                 }
             }
             cut.deletePattern(Range.greaterThan(data[i]));
-            assertTrue("bytMachine must be empty after delete pattern", cut.isEmpty());
+            assertTrue("byteMachine must be empty after delete pattern", cut.isEmpty());
         }
 
         // >=
@@ -205,7 +205,7 @@ public class ByteMachineTest {
             cut.addPattern(nr);
             for (double aData : data) {
                 String num = String.format("%f", aData);
-                Set<NameState> matched = cut.transitionOn(num);
+                Set<NameStateWithPattern> matched = cut.transitionOn(num);
                 if (aData >= data[i]) {
                     assertEquals(num + " should match > " + data[i], 1, matched.size());
                 } else {
@@ -213,7 +213,7 @@ public class ByteMachineTest {
                 }
             }
             cut.deletePattern(Range.greaterThanOrEqualTo(data[i]));
-            assertTrue("bytMachine must be empty after delete pattern", cut.isEmpty());
+            assertTrue("byteMachine must be empty after delete pattern", cut.isEmpty());
         }
 
         // open/open range
@@ -224,7 +224,7 @@ public class ByteMachineTest {
                 cut.addPattern(r);
                 for (double aData : data) {
                     String num = String.format("%f", aData);
-                    Set<NameState> matched = cut.transitionOn(num);
+                    Set<NameStateWithPattern> matched = cut.transitionOn(num);
                     if (aData > data[i] && aData < data[j]) {
                         assertEquals(1, matched.size());
                     } else {
@@ -232,7 +232,7 @@ public class ByteMachineTest {
                     }
                 }
                 cut.deletePattern(r);
-                assertTrue("bytMachine must be empty after delete pattern", cut.isEmpty());
+                assertTrue("byteMachine must be empty after delete pattern", cut.isEmpty());
             }
         }
 
@@ -244,7 +244,7 @@ public class ByteMachineTest {
                 cut.addPattern(r);
                 for (double aData : data) {
                     String num = String.format("%f", aData);
-                    Set<NameState> matched = cut.transitionOn(num);
+                    Set<NameStateWithPattern> matched = cut.transitionOn(num);
                     if (aData > data[i] && aData <= data[j]) {
                         assertEquals(1, matched.size());
                     } else {
@@ -252,7 +252,7 @@ public class ByteMachineTest {
                     }
                 }
                 cut.deletePattern(r);
-                assertTrue("bytMachine must be empty after delete pattern", cut.isEmpty());
+                assertTrue("byteMachine must be empty after delete pattern", cut.isEmpty());
             }
         }
 
@@ -264,7 +264,7 @@ public class ByteMachineTest {
                 cut.addPattern(r);
                 for (double aData : data) {
                     String num = String.format("%f", aData);
-                    Set<NameState> matched = cut.transitionOn(num);
+                    Set<NameStateWithPattern> matched = cut.transitionOn(num);
                     if (aData >= data[i] && aData < data[j]) {
                         assertEquals(1, matched.size());
                     } else {
@@ -272,7 +272,7 @@ public class ByteMachineTest {
                     }
                 }
                 cut.deletePattern(r);
-                assertTrue("bytMachine must be empty after delete pattern", cut.isEmpty());
+                assertTrue("byteMachine must be empty after delete pattern", cut.isEmpty());
             }
         }
         // closed/closed range
@@ -283,7 +283,7 @@ public class ByteMachineTest {
                 cut.addPattern(r);
                 for (double aData : data) {
                     String num = String.format("%f", aData);
-                    Set<NameState> matched = cut.transitionOn(num);
+                    Set<NameStateWithPattern> matched = cut.transitionOn(num);
                     if (aData >= data[i] && aData <= data[j]) {
                         assertEquals(1, matched.size());
                     } else {
@@ -291,7 +291,7 @@ public class ByteMachineTest {
                     }
                 }
                 cut.deletePattern(r);
-                assertTrue("bytMachine must be empty after delete pattern", cut.isEmpty());
+                assertTrue("byteMachine must be empty after delete pattern", cut.isEmpty());
             }
         }
 
@@ -311,7 +311,7 @@ public class ByteMachineTest {
         }
         for (int k = 0; k < data.length; k++) {
             String num = String.format("%f", data[k]);
-            Set<NameState> matched = cut.transitionOn(num);
+            Set<NameStateWithPattern> matched = cut.transitionOn(num);
             assertEquals(containedCount[k], matched.size());
         }
         // delete the range
@@ -330,7 +330,7 @@ public class ByteMachineTest {
         assertTrue("byteMachine must be empty after delete pattern", cut.isEmpty());
         for (int k = 0; k < data.length; k++) {
             String num = String.format("%f", data[k]);
-            Set<NameState> matched = cut.transitionOn(num);
+            Set<NameStateWithPattern> matched = cut.transitionOn(num);
             assertEquals(containedCount[k], matched.size());
             assertEquals(0, matched.size());
         }
@@ -351,7 +351,7 @@ public class ByteMachineTest {
         }
         for (int k = 0; k < data.length; k++) {
             String num = String.format("%f", data[k]);
-            Set<NameState> matched = cut.transitionOn(num);
+            Set<NameStateWithPattern> matched = cut.transitionOn(num);
             assertEquals(containedCount[k], matched.size());
         }
 
@@ -366,10 +366,10 @@ public class ByteMachineTest {
                 }
             }
         }
-        assertTrue("bytMachine must be empty after delete pattern", cut.isEmpty());
+        assertTrue("byteMachine must be empty after delete pattern", cut.isEmpty());
         for (int k = 0; k < data.length; k++) {
             String num = String.format("%f", data[k]);
-            Set<NameState> matched = cut.transitionOn(num);
+            Set<NameStateWithPattern> matched = cut.transitionOn(num);
             assertEquals(containedCount[k], matched.size());
             assertEquals(0, matched.size());
         }
@@ -391,7 +391,7 @@ public class ByteMachineTest {
         cut.addPattern(Patterns.exactMatch("foo"));
         cut.addPattern(Patterns.exactMatch("foo"));
 
-        Set<NameState> l = cut.transitionOn("foo");
+        Set<NameStateWithPattern> l = cut.transitionOn("foo");
         assertEquals(1, l.size());
     }
 
@@ -569,7 +569,7 @@ public class ByteMachineTest {
         assertEquals(1, cut.transitionOn(num).size());
         cut.deletePattern(r1);
         assertEquals(0, cut.transitionOn(num).size());
-        assertTrue("bytMachine must be empty after delete pattern", cut.isEmpty());
+        assertTrue("byteMachine must be empty after delete pattern", cut.isEmpty());
 
     }
 
@@ -594,9 +594,9 @@ public class ByteMachineTest {
         assertEquals(1, cut.transitionOn(num).size());
         cut.deletePattern(r3);
         assertEquals(0, cut.transitionOn(num).size());
-        assertTrue("bytMachine must be empty after delete pattern", cut.isEmpty());
+        assertTrue("byteMachine must be empty after delete pattern", cut.isEmpty());
         cut.deletePattern(r);
-        assertTrue("bytMachine must be empty after delete pattern", cut.isEmpty());
+        assertTrue("byteMachine must be empty after delete pattern", cut.isEmpty());
     }
 
     @Test
@@ -700,7 +700,7 @@ public class ByteMachineTest {
 
         cut.addPattern(Patterns.existencePatterns());
 
-        Set<NameState> matches = cut.transitionOn("someValue");
+        Set<NameStateWithPattern> matches = cut.transitionOn("someValue");
         assertEquals(1, matches.size());
 
         cut.deletePattern(Patterns.existencePatterns());
@@ -711,7 +711,7 @@ public class ByteMachineTest {
     public void testIfExistencePatternIsNotAdded_itDoesNotFindMatch() {
         ByteMachine cut = new ByteMachine();
 
-        Set<NameState> matches = cut.transitionOn("someValue");
+        Set<NameStateWithPattern> matches = cut.transitionOn("someValue");
         assertEquals(0, matches.size());
 
         assertTrue(cut.isEmpty());
@@ -725,7 +725,7 @@ public class ByteMachineTest {
         cut.addPattern(Patterns.existencePatterns());
         cut.addPattern(Patterns.exactMatch(val));
 
-        Set<NameState> matches = cut.transitionOn("anotherValue");
+        Set<NameStateWithPattern> matches = cut.transitionOn("anotherValue");
         assertEquals(1, matches.size());
 
         matches = cut.transitionOn(val);
@@ -749,7 +749,7 @@ public class ByteMachineTest {
         String val = "0A,";
         cut.addPattern(Range.greaterThanOrEqualTo(-1e9));
 
-        Set<NameState> matches = cut.transitionOn(val);
+        Set<NameStateWithPattern> matches = cut.transitionOn(val);
         assertTrue(matches.isEmpty());
     }
 
@@ -761,7 +761,7 @@ public class ByteMachineTest {
         cut.addPattern(Patterns.existencePatterns());
         cut.addPattern(Patterns.exactMatch(val));
 
-        Set<NameState> matches = cut.transitionOn("NewValue");
+        Set<NameStateWithPattern> matches = cut.transitionOn("NewValue");
         assertEquals(1, matches.size());
 
         matches = cut.transitionOn(val);
@@ -2134,19 +2134,6 @@ public class ByteMachineTest {
     public void testAddAnythingButPatternNoNameStateGiven() {
         ByteMachine cut = new ByteMachine();
         assertNotNull(cut.addPattern(Patterns.anythingButMatch("z")));
-    }
-
-    @Test
-    public void testAddAnythingButEqualsIgnoreCasePatternGivenNameStateReturned() {
-        NameState nameState = new NameState();
-        ByteMachine cut = new ByteMachine();
-        assertSame(nameState, cut.addPattern(Patterns.anythingButIgnoreCaseMatch("z"), nameState));
-    }
-
-    @Test
-    public void testAddAnythingButEqualsIgnoreCasePatternNoNameStateGiven() {
-        ByteMachine cut = new ByteMachine();
-        assertNotNull(cut.addPattern(Patterns.anythingButIgnoreCaseMatch("z")));
     }
 
     @Test

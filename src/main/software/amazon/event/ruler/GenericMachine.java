@@ -50,6 +50,11 @@ public class GenericMachine<T> {
      */
     private final Map<String, Integer> fieldStepsUsedRefCount = new ConcurrentHashMap<>();
 
+    /**
+     * Generate context for a sub-rule that can be passed through relevant methods.
+     */
+    private final SubRuleContext.Generator subRuleContextGenerator = new SubRuleContext.Generator();
+
     public GenericMachine() {}
 
     /**
@@ -199,7 +204,7 @@ public class GenericMachine<T> {
         Collections.sort(keys);
         synchronized(this) {
             final List<String> addedKeys =  new ArrayList<>();
-            addStep(getStartState(), keys, 0, namePatterns, name, addedKeys);
+            addStep(getStartState(), keys, 0, namePatterns, name, addedKeys, subRuleContextGenerator.generate());
             addIntoUsedFields(addedKeys);
         }
     }
@@ -236,7 +241,8 @@ public class GenericMachine<T> {
         Collections.sort(keys);
         synchronized(this) {
             final List<String> deletedKeys =  new ArrayList<>();
-            deleteStep(getStartState(), keys, 0, namevals, name, deletedKeys);
+            final Set<Double> candidateSubRuleIds = new HashSet<>();
+            deleteStep(getStartState(), keys, 0, namevals, name, deletedKeys, candidateSubRuleIds);
             // check and delete the key from filedUsed ...
             checkAndDeleteUsedFields(deletedKeys);
         }
@@ -252,20 +258,22 @@ public class GenericMachine<T> {
         deletePatternRule(name, patternMap);
     }
 
-    private void deleteStep(final NameState state,
-                            final List<String> keys,
-                            final int keyIndex,
-                            final Map<String, List<Patterns>> patterns,
-                            final T ruleName,
-                            List<String> deletedKeys) {
+    private Set<Double> deleteStep(final NameState state,
+                                   final List<String> keys,
+                                   final int keyIndex,
+                                   final Map<String, List<Patterns>> patterns,
+                                   final T ruleName,
+                                   final List<String> deletedKeys,
+                                   final Set<Double> candidateSubRuleIds) {
 
+        final Set<Double> deletedSubRuleIds = new HashSet<>();
         final String key = keys.get(keyIndex);
         ByteMachine byteMachine = state.getTransitionOn(key);
         NameMatcher<NameState> nameMatcher = state.getKeyTransitionOn(key);
 
         // matchers are null, we have nothing to delete.
         if (byteMachine == null && nameMatcher == null) {
-            return;
+            return deletedSubRuleIds;
         }
 
         for (Patterns pattern : patterns.get(key)) {
@@ -279,17 +287,30 @@ public class GenericMachine<T> {
                     nextNameState = byteMachine.findPattern(pattern);
                 }
             }
+
             if (nextNameState != null) {
                 // If this was the last step, then reaching the last state means the rule matched, and we should delete
                 // the rule from the next NameState.
                 final int nextKeyIndex = keyIndex + 1;
-                if (nextKeyIndex == keys.size()) {
-                    if (nextNameState.hasRuleWithPattern(ruleName, pattern)) {
-                        nextNameState.deleteRuleWithPattern(ruleName, pattern);
-                        // Only delete the pattern if:
-                        //   1. There are no other rules using the same pattern also leading to the next NameState, and
+                boolean isTerminal = nextKeyIndex == keys.size();
+
+                // Trim the candidate sub-rule ID set to contain only the sub-rule IDs present in the next NameState.
+                // If candidate set is empty, we are at first NameState, so initialize to next NameState's sub-rule IDs.
+                Set<Double> nextNameStateSubRuleIds = nextNameState.getSubRuleIds(ruleName, pattern, isTerminal);
+                if (candidateSubRuleIds.isEmpty()) {
+                    candidateSubRuleIds.addAll(nextNameStateSubRuleIds);
+                } else {
+                    candidateSubRuleIds.retainAll(nextNameStateSubRuleIds);
+                }
+
+                if (isTerminal) {
+                    for (Double candidateSubRuleId : candidateSubRuleIds) {
+                        nextNameState.deleteSubRule(ruleName, candidateSubRuleId, pattern, true);
+                        deletedSubRuleIds.add(candidateSubRuleId);
+                        // Only delete the pattern if both are true:
+                        //   1. There are no other terminal rules using the same pattern to lead to the next NameState.
                         //   2. The next NameState is a dead-end; it doesn't transition to a ByteMachine or NameMatcher.
-                        Set<Patterns> nextPatterns = nextNameState.getPatterns();
+                        Set<Patterns> nextPatterns = nextNameState.getTerminalPatterns();
                         boolean doesNextNameStateStillContainPattern = nextPatterns.contains(pattern);
                         if (!doesNextNameStateStillContainPattern && !nextNameState.hasTransitions()
                                 && deletePattern(state, key, pattern)) {
@@ -297,7 +318,16 @@ public class GenericMachine<T> {
                         }
                     }
                 } else {
-                    deleteStep(nextNameState, keys, nextKeyIndex, patterns, ruleName, deletedKeys);
+                    if (candidateSubRuleIds.isEmpty()) {
+                        return deletedSubRuleIds;
+                    }
+                    deletedSubRuleIds.addAll(deleteStep(nextNameState, keys, nextKeyIndex, patterns, ruleName,
+                            deletedKeys, new HashSet<>(candidateSubRuleIds)));
+
+                    for (double deletedSubRuleId : deletedSubRuleIds) {
+                        nextNameState.deleteSubRule(ruleName, deletedSubRuleId, pattern, false);
+                    }
+
                     // Unwinding the key recursion, so we aren't on a rule match. Only delete the pattern if the next
                     // NameState is a dead-end, meaning it doesn't transition to a ByteMachine or NameMatcher.
                     if (!nextNameState.hasTransitions() && deletePattern(state, key, pattern)) {
@@ -308,6 +338,7 @@ public class GenericMachine<T> {
 
         }
 
+        return deletedSubRuleIds;
     }
 
     /**
@@ -448,7 +479,8 @@ public class GenericMachine<T> {
                          final int keyIndex,
                          final Map<String, List<Patterns>> patterns,
                          final T ruleName,
-                         List<String> addedKeys) {
+                         List<String> addedKeys,
+                         final SubRuleContext context) {
 
         final String key = keys.get(keyIndex);
         ByteMachine byteMachine = state.getTransitionOn(key);
@@ -485,12 +517,12 @@ public class GenericMachine<T> {
         for (NameState nameState : nameStates) {
             // if this was the last step, then reaching the last state means the rule matched.
             final int nextKeyIndex = keyIndex + 1;
-            if (nextKeyIndex == keys.size()) {
-                for (Patterns pattern : patterns.get(key)) {
-                    nameState.addRuleWithPattern(ruleName, pattern);
-                }
-            } else {
-                addStep(nameState, keys, nextKeyIndex, patterns, ruleName, addedKeys);
+            boolean isTerminal = nextKeyIndex == keys.size();
+            for (Patterns pattern : patterns.get(key)) {
+                nameState.addSubRule(ruleName, context.getId(), pattern, isTerminal);
+            }
+            if (nextKeyIndex != keys.size()) {
+                addStep(nameState, keys, nextKeyIndex, patterns, ruleName, addedKeys, context);
             }
         }
 

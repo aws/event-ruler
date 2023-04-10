@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Represents the state of a rule-finding project.
@@ -15,12 +16,11 @@ import java.util.Set;
 @ThreadSafe
 class Task {
 
-  public static final String[] INITIAL = new String[0];
-  // What we're trying to match rules to
+    // What we're trying to match rules to
     public final String[] event;
 
-    // the rules, if we find any
-    private final Set<Object> rules = new HashSet<>();
+    // the sub-rules that matched the event, if we find any
+    private final Set<NameState.SubRule> matchingSubRules = new HashSet<>();
 
     // Steps queued up for processing
     private final Queue<Step> stepQueue = new ArrayDeque<>();
@@ -38,7 +38,7 @@ class Task {
     private final GenericMachine<?> machine;
 
     Task(final List<String> event, final GenericMachine<?> machine) {
-        this(event.toArray(INITIAL), machine);
+        this(event.toArray(new String[0]), machine);
     }
 
     Task(final String[] event, final GenericMachine<?> machine) {
@@ -53,7 +53,7 @@ class Task {
     // The field used means all steps in the field must be all used individually.
     boolean isFieldUsed(final String field) {
         if (field.contains(".")) {
-            final String[] steps = field.split("\\.");
+            String[] steps = field.split("\\.");
             return Arrays.stream(steps).allMatch(machine::isFieldStepUsed);
         }
         return machine.isFieldStepUsed(field);
@@ -67,7 +67,7 @@ class Task {
         // queue it up only if it's the first time we're trying to queue it up
         // otherwise bad things happen, see comment on seenSteps collection
         if (seenSteps.add(step)) {
-          stepQueue.add(step);
+            stepQueue.add(step);
         }
     }
 
@@ -76,10 +76,27 @@ class Task {
     }
 
     List<Object> getMatchedRules() {
-        return new ArrayList<>(rules);
+        return new ArrayList<>(matchingSubRules.stream()
+                .map(r -> r.getRule())
+                .collect(Collectors.toSet()));
     }
 
-    void collectRules(final NameState nameState) {
-      rules.addAll(nameState.getRules());
+    void collectRules(final Set<NameState.SubRule> candidateSubRules, final NameStateWithPattern nameStateWithPattern) {
+        Set<NameState.SubRule> terminalSubRules = nameStateWithPattern.getNameState().getTerminalSubRulesForPattern(
+                nameStateWithPattern.getPattern());
+        if (terminalSubRules == null) {
+            return;
+        }
+
+        // If no candidates, that means we're on the first step, so all sub-rules are candidates.
+        if (candidateSubRules.isEmpty()) {
+            matchingSubRules.addAll(terminalSubRules);
+        } else {
+            for (NameState.SubRule subRule : candidateSubRules) {
+                if (terminalSubRules.contains(subRule)) {
+                    matchingSubRules.add(subRule);
+                }
+            }
+        }
     }
 }
