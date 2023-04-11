@@ -1617,6 +1617,7 @@ public class MachineTest {
         assertTrue(machine.isEmpty());
     }
 
+    @Test
     public void testDuplicateKeyLastOneWins() throws Exception {
         final Machine machine = new Machine();
         String event1 = "{\n" +
