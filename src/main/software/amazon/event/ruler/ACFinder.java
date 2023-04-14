@@ -99,7 +99,7 @@ class ACFinder {
                     candidateSubRulesForNextStep = calculateCandidateSubRulesForNextStep(null, fromStateWithPattern);
                     // If there are no more candidate sub-rules, there is no need to proceed further.
                     if (candidateSubRulesForNextStep == null || candidateSubRulesForNextStep.isEmpty()) {
-                        continue;
+                        break;
                     }
                 } else {
                     candidateSubRulesForNextStep = new HashSet<>();

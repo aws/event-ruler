@@ -2005,6 +2005,27 @@ public class MachineTest {
     }
 
     @Test
+    public void testInitialSharedNameStateWithTwoMustNotExistsIsTerminalForOnlyOne() throws Exception {
+        // Initial NameState has two different (bar and foo) exists=false patterns. One is terminal, whereas the other
+        // leads to another NameState with another key (zoo).
+        String rule1 = "{\"bar\": [{\"exists\": false}]}";
+        String rule2 = "{\"foo\": [{\"exists\": false}], \"zoo\": [\"a\"]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        String event = "{" +
+                "\"zoo\": \"a\"" +
+                "}";
+
+        List<String> matches = machine.rulesForEvent(event);
+        assertEquals(2, matches.size());
+        assertTrue(matches.contains("rule1"));
+        assertTrue(matches.contains("rule2"));
+    }
+
+    @Test
     public void testApproxSizeForSimplestPossibleMachine() throws Exception {
         String rule1 = "{ \"a\" : [ 1 ] }";
         String rule2 = "{ \"b\" : [ 2 ] }";

@@ -93,7 +93,7 @@ class Finder {
                                 nameStateWithPattern);
                         // If there are no more candidate sub-rules, there is no need to proceed further.
                         if (candidateSubRulesForNextStep == null || candidateSubRulesForNextStep.isEmpty()) {
-                            continue;
+                            break;
                         }
                     } else {
                         candidateSubRulesForNextStep = new HashSet<>();
