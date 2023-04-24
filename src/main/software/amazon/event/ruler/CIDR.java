@@ -75,8 +75,8 @@ public class CIDR {
     }
 
     /**
-     * Converts a string to an IP address literal to isCIDR format Range if this is possible.  If not
-     *  possible, returns null
+     * Converts a string to an IP address literal to isCIDR format Range if this is possible.
+     * If not possible, returns null.
      * @param ip String that might be an IP address literal
      * @return Range with isCIDR as true
      */
@@ -106,7 +106,7 @@ public class CIDR {
                 openTop = true;
             }
             return new Range(bottom, openBottom, top, openTop, true);
-        } catch (Exception e){
+        } catch (Exception e) {
             return null;
         }
     }
