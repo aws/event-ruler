@@ -27,7 +27,7 @@ import java.util.Set;
  */
 
 /**
- *  Uses a state machine created by com.amazon.fsm.ruler.Machine to process tokens
+ *  Uses a state machine created by software.amazon.event.ruler.Machine to process tokens
  *   representing key-value pairs in an event, and return any matching Rules.
  */
 @ThreadSafe
