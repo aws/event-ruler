@@ -30,6 +30,93 @@ import static org.junit.Assert.fail;
  */
 public class MachineTest {
 
+    private String toIP(int ip) {
+        StringBuilder sb = new StringBuilder();
+        sb.append((ip >> 24) & 0xFF).append('.');
+        sb.append((ip >> 16) & 0xFF).append('.');
+        sb.append((ip >> 8) & 0xFF).append('.');
+        sb.append(ip & 0xFF);
+        return sb.toString();
+    }
+
+    @Test
+    public void CIDRTest() throws Exception {
+
+        String template = "{" +
+                "  \"a\": \"IP\"" +
+                "}";
+
+        long base = 0x0A000000;
+
+        // tested by hand with much smaller starts but the runtime gets looooooooong
+        for (int i = 22; i < 32; i++) {
+
+            String rule = "{ " +
+                    "  \"a\": [ {\"cidr\": \"10.0.0.0/" + i + "\"} ]" +
+                    "}";
+            Machine m = new Machine();
+            m.addRule("r", rule);
+            long numberThatShouldMatch = 1L << (32 - i);
+
+            // don't want to run through all of them for low values of maskbits
+            long windowEnd = base + numberThatShouldMatch + 16;
+            int matches = 0;
+            for (long j = base - 16; j < windowEnd; j++) {
+
+                String event = template.replace("IP", toIP((int) j));
+                if (m.rulesForEvent(event).size() == 1) {
+                    matches++;
+                }
+            }
+            assertEquals(numberThatShouldMatch, matches);
+        }
+    }
+
+    @Test
+    public void testIPAddressOfCIDRIsEqualToMaximumOfRange() throws Exception {
+        String rule1 = "{\"sourceIPAddress\": [{\"cidr\": \"190.149.163.171/31\"}]}";
+        String rule2 = "{\"sourceIPAddress\": [{\"cidr\": \"190.149.164.255/24\"}]}";
+        String rule3 = "{\"sourceIPAddress\": [{\"cidr\": \"172.31.39.225/31\"}]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+        machine.addRule("rule3", rule3);
+
+        List<String> matches = machine.rulesForEvent("{\"sourceIPAddress\": \"190.149.163.170\"}");
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+        matches = machine.rulesForEvent("{\"sourceIPAddress\": \"190.149.163.171\"}");
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+        matches = machine.rulesForEvent("{\"sourceIPAddress\": \"190.149.163.169\"}");
+        assertTrue(matches.isEmpty());
+        matches = machine.rulesForEvent("{\"sourceIPAddress\": \"190.149.163.172\"}");
+        assertTrue(matches.isEmpty());
+
+        matches = machine.rulesForEvent("{\"sourceIPAddress\": \"190.149.164.0\"}");
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule2"));
+        matches = machine.rulesForEvent("{\"sourceIPAddress\": \"190.149.164.255\"}");
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule2"));
+        matches = machine.rulesForEvent("{\"sourceIPAddress\": \"190.149.163.255\"}");
+        assertTrue(matches.isEmpty());
+        matches = machine.rulesForEvent("{\"sourceIPAddress\": \"190.149.165.0\"}");
+        assertTrue(matches.isEmpty());
+
+        matches = machine.rulesForEvent("{\"sourceIPAddress\": \"172.31.39.224\"}");
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule3"));
+        matches = machine.rulesForEvent("{\"sourceIPAddress\": \"172.31.39.225\"}");
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule3"));
+        matches = machine.rulesForEvent("{\"sourceIPAddress\": \"172.31.39.223\"}");
+        assertTrue(matches.isEmpty());
+        matches = machine.rulesForEvent("{\"sourceIPAddress\": \"172.31.39.226\"}");
+        assertTrue(matches.isEmpty());
+    }
+
     @Test
     public void testSimplestPossibleMachine() throws Exception {
         String rule1 = "{ \"a\" : [ 1 ] }";

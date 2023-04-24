@@ -71,6 +71,51 @@ public class ACMachineTest {
         }
     }
 
+    @Test
+    public void testIPAddressOfCIDRIsEqualToMaximumOfRange() throws Exception {
+        String rule1 = "{\"sourceIPAddress\": [{\"cidr\": \"190.149.163.171/31\"}]}";
+        String rule2 = "{\"sourceIPAddress\": [{\"cidr\": \"190.149.164.255/24\"}]}";
+        String rule3 = "{\"sourceIPAddress\": [{\"cidr\": \"172.31.39.225/31\"}]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+        machine.addRule("rule3", rule3);
+
+        List<String> matches = machine.rulesForJSONEvent("{\"sourceIPAddress\": \"190.149.163.170\"}");
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+        matches = machine.rulesForJSONEvent("{\"sourceIPAddress\": \"190.149.163.171\"}");
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+        matches = machine.rulesForJSONEvent("{\"sourceIPAddress\": \"190.149.163.169\"}");
+        assertTrue(matches.isEmpty());
+        matches = machine.rulesForJSONEvent("{\"sourceIPAddress\": \"190.149.163.172\"}");
+        assertTrue(matches.isEmpty());
+
+        matches = machine.rulesForJSONEvent("{\"sourceIPAddress\": \"190.149.164.0\"}");
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule2"));
+        matches = machine.rulesForJSONEvent("{\"sourceIPAddress\": \"190.149.164.255\"}");
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule2"));
+        matches = machine.rulesForJSONEvent("{\"sourceIPAddress\": \"190.149.163.255\"}");
+        assertTrue(matches.isEmpty());
+        matches = machine.rulesForJSONEvent("{\"sourceIPAddress\": \"190.149.165.0\"}");
+        assertTrue(matches.isEmpty());
+
+        matches = machine.rulesForJSONEvent("{\"sourceIPAddress\": \"172.31.39.224\"}");
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule3"));
+        matches = machine.rulesForJSONEvent("{\"sourceIPAddress\": \"172.31.39.225\"}");
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule3"));
+        matches = machine.rulesForJSONEvent("{\"sourceIPAddress\": \"172.31.39.223\"}");
+        assertTrue(matches.isEmpty());
+        matches = machine.rulesForJSONEvent("{\"sourceIPAddress\": \"172.31.39.226\"}");
+        assertTrue(matches.isEmpty());
+    }
+
     private static final String JSON_FROM_README = "{\n" +
             "  \"version\": \"0\",\n" +
             "  \"id\": \"ddddd4-aaaa-7777-4444-345dd43cc333\",\n" +

@@ -143,9 +143,8 @@ public class CIDRTest {
     public void TestCorrectRanges() {
 
         String[] addresses = {
-                // these first few aren't real CIDRs beause the IP address should end with the
-                //  right number of zeroes. But they're here to check the accuacy of the IP-address
-                //  parsing.
+                // The first few do not specify the minimum IP address of the CIDR range. But these are still real
+                // CIDRs. We must calculate the floor of the CIDR range ourselves.
                 "0011:2233:4455:6677:8899:aabb:ccdd:eeff/24",
                 "2001:db8::ff00:42:8329/24",
                 "::1/24",
@@ -162,11 +161,11 @@ public class CIDRTest {
                 "2600:1F14::/35"
         };
         String[] wanted = {
-                "00112233445566778899AABBCCDDEEFF/001122FFFFFFFFFFFFFFFFFFFFFFFFFF:false/false (T:NUMERIC_RANGE)",
-                "20010DB8000000000000FF0000428329/20010DFFFFFFFFFFFFFFFFFFFFFFFFFF:false/false (T:NUMERIC_RANGE)",
-                "00000000000000000000000000000001/000000FFFFFFFFFFFFFFFFFFFFFFFFFF:false/false (T:NUMERIC_RANGE)",
+                "00112200000000000000000000000000/001122FFFFFFFFFFFFFFFFFFFFFFFFFF:false/false (T:NUMERIC_RANGE)",
+                "20010D00000000000000000000000000/20010DFFFFFFFFFFFFFFFFFFFFFFFFFF:false/false (T:NUMERIC_RANGE)",
+                "00000000000000000000000000000000/000000FFFFFFFFFFFFFFFFFFFFFFFFFF:false/false (T:NUMERIC_RANGE)",
                 "0A000000/0A0000FF:false/false (T:NUMERIC_RANGE)",
-                "36F0C4AB/36F0C4FF:false/false (T:NUMERIC_RANGE)",
+                "36F0C400/36F0C4FF:false/false (T:NUMERIC_RANGE)",
                 "C0000200/C00002FF:false/false (T:NUMERIC_RANGE)",
                 "0D200000/0D21FFFF:false/false (T:NUMERIC_RANGE)",
                 "1B000000/1B0003FF:false/false (T:NUMERIC_RANGE)",
