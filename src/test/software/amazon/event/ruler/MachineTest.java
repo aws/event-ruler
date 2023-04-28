@@ -2026,6 +2026,21 @@ public class MachineTest {
     }
 
     @Test
+    public void testSharedNameStateForMultipleAnythingButPatterns() throws Exception {
+        // Every event will match this rule because any bar that is "a" cannot also be "b".
+        String rule1 = "{\"bar\": [{\"anything-but\": \"a\"}, {\"anything-but\": \"b\"}]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+
+        String event = "{\"bar\": \"b\"}";
+
+        List<String> matches = machine.rulesForEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+    }
+
+    @Test
     public void testApproxSizeForSimplestPossibleMachine() throws Exception {
         String rule1 = "{ \"a\" : [ 1 ] }";
         String rule2 = "{ \"b\" : [ 2 ] }";

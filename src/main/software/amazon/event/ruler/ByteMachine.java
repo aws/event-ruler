@@ -10,9 +10,12 @@ import software.amazon.event.ruler.input.MultiByte;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -76,7 +79,7 @@ class ByteMachine {
     //  and lazily allocating Matches only when you have unique values, but all of these things would add
     //  considerable complexity, and this is also easy to understand, and probably not much slower.
     //
-    private final Map<NameState, Patterns> anythingButs = new ConcurrentHashMap<>();
+    private final Map<NameState, List<Patterns>> anythingButs = new ConcurrentHashMap<>();
 
     // Multiple different next-namestate steps can result from  processing a single field value, for example
     //  "foot" matches "foot" exactly, "foo" as a prefix, and "hand" as an anything-but.  So, this
@@ -446,7 +449,7 @@ class ByteMachine {
 
     private void doTransitionOn(final String valString, final Set<NameStateWithPattern> transitionTo,
                                 boolean fieldValueIsNumeric) {
-        final Set<NameState> failedAnythingButs = new HashSet<>();
+        final Map<NameState, List<Patterns>> failedAnythingButs = new HashMap<>();
         final byte[] val = valString.getBytes(StandardCharsets.UTF_8);
 
         // we need to add the name state for key existence
@@ -508,17 +511,17 @@ class ByteMachine {
                             AnythingBut anythingBut = (AnythingBut) match.getPattern();
                             // only applies if at last character
                             if (valIndex == (val.length - 1) && anythingBut.isNumeric() == fieldValueIsNumeric) {
-                                failedAnythingButs.add(match.getNextNameState());
+                                addToAnythingButsMap(failedAnythingButs, match.getNextNameState(), match.getPattern());
                             }
                             break;
                         case ANYTHING_BUT_IGNORE_CASE:
                             // only applies if at last character
                             if (valIndex == (val.length - 1)) {
-                                failedAnythingButs.add(match.getNextNameState());
+                                addToAnythingButsMap(failedAnythingButs, match.getNextNameState(), match.getPattern());
                             }
                             break;
                         case ANYTHING_BUT_PREFIX:
-                            failedAnythingButs.add(match.getNextNameState());
+                            addToAnythingButsMap(failedAnythingButs, match.getNextNameState(), match.getPattern());
                             break;
 
                         default:
@@ -537,16 +540,31 @@ class ByteMachine {
         // This may look like premature optimization, but the first "if" here yields roughly 10x performance
         // improvement.
         if (!anythingButs.isEmpty()) {
-            if (!failedAnythingButs.isEmpty()) {
-                for (Map.Entry<NameState, Patterns> entry : anythingButs.entrySet()) {
-                    if (!failedAnythingButs.contains(entry.getKey())) {
-                        transitionTo.add(new NameStateWithPattern(entry.getKey(), entry.getValue()));
+            for (Map.Entry<NameState, List<Patterns>> entry : anythingButs.entrySet()) {
+                boolean failedAnythingButsContainsKey = failedAnythingButs.containsKey(entry.getKey());
+                for (Patterns pattern : entry.getValue()) {
+                    if (!failedAnythingButsContainsKey ||
+                            !failedAnythingButs.get(entry.getKey()).contains(pattern)) {
+                        transitionTo.add(new NameStateWithPattern(entry.getKey(), pattern));
                     }
                 }
-            } else {
-                for (Map.Entry<NameState, Patterns> entry : anythingButs.entrySet()) {
-                    transitionTo.add(new NameStateWithPattern(entry.getKey(), entry.getValue()));
-                }
+            }
+        }
+    }
+
+    private void addToAnythingButsMap(Map<NameState, List<Patterns>> map, NameState nameState, Patterns pattern) {
+        if (!map.containsKey(nameState)) {
+            map.put(nameState, new ArrayList<>());
+        }
+        map.get(nameState).add(pattern);
+    }
+
+    private void removeFromAnythingButsMap(Map<NameState, List<Patterns>> map, NameState nameState, Patterns pattern) {
+        List<Patterns> patterns = map.get(nameState);
+        if (patterns != null) {
+            patterns.remove(pattern);
+            if (patterns.isEmpty()) {
+                map.remove(nameState);
             }
         }
     }
@@ -574,7 +592,7 @@ class ByteMachine {
     }
 
     private void addSuffixMatch(final byte[] val, final Set<NameStateWithPattern> transitionTo,
-                                final Set<NameState> failedAnythingButs) {
+                                final Map<NameState, List<Patterns>> failedAnythingButs) {
         // we only attempt to evaluate suffix matches when there is suffix match in current byte machine instance.
         // it works as performance level to avoid other type of matches from being affected by suffix checking.
         if (hasSuffix.get() > 0) {
@@ -588,8 +606,8 @@ class ByteMachine {
                     MatchType patternType = match.getPattern().type();
                     if (patternType == SUFFIX) {
                         transitionTo.add(new NameStateWithPattern(match.getNextNameState(), match.getPattern()));
-                    } else if(patternType == ANYTHING_BUT_SUFFIX) {
-                        failedAnythingButs.add(match.getNextNameState());
+                    } else if (patternType == ANYTHING_BUT_SUFFIX) {
+                        addToAnythingButsMap(failedAnythingButs, match.getNextNameState(), match.getPattern());
                     }
                 }
                 trans = nextTrans.getTransitionForNextByteStates();
@@ -1583,20 +1601,20 @@ class ByteMachine {
             }
             break;
         case ANYTHING_BUT:
-            anythingButs.put(match.getNextNameState(), match.getPattern());
+            addToAnythingButsMap(anythingButs, match.getNextNameState(), match.getPattern());
             if (((AnythingBut) pattern).isNumeric()) {
                 hasNumeric.incrementAndGet();
             }
             break;
         case ANYTHING_BUT_IGNORE_CASE:
-            anythingButs.put(match.getNextNameState(), match.getPattern());
+            addToAnythingButsMap(anythingButs, match.getNextNameState(), match.getPattern());
             break;
         case ANYTHING_BUT_SUFFIX:
             hasSuffix.incrementAndGet();
-            anythingButs.put(match.getNextNameState(), match.getPattern());
+            addToAnythingButsMap(anythingButs, match.getNextNameState(), match.getPattern());
             break;
         case ANYTHING_BUT_PREFIX:
-            anythingButs.put(match.getNextNameState(), match.getPattern());
+            addToAnythingButsMap(anythingButs, match.getNextNameState(), match.getPattern());
             break;
         default:
             throw new AssertionError("Not implemented yet");
@@ -1685,20 +1703,20 @@ class ByteMachine {
             }
             break;
         case ANYTHING_BUT:
-            anythingButs.remove(match.getNextNameState());
+            removeFromAnythingButsMap(anythingButs, match.getNextNameState(), match.getPattern());
             if (((AnythingBut) pattern).isNumeric()) {
                 hasNumeric.decrementAndGet();
             }
             break;
         case ANYTHING_BUT_IGNORE_CASE:
-            anythingButs.remove(match.getNextNameState());
+            removeFromAnythingButsMap(anythingButs, match.getNextNameState(), match.getPattern());
             break;
         case ANYTHING_BUT_SUFFIX:
             hasSuffix.decrementAndGet();
-            anythingButs.remove(match.getNextNameState());
+            removeFromAnythingButsMap(anythingButs, match.getNextNameState(), match.getPattern());
             break;
         case ANYTHING_BUT_PREFIX:
-            anythingButs.remove(match.getNextNameState());
+            removeFromAnythingButsMap(anythingButs, match.getNextNameState(), match.getPattern());
             break;
         default:
             throw new AssertionError("Not implemented yet");
