@@ -34,8 +34,8 @@ class NameState {
     // All terminal sub-rules, keyed by pattern, that led to this NameState.
     private final Map<Patterns, Set<SubRule>> patternToTerminalSubRules = new ConcurrentHashMap<>();
 
-    // All non-terminal sub-rules, keyed by pattern, that led to this NameState.
-    private final Map<Patterns, Set<SubRule>> patternToNonTerminalSubRules = new ConcurrentHashMap<>();
+    // All non-terminal sub-rule IDs, keyed by pattern, that led to this NameState.
+    private final Map<Patterns, Set<Double>> patternToNonTerminalSubRuleIds = new ConcurrentHashMap<>();
 
     ByteMachine getTransitionOn(final String token) {
         return valueTransitions.get(token);
@@ -66,14 +66,14 @@ class NameState {
      * on the critical matching path. This avoids creating new data structures and/or copying elements between them.
      *
      * @param pattern The pattern that the rules must use to get to this NameState.
-     * @return The sub-rules.
+     * @return The sub-rules, could be null if none for pattern.
      */
     Set<SubRule> getTerminalSubRulesForPattern(Patterns pattern) {
         return patternToTerminalSubRules.get(pattern);
     }
 
     /**
-     * Get all the non-terminal sub-rules that used a given pattern to lead to this NameState.
+     * Get all the non-terminal sub-rule IDs that used a given pattern to lead to this NameState.
      *
      * NOTE: This function returns the raw key set from one of NameState's internal maps. Mutating it will corrupt the
      * state of NameState. Although standard coding practice would warrant returning a copy of the set, or wrapping it
@@ -81,52 +81,61 @@ class NameState {
      * on the critical matching path. This avoids creating new data structures and/or copying elements between them.
      *
      * @param pattern The pattern that the rules must use to get to this NameState.
-     * @return The sub-rules.
+     * @return The sub-rule IDs, could be null if none for pattern.
      */
-    Set<SubRule> getNonTerminalSubRulesForPattern(Patterns pattern) {
-        return patternToNonTerminalSubRules.get(pattern);
+    Set<Double> getNonTerminalSubRuleIdsForPattern(Patterns pattern) {
+        return patternToNonTerminalSubRuleIds.get(pattern);
     }
 
     /**
-     * Get all the sub-rule IDs that match the provided rule, pattern, and isTerminal.
+     * Get all the sub-rule IDs that match the provided pattern and isTerminal.
      *
-     * @param rule The rule that led to this NameState.
+     * NOTE: This can return the raw key set from one of NameState's internal maps. Mutating it will corrupt the
+     * state of NameState. Although standard coding practice would warrant returning a copy of the set, or wrapping it
+     * to be immutable, we instead return the raw key set as a performance optimization since this is called repeatedly
+     * on the critical matching path. This avoids creating new data structures and/or copying elements between them.
+     *
      * @param pattern The pattern used by the given rule to lead to this NameState.
      * @param isTerminal Whether or not the last field of the rule was used to lead to this NameState.
-     * @return All matching sub-rule IDs.
+     * @return All matching sub-rule IDs, could be null if none for pattern and isTerminal.
      */
-    Set<Double> getSubRuleIds(final Object rule, final Patterns pattern, final boolean isTerminal) {
-        Set<Double> subRuleIds = new HashSet<>();
-        Set<SubRule> subRules = (isTerminal ? patternToTerminalSubRules : patternToNonTerminalSubRules).get(pattern);
-        if (subRules != null) {
-            for (SubRule subRule : subRules) {
-                if (subRule.rule.equals(rule)) {
+    Set<Double> getSubRuleIds(final Patterns pattern, final boolean isTerminal) {
+        if (isTerminal) {
+            Set<Double> subRuleIds = new HashSet<>();
+            Set<SubRule> subRules = patternToTerminalSubRules.get(pattern);
+            if (subRules != null) {
+                for (SubRule subRule : subRules) {
                     subRuleIds.add(subRule.id);
                 }
             }
+            return subRuleIds;
         }
-        return subRuleIds;
+
+        return patternToNonTerminalSubRuleIds.get(pattern);
     }
 
     /**
      * Delete a sub-rule to indicate that it no longer transitions to this NameState using the provided pattern.
+     * If the provided rule and subRuleId do not match, then behavior is undefined.
      *
      * @param rule The rule, which may have multiple sub-rules.
      * @param subRuleId The ID of the sub-rule.
      * @param pattern The pattern used by the sub-rule to transition to this NameState.
      * @param isTerminal True indicates that the sub-rule is using pattern to match on the final event field.
+     * @return True if and only if the sub-rule was found and deleted.
      */
-    void deleteSubRule(final Object rule, final double subRuleId, final Patterns pattern, final boolean isTerminal) {
-        SubRule subRule = new SubRule(rule, subRuleId);
-        Map<Patterns, Set<SubRule>> patternToSubRules =
-                isTerminal ? patternToTerminalSubRules : patternToNonTerminalSubRules;
-        Set<SubRule> subRules = patternToSubRules.get(pattern);
-        if (subRules != null) {
-            subRules.remove(subRule);
-            if (subRules.isEmpty()) {
+    boolean deleteSubRule(final Object rule, final double subRuleId, final Patterns pattern, final boolean isTerminal) {
+        boolean deleted = false;
+        Object setElement = isTerminal ? new SubRule(rule, subRuleId) : subRuleId;
+        Map<Patterns, ?> patternToSubRules = isTerminal ? patternToTerminalSubRules : patternToNonTerminalSubRuleIds;
+        Set<?> set = (Set<?>) patternToSubRules.get(pattern);
+        if (set != null) {
+            deleted = set.remove(setElement);
+            if (set.isEmpty()) {
                 patternToSubRules.remove(pattern);
             }
         }
+        return deleted;
     }
 
     void removeTransition(String name) {
@@ -144,7 +153,7 @@ class NameState {
     boolean isEmpty() {
         return  valueTransitions.isEmpty() &&
                 patternToTerminalSubRules.isEmpty() &&
-                patternToNonTerminalSubRules.isEmpty() &&
+                patternToNonTerminalSubRuleIds.isEmpty() &&
                 mustNotExistMatchers.isEmpty();
     }
 
@@ -157,13 +166,12 @@ class NameState {
      * @param isTerminal True indicates that the sub-rule is using pattern to match on the final event field.
      */
     void addSubRule(final Object rule, final double subRuleId, final Patterns pattern, final boolean isTerminal) {
-        SubRule subRule = new SubRule(rule, subRuleId);
-        Map<Patterns, Set<SubRule>> patternToSubRules =
-                isTerminal ? patternToTerminalSubRules : patternToNonTerminalSubRules;
+        Object setElement = isTerminal ? new SubRule(rule, subRuleId) : subRuleId;
+        Map<Patterns, ?> patternToSubRules = isTerminal ? patternToTerminalSubRules : patternToNonTerminalSubRuleIds;
         if (!patternToSubRules.containsKey(pattern)) {
-            patternToSubRules.put(pattern, new HashSet<>());
+            ((Map<Patterns, Set>) patternToSubRules).put(pattern, new HashSet<>());
         }
-        patternToSubRules.get(pattern).add(subRule);
+        ((Set) patternToSubRules.get(pattern)).add(setElement);
     }
 
     void addTransition(final String key, final ByteMachine to) {
@@ -268,7 +276,7 @@ class NameState {
                 objectSet.add(entry.getKey());
                 objectSet.addAll(entry.getValue());
             }
-            for (Map.Entry<Patterns, Set<SubRule>> entry : patternToNonTerminalSubRules.entrySet()) {
+            for (Map.Entry<Patterns, Set<Double>> entry : patternToNonTerminalSubRuleIds.entrySet()) {
                 objectSet.add(entry.getKey());
                 objectSet.addAll(entry.getValue());
             }
@@ -281,7 +289,7 @@ class NameState {
                 "valueTransitions=" + valueTransitions +
                 ", mustNotExistMatchers=" + mustNotExistMatchers +
                 ", patternToTerminalSubRules=" + patternToTerminalSubRules +
-                ", patternToNonTerminalSubRules=" + patternToNonTerminalSubRules +
+                ", patternToNonTerminalSubRuleIds=" + patternToNonTerminalSubRuleIds +
                 '}';
     }
 
@@ -299,6 +307,10 @@ class NameState {
 
         Object getRule() {
             return rule;
+        }
+
+        double getId() {
+            return id;
         }
 
         @Override

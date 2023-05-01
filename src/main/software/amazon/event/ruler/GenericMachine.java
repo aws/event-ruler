@@ -296,8 +296,10 @@ public class GenericMachine<T> {
 
                 // Trim the candidate sub-rule ID set to contain only the sub-rule IDs present in the next NameState.
                 // If candidate set is empty, we are at first NameState, so initialize to next NameState's sub-rule IDs.
-                Set<Double> nextNameStateSubRuleIds = nextNameState.getSubRuleIds(ruleName, pattern, isTerminal);
-                if (candidateSubRuleIds.isEmpty()) {
+                Set<Double> nextNameStateSubRuleIds = nextNameState.getSubRuleIds(pattern, isTerminal);
+                if (nextNameStateSubRuleIds == null) {
+                    candidateSubRuleIds.clear();
+                } else if (candidateSubRuleIds.isEmpty()) {
                     candidateSubRuleIds.addAll(nextNameStateSubRuleIds);
                 } else {
                     candidateSubRuleIds.retainAll(nextNameStateSubRuleIds);
@@ -305,16 +307,17 @@ public class GenericMachine<T> {
 
                 if (isTerminal) {
                     for (Double candidateSubRuleId : candidateSubRuleIds) {
-                        nextNameState.deleteSubRule(ruleName, candidateSubRuleId, pattern, true);
-                        deletedSubRuleIds.add(candidateSubRuleId);
-                        // Only delete the pattern if both are true:
-                        //   1. There are no other terminal rules using the same pattern to lead to the next NameState.
-                        //   2. The next NameState is a dead-end; it doesn't transition to a ByteMachine or NameMatcher.
-                        Set<Patterns> nextPatterns = nextNameState.getTerminalPatterns();
-                        boolean doesNextNameStateStillContainPattern = nextPatterns.contains(pattern);
-                        if (!doesNextNameStateStillContainPattern && !nextNameState.hasTransitions()
-                                && deletePattern(state, key, pattern)) {
-                            deletedKeys.add(key);
+                        if (nextNameState.deleteSubRule(ruleName, candidateSubRuleId, pattern, true)) {
+                            deletedSubRuleIds.add(candidateSubRuleId);
+                            // Only delete the pattern if both are true:
+                            //   1. There are no other terminal rules using the same pattern to lead to the next NameState.
+                            //   2. The next NameState is a dead-end; it doesn't transition to a ByteMachine or NameMatcher.
+                            Set<Patterns> nextPatterns = nextNameState.getTerminalPatterns();
+                            boolean doesNextNameStateStillContainPattern = nextPatterns.contains(pattern);
+                            if (!doesNextNameStateStillContainPattern && !nextNameState.hasTransitions()
+                                    && deletePattern(state, key, pattern)) {
+                                deletedKeys.add(key);
+                            }
                         }
                     }
                 } else {

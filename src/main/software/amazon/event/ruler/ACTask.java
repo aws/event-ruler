@@ -43,9 +43,9 @@ class ACTask {
     /*
      *  Add a step to the queue for later consideration
      */
-    void addStep(final int fieldIndex, final NameState nameState, final Set<NameState.SubRule> candidateSubRules,
+    void addStep(final int fieldIndex, final NameState nameState, final Set<Double> candidateSubRuleIds,
                  final ArrayMembership membershipSoFar) {
-        stepQueue.add(new ACStep(fieldIndex, nameState, candidateSubRules, membershipSoFar));
+        stepQueue.add(new ACStep(fieldIndex, nameState, candidateSubRuleIds, membershipSoFar));
     }
 
     boolean stepsRemain() {
@@ -58,7 +58,7 @@ class ACTask {
                 .collect(Collectors.toSet()));
     }
 
-    void collectRules(final Set<NameState.SubRule> candidateSubRules, final NameStateWithPattern nameStateWithPattern) {
+    void collectRules(final Set<Double> candidateSubRuleIds, final NameStateWithPattern nameStateWithPattern) {
         Set<NameState.SubRule> terminalSubRules = nameStateWithPattern.getNameState().getTerminalSubRulesForPattern(
                 nameStateWithPattern.getPattern());
         if (terminalSubRules == null) {
@@ -66,11 +66,11 @@ class ACTask {
         }
 
         // If no candidates, that means we're on the first step, so all sub-rules are candidates.
-        if (candidateSubRules.isEmpty()) {
+        if (candidateSubRuleIds.isEmpty()) {
             matchingSubRules.addAll(terminalSubRules);
         } else {
-            for (NameState.SubRule subRule : candidateSubRules) {
-                if (terminalSubRules.contains(subRule)) {
+            for (NameState.SubRule subRule : terminalSubRules) {
+                if (candidateSubRuleIds.contains(subRule.getId())) {
                     matchingSubRules.add(subRule);
                 }
             }

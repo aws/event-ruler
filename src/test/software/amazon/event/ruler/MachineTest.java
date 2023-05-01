@@ -2088,7 +2088,7 @@ public class MachineTest {
                         "    \"c\": [{ \"numeric\": [\">\", 50] }]\n" +
                         "}");
 
-        assertEquals(517, machine.approximateObjectCount());
+        assertEquals(518, machine.approximateObjectCount());
     }
 
     @Test
@@ -2139,7 +2139,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name1\",\"Name2\",\"Name3\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(25, machine.approximateObjectCount());
+        assertEquals(26, machine.approximateObjectCount());
 
         machine.addRule("rule-with-six-elements",
                 "{\n" +
@@ -2148,7 +2148,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name1\",\"Name2\",\"Name3\",\"Name4\",\"Name5\",\"Name6\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(35, machine.approximateObjectCount());
+        assertEquals(37, machine.approximateObjectCount());
 
 
         machine.addRule("rule-with-six-more-elements",
@@ -2158,7 +2158,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name7\",\"Name8\",\"Name9\",\"Name10\",\"Name11\",\"Name12\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(60, machine.approximateObjectCount());
+        assertEquals(63, machine.approximateObjectCount());
     }
 
     @Test
@@ -2171,7 +2171,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name1\",\"Name2\",\"Name3\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(35, machine.approximateObjectCount());
+        assertEquals(36, machine.approximateObjectCount());
 
         machine.addRule("rule-with-two-more-source-and-eventNames",
                 "{\n" +
@@ -2180,7 +2180,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name1\",\"Name2\",\"Name3\",\"Name4\",\"Name5\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(48, machine.approximateObjectCount());
+        assertEquals(50, machine.approximateObjectCount());
 
         machine.addRule("rule-with-more-unique-source-and-eventNames",
                 "{\n" +
@@ -2189,7 +2189,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name6\",\"Name7\",\"Name8\",\"Name9\",\"Name10\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(87, machine.approximateObjectCount());
+        assertEquals(90, machine.approximateObjectCount());
     }
 
 }

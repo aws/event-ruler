@@ -8,14 +8,14 @@ import java.util.Set;
 class ACStep {
     final int fieldIndex;
     final NameState nameState;
-    final Set<NameState.SubRule> candidateSubRules;
+    final Set<Double> candidateSubRuleIds;
     final ArrayMembership membershipSoFar;
 
-    ACStep(final int fieldIndex, final NameState nameState, final Set<NameState.SubRule> candidateSubRules,
+    ACStep(final int fieldIndex, final NameState nameState, final Set<Double> candidateSubRuleIds,
            final ArrayMembership arrayMembership) {
         this.fieldIndex = fieldIndex;
         this.nameState = nameState;
-        this.candidateSubRules = candidateSubRules;
+        this.candidateSubRuleIds = candidateSubRuleIds;
         this.membershipSoFar = arrayMembership;
     }
 }

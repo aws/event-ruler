@@ -14,12 +14,12 @@ import java.util.Set;
 class Step {
     final int keyIndex;
     final NameState nameState;
-    final Set<NameState.SubRule> candidateSubRules;
+    final Set<Double> candidateSubRuleIds;
 
-    Step(final int keyIndex, final NameState nameState, final Set<NameState.SubRule> candidateSubRules) {
+    Step(final int keyIndex, final NameState nameState, final Set<Double> candidateSubRuleIds) {
         this.keyIndex = keyIndex;
         this.nameState = nameState;
-        this.candidateSubRules = candidateSubRules;
+        this.candidateSubRuleIds = candidateSubRuleIds;
     }
 
     @Override
@@ -33,11 +33,11 @@ class Step {
         Step step = (Step) o;
         return  keyIndex == step.keyIndex &&
                 Objects.equals(nameState, step.nameState) &&
-                Objects.equals(candidateSubRules, step.candidateSubRules);
+                Objects.equals(candidateSubRuleIds, step.candidateSubRuleIds);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(keyIndex, nameState, candidateSubRules);
+        return Objects.hash(keyIndex, nameState, candidateSubRuleIds);
     }
 }

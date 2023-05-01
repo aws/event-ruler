@@ -81,7 +81,7 @@ class Task {
                 .collect(Collectors.toSet()));
     }
 
-    void collectRules(final Set<NameState.SubRule> candidateSubRules, final NameStateWithPattern nameStateWithPattern) {
+    void collectRules(final Set<Double> candidateSubRuleIds, final NameStateWithPattern nameStateWithPattern) {
         Set<NameState.SubRule> terminalSubRules = nameStateWithPattern.getNameState().getTerminalSubRulesForPattern(
                 nameStateWithPattern.getPattern());
         if (terminalSubRules == null) {
@@ -89,11 +89,11 @@ class Task {
         }
 
         // If no candidates, that means we're on the first step, so all sub-rules are candidates.
-        if (candidateSubRules.isEmpty()) {
+        if (candidateSubRuleIds.isEmpty()) {
             matchingSubRules.addAll(terminalSubRules);
         } else {
-            for (NameState.SubRule subRule : candidateSubRules) {
-                if (terminalSubRules.contains(subRule)) {
+            for (NameState.SubRule subRule : terminalSubRules) {
+                if (candidateSubRuleIds.contains(subRule.getId())) {
                     matchingSubRules.add(subRule);
                 }
             }
