@@ -31,7 +31,7 @@
 
   <properties>
     <jdk.version>1.8</jdk.version>
-    <jackson.version>2.14.2</jackson.version>
+    <jackson.version>2.15.0</jackson.version>
     <jsr.version>3.0.2</jsr.version>
     <junit.version>4.13.2</junit.version>
     <compiler.plugin.version>3.11.0</compiler.plugin.version>
@@ -39,7 +39,7 @@
     <source.plugin.version>3.2.1</source.plugin.version>
     <gpg.plugin.version>3.0.1</gpg.plugin.version>
     <staging.plugin.version>1.6.13</staging.plugin.version>
-    <checkstyle.plugin.version>3.2.1</checkstyle.plugin.version>
+    <checkstyle.plugin.version>3.2.2</checkstyle.plugin.version>
     <spotbugs.plugin.version>4.7.3.4</spotbugs.plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>

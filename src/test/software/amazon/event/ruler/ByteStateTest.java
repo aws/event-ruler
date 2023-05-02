@@ -6,6 +6,8 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static software.amazon.event.ruler.CompoundByteTransition.coalesce;
 import static org.junit.Assert.assertEquals;
@@ -104,9 +106,9 @@ public class ByteStateTest {
         byte b = 'a';
         SingleByteTransition transition = new ByteState();
 
-        this.state.addTransition(b, transition);
+        state.addTransition(b, transition);
 
-        ByteTransition actualTransition = this.state.getTransition(b);
+        ByteTransition actualTransition = state.getTransition(b);
 
         assertSame(transition, actualTransition);
     }
@@ -124,6 +126,23 @@ public class ByteStateTest {
         ByteTransition actualTransition = state.getTransition(b1);
 
         assertSame(transition1, actualTransition);
+    }
+
+    @Test
+    public void putTransitionShouldCreateExpectedMappings() {
+        SingleByteTransition transition1 = new ByteState();
+        SingleByteTransition transition2 = new ByteState();
+        SingleByteTransition transition3 = new ByteState();
+        SingleByteTransition transition4 = new ByteState();
+
+        state.putTransition((byte) 'a', transition1);
+        state.putTransition((byte) 'a', transition2);
+        state.putTransition((byte) 'b', transition3);
+        state.putTransition((byte) 'c', transition4);
+
+        assertSame(transition2, state.getTransition((byte) 'a'));
+        assertSame(transition3, state.getTransition((byte) 'b'));
+        assertSame(transition4, state.getTransition((byte) 'c'));
     }
 
     @Test
@@ -272,12 +291,121 @@ public class ByteStateTest {
     }
 
     @Test
+    public void putTransitionForAllBytesShouldCreateExpectedMappings() {
+        SingleByteTransition transition1 = new ByteState();
+        SingleByteTransition transition2 = new ByteState();
+        state.addTransition((byte) 'a', transition1);
+        state.putTransitionForAllBytes(transition2);
+        assertSame(transition2, state.getTransition((byte) 'a'));
+        assertSame(transition2, state.getTransition((byte) 'b'));
+    }
+
+    @Test
+    public void addTransitionForAllBytesFromNullTransitionStoreShouldCreateExpectedMappings() {
+        SingleByteTransition transition1 = new ByteState();
+        state.addTransitionForAllBytes(transition1);
+        assertSame(transition1, state.getTransition((byte) 'a'));
+    }
+
+    @Test
+    public void addTransitionForAllBytesFromSingleByteTransitionEntryShouldCreateExpectedMappings() {
+        SingleByteTransition transition1 = new ByteState();
+        SingleByteTransition transition2 = new ByteState();
+        state.addTransition((byte) 'a', transition1);
+        state.addTransitionForAllBytes(transition2);
+        assertEquals(coalesce(new HashSet<>(Arrays.asList(transition1, transition2))), state.getTransition((byte) 'a'));
+        assertSame(transition2, state.getTransition((byte) 'b'));
+    }
+
+    @Test
+    public void addTransitionForAllBytesFromByteMapShouldCreateExpectedMappings() {
+        SingleByteTransition transition1 = new ByteState();
+        SingleByteTransition transition2 = new ByteState();
+        SingleByteTransition transition3 = new ByteState();
+        state.addTransition((byte) 'a', transition1);
+        state.addTransition((byte) 'b', transition2);
+        state.addTransitionForAllBytes(transition3);
+        assertEquals(coalesce(new HashSet<>(Arrays.asList(transition1, transition3))), state.getTransition((byte) 'a'));
+        assertEquals(coalesce(new HashSet<>(Arrays.asList(transition2, transition3))), state.getTransition((byte) 'b'));
+        assertSame(transition3, state.getTransition((byte) 'c'));
+    }
+
+    @Test
+    public void removeTransitionForAllBytesFromNullTransitionStoreShouldHaveNoEffect() {
+        SingleByteTransition transition1 = new ByteState();
+        state.removeTransitionForAllBytes(transition1);
+        assertNull(state.getTransition((byte) 'a'));
+    }
+
+    @Test
+    public void removeTransitionForAllBytesFromSingleByteTransitionEntryWithDifferentTransitionShouldHaveNoEffect() {
+        SingleByteTransition transition1 = new ByteState();
+        SingleByteTransition transition2 = new ByteState();
+        state.addTransition((byte) 'a', transition1);
+        state.removeTransitionForAllBytes(transition2);
+        assertSame(transition1, state.getTransition((byte) 'a'));
+    }
+
+    @Test
+    public void removeTransitionForAllBytesFromSingleByteTransitionEntryWithSameTransitionShouldRemoveTransition() {
+        SingleByteTransition transition1 = new ByteState();
+        state.addTransition((byte) 'a', transition1);
+        state.removeTransitionForAllBytes(transition1);
+        assertNull(state.getTransition((byte) 'a'));
+    }
+
+    @Test
+    public void removeTransitionForAllBytesFromByteMapWithDifferentTransitionShouldHaveNoEffect() {
+        SingleByteTransition transition1 = new ByteState();
+        SingleByteTransition transition2 = new ByteState();
+        SingleByteTransition transition3 = new ByteState();
+        state.addTransition((byte) 'a', transition1);
+        state.addTransition((byte) 'b', transition2);
+        state.removeTransitionForAllBytes(transition3);
+        assertSame(transition1, state.getTransition((byte) 'a'));
+        assertSame(transition2, state.getTransition((byte) 'b'));
+    }
+
+    @Test
+    public void removeTransitionForAllBytesFromByteMapWithSameTransitionShouldRemoveTransition() {
+        SingleByteTransition transition1 = new ByteState();
+        SingleByteTransition transition2 = new ByteState();
+        state.addTransition((byte) 'a', transition1);
+        state.addTransition((byte) 'b', transition2);
+        state.removeTransitionForAllBytes(transition2);
+        assertSame(transition1, state.getTransition((byte) 'a'));
+        assertNull(state.getTransition((byte) 'b'));
+    }
+
+    @Test
     public void getShortcutsShouldReturnEmptySet() {
         assertEquals(Collections.emptySet(), state.getShortcuts());
     }
 
     @Test
-    public void getTransitionForAllBytesShouldReturnExpectedTransition() {
+    public void getTransitionForAllBytesWithNullTransitionStoreShouldReturnExpectedTransition() {
+        assertEquals(ByteMachine.EmptyByteTransition.INSTANCE, state.getTransitionForAllBytes());
+    }
+
+    @Test
+    public void getTransitionForAllBytesWithSingleByteTransitionEntryShouldReturnEmptyTransition() {
+        SingleByteTransition trans1 = new ByteState();
+        state.addTransition((byte) 'a', trans1);
+        assertEquals(ByteMachine.EmptyByteTransition.INSTANCE, state.getTransitionForAllBytes());
+    }
+
+    @Test
+    public void getTransitionForAllBytesWithByteMapWithSomeBytesShouldReturnEmptyTransition() {
+        SingleByteTransition trans1 = new ByteState();
+        SingleByteTransition trans2 = new ByteState();
+
+        state.addTransition((byte) 'a', trans1);
+        state.addTransition((byte) 'c', trans2);
+        assertEquals(ByteMachine.EmptyByteTransition.INSTANCE, state.getTransitionForAllBytes());
+    }
+
+    @Test
+    public void getTransitionForAllBytesWithByteMapWithAllBytesShouldReturnExpectedTransition() {
         SingleByteTransition trans1 = new ByteState();
         SingleByteTransition trans2 = new ByteState();
         SingleByteTransition trans3 = new ByteState();
@@ -292,7 +420,19 @@ public class ByteStateTest {
     }
 
     @Test
-    public void getTransitionsShouldReturnExpectedTransitions() {
+    public void getTransitionsWithNullTransitionStoreShouldReturnEmptySet() {
+        assertEquals(Collections.emptySet(), state.getTransitions());
+    }
+
+    @Test
+    public void getTransitionsWithSingleByteTransitionEntryShouldReturnExpectedTransition() {
+        SingleByteTransition trans1 = new ByteState();
+        state.addTransition((byte) 'a', trans1);
+        assertEquals(Stream.of(trans1).collect(Collectors.toSet()), state.getTransitions());
+    }
+
+    @Test
+    public void getTransitionsWithByteMapShouldReturnExpectedTransitions() {
         SingleByteTransition trans1 = new ByteState();
         SingleByteTransition trans2 = new ByteState();
         SingleByteTransition trans3 = new ByteState();
@@ -304,13 +444,39 @@ public class ByteStateTest {
         state.addTransition((byte) 'a', trans4);
         state.removeTransition((byte) 'c', trans2);
         assertEquals(new HashSet<>(Arrays.asList(coalesce(new HashSet<>(Arrays.asList(trans1, trans3))),
-                                                 coalesce(new HashSet<>(Arrays.asList(trans1, trans2, trans3))),
-                                                 coalesce(new HashSet<>(Arrays.asList(trans1, trans2, trans3, trans4)))
-                )), state.getTransitions());
+                coalesce(new HashSet<>(Arrays.asList(trans1, trans2, trans3))),
+                coalesce(new HashSet<>(Arrays.asList(trans1, trans2, trans3, trans4)))
+        )), state.getTransitions());
     }
 
     @Test
-    public void testGetCeilingsShouldReturnExpectedCeilings() {
+    public void testGetCeilingsWithNullTransitionStoreShouldReturnEmptySet() {
+        assertEquals(Collections.emptySet(), state.getCeilings());
+    }
+
+    @Test
+    public void testGetCeilingsWithSingleByteTransitionEntryShouldReturnExpectedCeilings() {
+        SingleByteTransition trans1 = new ByteState();
+        state.addTransition((byte) 'a', trans1);
+        assertEquals(new HashSet<>(Arrays.asList(97, 98, 256)), state.getCeilings());
+    }
+
+    @Test
+    public void testGetCeilingsWithSingleByteTransitionEntryWithZeroIndexByteShouldReturnExpectedCeilings() {
+        SingleByteTransition trans1 = new ByteState();
+        state.addTransition((byte) 0, trans1);
+        assertEquals(new HashSet<>(Arrays.asList(1, 256)), state.getCeilings());
+    }
+
+    @Test
+    public void testGetCeilingsWithSingleByteTransitionEntryWith255IndexByteShouldReturnExpectedCeilings() {
+        SingleByteTransition trans1 = new ByteState();
+        state.addTransition((byte) 255, trans1);
+        assertEquals(new HashSet<>(Arrays.asList(255, 256)), state.getCeilings());
+    }
+
+    @Test
+    public void testGetCeilingsWithByteMapShouldReturnExpectedCeilings() {
         SingleByteTransition trans1 = new ByteState();
         SingleByteTransition trans2 = new ByteState();
 

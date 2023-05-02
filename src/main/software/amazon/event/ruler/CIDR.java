@@ -11,7 +11,17 @@ import static software.amazon.event.ruler.Constants.MAX_DIGIT;
  */
 public class CIDR {
 
-    private final static byte[] TRAILING_MAX_BITS = { 0x0, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f };
+    /**
+     * Binary representation of these bytes is 1's followed by all 0's. The number of 0's is equal to the array index.
+     * So the binary values are: 11111111, 11111110, 11111100, 11111000, 11110000, 11100000, 11000000, 10000000, 00000000
+     */
+    private final static byte[] LEADING_MIN_BITS = { (byte) 0xff, (byte) 0xfe, (byte) 0xfc, (byte) 0xf8, (byte) 0xf0, (byte) 0xe0, (byte) 0xc0, (byte) 0x80, 0x00 };
+
+    /**
+     * Binary representation of these bytes is 0's followed by all 1's. The number of 1's is equal to the array index.
+     * So the binary values are: 00000000, 00000001, 00000011, 00000111, 00001111, 00011111, 00111111, 01111111, 11111111
+     */
+    private final static byte[] TRAILING_MAX_BITS = { 0x0, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f, (byte) 0xff };
 
     private CIDR() { }
 
@@ -128,8 +138,8 @@ public class CIDR {
             barf("Malformed CIDR, mask bits must not be negative");
         }
 
-        byte[] ip = ipToBytes(slashed[0]);
-        if (ip.length == 4) {
+        byte[] providedIp = ipToBytes(slashed[0]);
+        if (providedIp.length == 4) {
             if (maskBits > 31) {
                 barf("IPv4 mask bits must be < 32");
             }
@@ -139,32 +149,91 @@ public class CIDR {
             }
         }
 
-        byte[] maxBytes;
-        maxBytes = computeTopBytes(ip, maskBits);
-
-        return new Range(toHexDigits(ip), false, toHexDigits(maxBytes), false, true);
+        byte[] minBytes = computeBottomBytes(providedIp, maskBits);
+        byte[] maxBytes = computeTopBytes(providedIp, maskBits);
+        return new Range(toHexDigits(minBytes), false, toHexDigits(maxBytes), false, true);
     }
 
-    private static byte[] computeTopBytes(final byte[] baseBytes, int maskBits) {
+    /**
+     * Calculate the byte representation of the lowest IP address covered by the provided CIDR.
+     *
+     * @param baseBytes The byte representation of the IP address (left-of-slash) component of the provided CIDR.
+     * @param maskBits The integer (right-of-slash) of the provided CIDR.
+     * @return The byte representation of the lowest IP address covered by the provided CIDR.
+     */
+    private static byte[] computeBottomBytes(final byte[] baseBytes, final int maskBits) {
 
-        if (baseBytes.length == 4) {
-            maskBits = 32 - maskBits;
-        } else {
-            maskBits = 128 - maskBits;
-        }
-        byte[] maxBytes = new byte[baseBytes.length];
+        int variableBits = computeVariableBits(baseBytes, maskBits);
 
+        // Calculate the byte representation of the lowest IP address covered by the provided CIDR.
+        // Iterate from the least significant byte (right hand side) back to the most significant byte (left hand side).
+        byte[] minBytes = new byte[baseBytes.length];
         for (int i = baseBytes.length - 1; i >= 0; i--) {
-            if (maskBits >= 8) {
-                maxBytes[i] = (byte) 0xff;
-            } else if (maskBits <= 0) {
-                maxBytes[i] = baseBytes[i];
+
+            // This is the case where some or all of the byte is variable. So the min byte value possible is equal to
+            // the original IP address's bits for the leading non-variable bits and equal to all 0's for the trailing
+            // variable bits.
+            if (variableBits > 0) {
+                minBytes[i] = (byte) (baseBytes[i] & LEADING_MIN_BITS[Math.min(8, variableBits)]);
+
+                // There is no variable component to this byte. Thus, it must equal the byte from the original IP address in
+                // the provided CIDR.
             } else {
-                maxBytes[i] = (byte) (baseBytes[i] | TRAILING_MAX_BITS[maskBits]);
+                minBytes[i] = baseBytes[i];
             }
-            maskBits -= 8;
+
+            // Subtract 8 variable bits. We're effectively chopping off the least significant byte for next iteration.
+            variableBits -= 8;
         }
+
+        return minBytes;
+    }
+
+    /**
+     * Calculate the byte representation of the highest IP address covered by the provided CIDR.
+     *
+     * @param baseBytes The byte representation of the IP address (left-of-slash) component of the provided CIDR.
+     * @param maskBits The integer (right-of-slash) of the provided CIDR.
+     * @return The byte representation of the highest IP address covered by the provided CIDR.
+     */
+    private static byte[] computeTopBytes(final byte[] baseBytes, final int maskBits) {
+
+        int variableBits = computeVariableBits(baseBytes, maskBits);
+
+        // Calculate the byte representation of the highest IP address covered by the provided CIDR.
+        // Iterate from the least significant byte (right hand side) back to the most significant byte (left hand side).
+        byte[] maxBytes = new byte[baseBytes.length];
+        for (int i = baseBytes.length - 1; i >= 0; i--) {
+
+            // This is the case where some or all of the byte is variable. So the max byte value possible is equal to
+            // the original IP address's bits for the leading non-variable bits and equal to all 1's for the trailing
+            // variable bits.
+            if (variableBits > 0) {
+                maxBytes[i] = (byte) (baseBytes[i] | TRAILING_MAX_BITS[Math.min(8, variableBits)]);
+
+                // There is no variable component to this byte. Thus, it must equal the byte from the original IP address in
+                // the provided CIDR.
+            } else {
+                maxBytes[i] = baseBytes[i];
+            }
+
+            // Subtract 8 variable bits. We're effectively chopping off the least significant byte for next iteration.
+            variableBits -= 8;
+        }
+
         return maxBytes;
+    }
+
+    /**
+     * The maskBits in a provided CIDR refer to the number of leading bits in the binary representation of the IP
+     * address component that are fixed. Thus, variableBits refers to the number of remaining (trailing) bits.
+     *
+     * @param baseBytes The byte representation of the IP address (left-of-slash) component of the provided CIDR.
+     * @param maskBits The integer (right-of-slash) of the provided CIDR.
+     * @return The number of variable (trailing) bits after the fixed maskBits bits.
+     */
+    private static int computeVariableBits(final byte[] baseBytes, final int maskBits) {
+        return (baseBytes.length == 4 ? 32 : 128) - maskBits;
     }
 
     private static void barf(final String msg) throws IllegalArgumentException {
