@@ -943,7 +943,7 @@ class ByteMachine {
 
                     SingleByteTransition nextByteState = eachTrans.getNextByteState();
                     if (nextByteState == null) {
-                        return null;
+                        continue;
                     }
 
                     // We are interested in the first state that hasn't simply led back to trans

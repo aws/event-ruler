@@ -109,4 +109,18 @@ public class NameStateTest {
         Set<Double> expectedSubRuleIds = new HashSet<>(Arrays.asList(1.0, 3.0, 5.0));
         assertEquals(expectedSubRuleIds, nameState.getSubRuleIds(Patterns.exactMatch("a"), true));
     }
+
+    @Test
+    public void testContainsTerminalSubRule() {
+        NameState nameState = new NameState();
+        nameState.addSubRule("rule1", 1.0, Patterns.exactMatch("a"), true);
+        nameState.addSubRule("rule2", 2.0, Patterns.exactMatch("a"), false);
+        nameState.addSubRule("rule1", 2.0, Patterns.exactMatch("b"), false);
+
+        assertTrue(nameState.containsTerminalSubRule("rule1", Patterns.exactMatch("a")));
+        assertFalse(nameState.containsTerminalSubRule("rule2", Patterns.exactMatch("a")));
+        assertFalse(nameState.containsTerminalSubRule("rule1", Patterns.exactMatch("b")));
+        assertFalse(nameState.containsTerminalSubRule("rule3", Patterns.exactMatch("a")));
+        assertFalse(nameState.containsTerminalSubRule("rule1", Patterns.exactMatch("c")));
+    }
 }

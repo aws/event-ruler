@@ -203,9 +203,7 @@ public class GenericMachine<T> {
         final ArrayList<String> keys = new ArrayList<>(namePatterns.keySet());
         Collections.sort(keys);
         synchronized(this) {
-            final List<String> addedKeys =  new ArrayList<>();
-            addStep(getStartState(), keys, 0, namePatterns, name, addedKeys, subRuleContextGenerator.generate());
-            addIntoUsedFields(addedKeys);
+            addStep(keys, namePatterns, name);
         }
     }
 
@@ -477,13 +475,45 @@ public class GenericMachine<T> {
         }
     }
 
-    private void addStep(final NameState state,
-                         final List<String> keys,
-                         final int keyIndex,
+    private void addStep(final List<String> keys,
                          final Map<String, List<Patterns>> patterns,
-                         final T ruleName,
-                         List<String> addedKeys,
-                         final SubRuleContext context) {
+                         final T ruleName) {
+        List<String> addedKeys = new ArrayList<>();
+        List<Set<NameState>> nameStates = new ArrayList<>();
+        if (addStep(getStartState(), keys, 0, patterns, ruleName, addedKeys, nameStates)) {
+            SubRuleContext context = subRuleContextGenerator.generate();
+            for (int i = 0; i < keys.size(); i++) {
+                boolean isTerminal = i + 1 == keys.size();
+                for (Patterns pattern : patterns.get(keys.get(i))) {
+                    for (NameState nameState : nameStates.get(i)) {
+                        nameState.addSubRule(ruleName, context.getId(), pattern, isTerminal);
+                    }
+                }
+            }
+        }
+        addIntoUsedFields(addedKeys);
+    }
+
+    /**
+     * Add a step, meaning keys and patterns, to the provided NameState.
+     *
+     * @param state NameState to add the step to.
+     * @param keys All keys of the rule.
+     * @param keyIndex The current index for keys.
+     * @param patterns Map of key to patterns.
+     * @param ruleName Name of the rule.
+     * @param addedKeys Pass in an empty list - this tracks keys that have been added.
+     * @param nameStatesForEachKey Pass in an empty list - this tracks the NameStates accessible by each key.
+     * @return True if and only if the keys and patterns being added represent a new sub-rule. Specifically, there
+     *         exists at least one key or at least one pattern for a key not present in another sub-rule of the rule.
+     */
+    private boolean addStep(final NameState state,
+                            final List<String> keys,
+                            final int keyIndex,
+                            final Map<String, List<Patterns>> patterns,
+                            final T ruleName,
+                            List<String> addedKeys,
+                            final List<Set<NameState>> nameStatesForEachKey) {
 
         final String key = keys.get(keyIndex);
         ByteMachine byteMachine = state.getTransitionOn(key);
@@ -516,19 +546,27 @@ public class GenericMachine<T> {
             }
             nameStates.add(lastNextState);
         }
+        nameStatesForEachKey.add(nameStates);
 
+        // Determine if we are adding a new rule or not. If we are not yet at the terminal key, go deeper recursively.
+        // If we are at the terminal key, check if the NameState already contains a terminal sub-rule for the provided
+        // rule name and patterns, and propagate this result up the recursion stack.
+        boolean isRuleNew = false;
+        final int nextKeyIndex = keyIndex + 1;
+        boolean isTerminal = nextKeyIndex == keys.size();
         for (NameState nameState : nameStates) {
-            // if this was the last step, then reaching the last state means the rule matched.
-            final int nextKeyIndex = keyIndex + 1;
-            boolean isTerminal = nextKeyIndex == keys.size();
-            for (Patterns pattern : patterns.get(key)) {
-                nameState.addSubRule(ruleName, context.getId(), pattern, isTerminal);
-            }
-            if (nextKeyIndex != keys.size()) {
-                addStep(nameState, keys, nextKeyIndex, patterns, ruleName, addedKeys, context);
+            if (!isTerminal) {
+                isRuleNew = addStep(nameState, keys, nextKeyIndex, patterns, ruleName, addedKeys, nameStatesForEachKey);
+            } else {
+                for (Patterns pattern : patterns.get(key)) {
+                    if (!nameState.containsTerminalSubRule(ruleName, pattern)) {
+                        return true;
+                    }
+                }
             }
         }
 
+        return isRuleNew;
     }
 
     private boolean hasValuePatterns(List<Patterns> patterns) {

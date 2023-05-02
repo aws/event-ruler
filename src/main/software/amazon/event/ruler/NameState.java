@@ -174,6 +174,27 @@ class NameState {
         ((Set) patternToSubRules.get(pattern)).add(setElement);
     }
 
+    /**
+     * Determines whether this NameState contains at least one terminal sub-rule accessible via the provided rule and
+     * pattern. Note that this method iterates through all terminal sub-rules for the provided pattern.
+     *
+     * @param rule The rule, which may have multiple sub-rules.
+     * @param pattern The pattern used by the rule to transition to this NameState.
+     * @return True indicates that this NameState contains at least one matching terminal sub-rule.
+     */
+    boolean containsTerminalSubRule(final Object rule, final Patterns pattern) {
+        Set<SubRule> subRules = patternToTerminalSubRules.get(pattern);
+        if (subRules == null) {
+            return false;
+        }
+        for (SubRule subRule : subRules) {
+            if (subRule.getRule().equals(rule)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void addTransition(final String key, final ByteMachine to) {
         valueTransitions.put(key, to);
     }

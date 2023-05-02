@@ -2060,6 +2060,77 @@ public class MachineTest {
     }
 
     @Test
+    public void testApproxSizeForDuplicatedRules() throws Exception {
+        String rule1 = "{ \"a\" : [ 1, 2, 3 ], \"b\" : [4, 5, 6] }";
+
+        Machine machine = new Machine();
+        machine.addRule("r1", rule1);
+        assertEquals(80, machine.approximateObjectCount());
+
+        // Adding the same rule multiple times should not increase object count
+        for (int i = 0; i < 100; i++) {
+            machine.addRule("r1", rule1);
+        }
+        assertEquals(80, machine.approximateObjectCount());
+    }
+
+    @Test
+    public void testApproxSizeForAddingDuplicateRuleExceptTerminalKeyIsSubset() throws Exception {
+        String rule1a = "{ \"a\" : [ 1, 2, 3 ], \"b\" : [4, 5, 6] }";
+        String rule1b = "{ \"a\" : [ 1, 2, 3 ], \"b\" : [4, 5] }";
+
+        Machine machine = new Machine();
+        machine.addRule("r1", rule1a);
+        assertEquals(80, machine.approximateObjectCount());
+
+        // Adding rule with terminal key having subset of values will be treated as same rule and thus increase size
+        machine.addRule("r1", rule1b);
+        assertEquals(80, machine.approximateObjectCount());
+    }
+
+    @Test
+    public void testApproxSizeForAddingDuplicateRuleExceptNonTerminalKeyIsSubset() throws Exception {
+        String rule1a = "{ \"a\" : [ 1, 2, 3 ], \"b\" : [4, 5, 6] }";
+        String rule1b = "{ \"a\" : [ 1, 2 ], \"b\" : [4, 5, 6] }";
+
+        Machine machine = new Machine();
+        machine.addRule("r1", rule1a);
+        assertEquals(80, machine.approximateObjectCount());
+
+        // Adding rule with non-terminal key having subset of values will be treated as same rule and not affect count
+        machine.addRule("r1", rule1b);
+        assertEquals(80, machine.approximateObjectCount());
+    }
+
+    @Test
+    public void testApproxSizeForAddingDuplicateRuleExceptTerminalKeyIsSuperset() throws Exception {
+        String rule1a = "{ \"a\" : [ 1, 2, 3 ], \"b\" : [4, 5, 6] }";
+        String rule1b = "{ \"a\" : [ 1, 2, 3 ], \"b\" : [4, 5, 6, 7] }";
+
+        Machine machine = new Machine();
+        machine.addRule("r1", rule1a);
+        assertEquals(80, machine.approximateObjectCount());
+
+        // Adding rule with terminal key having superset of values will be treated as new rule and increase count
+        machine.addRule("r1", rule1b);
+        assertEquals(91, machine.approximateObjectCount());
+    }
+
+    @Test
+    public void testApproxSizeForAddingDuplicateRuleExceptNonTerminalKeyIsSuperset() throws Exception {
+        String rule1a = "{ \"a\" : [ 1, 2, 3 ], \"b\" : [4, 5, 6] }";
+        String rule1b = "{ \"a\" : [ 1, 2, 3, 7 ], \"b\" : [4, 5, 6] }";
+
+        Machine machine = new Machine();
+        machine.addRule("r1", rule1a);
+        assertEquals(80, machine.approximateObjectCount());
+
+        // Adding rule with non-terminal key having superset of values will be treated as new rule and increase count
+        machine.addRule("r1", rule1b);
+        assertEquals(87, machine.approximateObjectCount());
+    }
+
+    @Test
     public void testSuffixChineseMatch() throws Exception {
         Machine m = new Machine();
         String rule = "{\n" +
