@@ -307,14 +307,11 @@ public class GenericMachine<T> {
                     for (Double candidateSubRuleId : candidateSubRuleIds) {
                         if (nextNameState.deleteSubRule(ruleName, candidateSubRuleId, pattern, true)) {
                             deletedSubRuleIds.add(candidateSubRuleId);
-                            // Only delete the pattern if both are true:
-                            //   1. There are no other terminal rules using the same pattern to lead to the next NameState.
-                            //   2. The next NameState is a dead-end; it doesn't transition to a ByteMachine or NameMatcher.
-                            Set<Patterns> nextPatterns = nextNameState.getTerminalPatterns();
-                            boolean doesNextNameStateStillContainPattern = nextPatterns.contains(pattern);
-                            if (!doesNextNameStateStillContainPattern && !nextNameState.hasTransitions()
-                                    && deletePattern(state, key, pattern)) {
+                            // Only delete the pattern if the pattern does not transition to the next NameState.
+                            if (!doesNameStateContainPattern(nextNameState, pattern) &&
+                                    deletePattern(state, key, pattern)) {
                                 deletedKeys.add(key);
+                                state.removeNextNameState(key);
                             }
                         }
                     }
@@ -329,10 +326,11 @@ public class GenericMachine<T> {
                         nextNameState.deleteSubRule(ruleName, deletedSubRuleId, pattern, false);
                     }
 
-                    // Unwinding the key recursion, so we aren't on a rule match. Only delete the pattern if the next
-                    // NameState is a dead-end, meaning it doesn't transition to a ByteMachine or NameMatcher.
-                    if (!nextNameState.hasTransitions() && deletePattern(state, key, pattern)) {
+                    // Unwinding the key recursion, so we aren't on a rule match. Only delete the pattern if the pattern
+                    // does not transition to the next NameState.
+                    if (!doesNameStateContainPattern(nextNameState, pattern) && deletePattern(state, key, pattern)) {
                         deletedKeys.add(key);
+                        state.removeNextNameState(key);
                     }
                 }
             }
@@ -340,6 +338,11 @@ public class GenericMachine<T> {
         }
 
         return deletedSubRuleIds;
+    }
+
+    private boolean doesNameStateContainPattern(final NameState nameState, final Patterns pattern) {
+        return nameState.getTerminalPatterns().contains(pattern) ||
+                nameState.getNonTerminalPatterns().contains(pattern);
     }
 
     /**
@@ -479,15 +482,13 @@ public class GenericMachine<T> {
                          final Map<String, List<Patterns>> patterns,
                          final T ruleName) {
         List<String> addedKeys = new ArrayList<>();
-        List<Set<NameState>> nameStates = new ArrayList<>();
+        List<NameState> nameStates = new ArrayList<>();
         if (addStep(getStartState(), keys, 0, patterns, ruleName, addedKeys, nameStates)) {
             SubRuleContext context = subRuleContextGenerator.generate();
             for (int i = 0; i < keys.size(); i++) {
                 boolean isTerminal = i + 1 == keys.size();
                 for (Patterns pattern : patterns.get(keys.get(i))) {
-                    for (NameState nameState : nameStates.get(i)) {
-                        nameState.addSubRule(ruleName, context.getId(), pattern, isTerminal);
-                    }
+                    nameStates.get(i).addSubRule(ruleName, context.getId(), pattern, isTerminal);
                 }
             }
         }
@@ -503,7 +504,7 @@ public class GenericMachine<T> {
      * @param patterns Map of key to patterns.
      * @param ruleName Name of the rule.
      * @param addedKeys Pass in an empty list - this tracks keys that have been added.
-     * @param nameStatesForEachKey Pass in an empty list - this tracks the NameStates accessible by each key.
+     * @param nameStateForEachKey Pass in an empty list - this tracks the NameState accessible by each key.
      * @return True if and only if the keys and patterns being added represent a new sub-rule. Specifically, there
      *         exists at least one key or at least one pattern for a key not present in another sub-rule of the rule.
      */
@@ -513,7 +514,7 @@ public class GenericMachine<T> {
                             final Map<String, List<Patterns>> patterns,
                             final T ruleName,
                             List<String> addedKeys,
-                            final List<Set<NameState>> nameStatesForEachKey) {
+                            final List<NameState> nameStateForEachKey) {
 
         final String key = keys.get(keyIndex);
         ByteMachine byteMachine = state.getTransitionOn(key);
@@ -533,20 +534,21 @@ public class GenericMachine<T> {
         // for each pattern, we'll provisionally add it to the BMC, which may already have it.  Pass the states
         //  list in in case the BMC doesn't already have a next-step for this pattern and needs to make a new one
         //
-        NameState lastNextState = null;
-        Set<NameState> nameStates = new HashSet<>();
+        NameState nextNameState = state.getNextNameState(key);
+        if (nextNameState == null) {
+            nextNameState = new NameState();
+            state.addNextNameState(key, nextNameState);
+        }
         for (Patterns pattern : patterns.get(key)) {
             if (isNamePattern(pattern)) {
                 assert nameMatcher != null;
-                final NameState nameStateForSupplier = lastNextState == null ? new NameState() : lastNextState;
-                lastNextState = nameMatcher.addPattern(pattern, () -> nameStateForSupplier);
+                final NameState nameStateForSupplier = nextNameState;
+                nameMatcher.addPattern(pattern, () -> nameStateForSupplier);
             } else {
-                assert byteMachine != null;
-                lastNextState = byteMachine.addPattern(pattern, lastNextState);
+                byteMachine.addPattern(pattern, nextNameState);
             }
-            nameStates.add(lastNextState);
         }
-        nameStatesForEachKey.add(nameStates);
+        nameStateForEachKey.add(nextNameState);
 
         // Determine if we are adding a new rule or not. If we are not yet at the terminal key, go deeper recursively.
         // If we are at the terminal key, check if the NameState already contains a terminal sub-rule for the provided
@@ -554,14 +556,12 @@ public class GenericMachine<T> {
         boolean isRuleNew = false;
         final int nextKeyIndex = keyIndex + 1;
         boolean isTerminal = nextKeyIndex == keys.size();
-        for (NameState nameState : nameStates) {
-            if (!isTerminal) {
-                isRuleNew = addStep(nameState, keys, nextKeyIndex, patterns, ruleName, addedKeys, nameStatesForEachKey);
-            } else {
-                for (Patterns pattern : patterns.get(key)) {
-                    if (!nameState.containsTerminalSubRule(ruleName, pattern)) {
-                        return true;
-                    }
+        if (!isTerminal) {
+            isRuleNew = addStep(nextNameState, keys, nextKeyIndex, patterns, ruleName, addedKeys, nameStateForEachKey);
+        } else {
+            for (Patterns pattern : patterns.get(key)) {
+                if (!nextNameState.containsTerminalSubRule(ruleName, pattern)) {
+                    return true;
                 }
             }
         }

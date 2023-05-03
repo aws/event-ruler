@@ -22,16 +22,18 @@ public class MachineComplexityEvaluatorTest {
 
     private static final int MAX_COMPLEXITY = 100;
     private MachineComplexityEvaluator evaluator;
+    private NameState nameState;
 
     @Before
     public void setup() {
         evaluator = new MachineComplexityEvaluator(MAX_COMPLEXITY);
+        nameState = new NameState();
     }
 
     @Test
     public void testEvaluateOnlyWildcard() {
         ByteMachine machine = new ByteMachine();
-        machine.addPattern(Patterns.wildcardMatch("*"));
+        machine.addPattern(Patterns.wildcardMatch("*"), nameState);
         // "a" is matched by 1 wildcard prefix: "*"
         assertEquals(1, machine.evaluateComplexity(evaluator));
     }
@@ -53,7 +55,7 @@ public class MachineComplexityEvaluatorTest {
     @Test
     public void testEvaluateWildcardPatternWithoutWildcards() {
         ByteMachine machine = new ByteMachine();
-        machine.addPattern(Patterns.wildcardMatch("abc"));
+        machine.addPattern(Patterns.wildcardMatch("abc"), nameState);
         // "abc" is matched by 1 wildcard prefix: "abc"
         assertEquals(1, machine.evaluateComplexity(evaluator));
     }
@@ -61,7 +63,7 @@ public class MachineComplexityEvaluatorTest {
     @Test
     public void testEvaluateOneWildcardLeadingCharTwoTrailingCharactersDifferent() {
         ByteMachine machine = new ByteMachine();
-        machine.addPattern(Patterns.wildcardMatch("*ab"));
+        machine.addPattern(Patterns.wildcardMatch("*ab"), nameState);
         // "ab" is matched by 2 wildcard prefixes: "*", "*ab"
         assertEquals(2, machine.evaluateComplexity(evaluator));
     }
@@ -69,7 +71,7 @@ public class MachineComplexityEvaluatorTest {
     @Test
     public void testEvaluateOneWildcardLeadingCharTwoTrailingCharactersEqual() {
         ByteMachine machine = new ByteMachine();
-        machine.addPattern(Patterns.wildcardMatch("*aa"));
+        machine.addPattern(Patterns.wildcardMatch("*aa"), nameState);
         // "ab" is matched by 3 wildcard prefixes: "*", "*a", "*aa"
         assertEquals(3, machine.evaluateComplexity(evaluator));
     }
@@ -77,7 +79,7 @@ public class MachineComplexityEvaluatorTest {
     @Test
     public void testEvaluateOneWildcardSecondLastChar() {
         ByteMachine machine = new ByteMachine();
-        machine.addPattern(Patterns.wildcardMatch("a*b"));
+        machine.addPattern(Patterns.wildcardMatch("a*b"), nameState);
         // "ab" is matched by 2 wildcard prefixes: "a*", "a*b"
         assertEquals(2, machine.evaluateComplexity(evaluator));
     }
@@ -85,7 +87,7 @@ public class MachineComplexityEvaluatorTest {
     @Test
     public void testEvaluateOneWildcardTrailingChar() {
         ByteMachine machine = new ByteMachine();
-        machine.addPattern(Patterns.wildcardMatch("aa*"));
+        machine.addPattern(Patterns.wildcardMatch("aa*"), nameState);
         // "aa" is matched by 2 wildcard prefixes: "aa", "aa*"
         assertEquals(2, machine.evaluateComplexity(evaluator));
     }
@@ -93,7 +95,7 @@ public class MachineComplexityEvaluatorTest {
     @Test
     public void testEvaluateOneWildcardNormalPositionTwoTrailingCharactersDifferent() {
         ByteMachine machine = new ByteMachine();
-        machine.addPattern(Patterns.wildcardMatch("a*bc"));
+        machine.addPattern(Patterns.wildcardMatch("a*bc"), nameState);
         // "ab" is matched by 2 wildcard prefixes: "a*", "a*b"
         assertEquals(2, machine.evaluateComplexity(evaluator));
     }
@@ -101,7 +103,7 @@ public class MachineComplexityEvaluatorTest {
     @Test
     public void testEvaluateOneWildcardNormalPositionTwoTrailingCharactersEqual() {
         ByteMachine machine = new ByteMachine();
-        machine.addPattern(Patterns.wildcardMatch("a*bb"));
+        machine.addPattern(Patterns.wildcardMatch("a*bb"), nameState);
         // "abb" is matched by 3 wildcard prefixes: "a*", "a*b", "a*bb"
         assertEquals(3, machine.evaluateComplexity(evaluator));
     }
@@ -109,7 +111,7 @@ public class MachineComplexityEvaluatorTest {
     @Test
     public void testEvaluateOneWildcardNormalPositionThreeTrailingCharactersDifferent() {
         ByteMachine machine = new ByteMachine();
-        machine.addPattern(Patterns.wildcardMatch("a*bcb"));
+        machine.addPattern(Patterns.wildcardMatch("a*bcb"), nameState);
         // "abcb" is matched by 3 wildcard prefixes: "a*", "a*b", "a*bcb"
         assertEquals(3, machine.evaluateComplexity(evaluator));
     }
@@ -117,7 +119,7 @@ public class MachineComplexityEvaluatorTest {
     @Test
     public void testEvaluateOneWildcardNormalPositionThreeTrailingCharactersEqual() {
         ByteMachine machine = new ByteMachine();
-        machine.addPattern(Patterns.wildcardMatch("a*bbb"));
+        machine.addPattern(Patterns.wildcardMatch("a*bbb"), nameState);
         // "abbb" is matched by 4 wildcard prefixes: "a*", "a*b", "a*bb", "a*bbb"
         assertEquals(4, machine.evaluateComplexity(evaluator));
     }
@@ -125,7 +127,7 @@ public class MachineComplexityEvaluatorTest {
     @Test
     public void testEvaluateTwoWildcardsLeadingCharAndNormalPosition() {
         ByteMachine machine = new ByteMachine();
-        machine.addPattern(Patterns.wildcardMatch("*ab*ad"));
+        machine.addPattern(Patterns.wildcardMatch("*ab*ad"), nameState);
         // "aba" is matched by 4 wildcard prefixes: "*", "*a", "*ab*", "*ab*a"
         assertEquals(4, machine.evaluateComplexity(evaluator));
     }
@@ -133,7 +135,7 @@ public class MachineComplexityEvaluatorTest {
     @Test
     public void testEvaluateTwoWildcardsLeadingCharAndSecondLastChar() {
         ByteMachine machine = new ByteMachine();
-        machine.addPattern(Patterns.wildcardMatch("*ab*d"));
+        machine.addPattern(Patterns.wildcardMatch("*ab*d"), nameState);
         // "abd" is matched by 3 wildcard prefixes: "*", "*ab*", "*ab*d"
         assertEquals(3, machine.evaluateComplexity(evaluator));
     }
@@ -141,7 +143,7 @@ public class MachineComplexityEvaluatorTest {
     @Test
     public void testEvaluateTwoWildcardsLeadingCharAndTrailingChar() {
         ByteMachine machine = new ByteMachine();
-        machine.addPattern(Patterns.wildcardMatch("*aba*"));
+        machine.addPattern(Patterns.wildcardMatch("*aba*"), nameState);
         // "aba" is matched by 4 wildcard prefixes: "*", "*a", "*aba", "*aba*"
         assertEquals(4, machine.evaluateComplexity(evaluator));
     }
@@ -149,7 +151,7 @@ public class MachineComplexityEvaluatorTest {
     @Test
     public void testEvaluateTwoWildcardsBothNormalPositionTwoTrailingCharactersEqual() {
         ByteMachine machine = new ByteMachine();
-        machine.addPattern(Patterns.wildcardMatch("a*b*bb"));
+        machine.addPattern(Patterns.wildcardMatch("a*b*bb"), nameState);
         // "abbb" is matched by 5 wildcard prefixes: "a*", "a*b", "a*b*", "a*b*b", "a*b*bb"
         assertEquals(5, machine.evaluateComplexity(evaluator));
     }
@@ -157,7 +159,7 @@ public class MachineComplexityEvaluatorTest {
     @Test
     public void testEvaluateTwoWildcardsBothNormalPositionTwoTrailingCharactersDifferent() {
         ByteMachine machine = new ByteMachine();
-        machine.addPattern(Patterns.wildcardMatch("a*b*cb"));
+        machine.addPattern(Patterns.wildcardMatch("a*b*cb"), nameState);
         // "abcb" is matched by 4 wildcard prefixes: "a*", "a*b", "a*b*", "a*b*cb"
         assertEquals(4, machine.evaluateComplexity(evaluator));
     }
@@ -165,7 +167,7 @@ public class MachineComplexityEvaluatorTest {
     @Test
     public void testEvaluateTwoWildcardsBothNormalPositionTwoTrailingCharactersDifferentLastCharUnique() {
         ByteMachine machine = new ByteMachine();
-        machine.addPattern(Patterns.wildcardMatch("a*b*cd"));
+        machine.addPattern(Patterns.wildcardMatch("a*b*cd"), nameState);
         // "abcd" is matched by 3 wildcard prefixes: "a*", "a*b*", "a*b*cd"
         assertEquals(3, machine.evaluateComplexity(evaluator));
     }
@@ -173,7 +175,7 @@ public class MachineComplexityEvaluatorTest {
     @Test
     public void testEvaluateTwoWildcardsNormalPositionAndSecondLastChar() {
         ByteMachine machine = new ByteMachine();
-        machine.addPattern(Patterns.wildcardMatch("a*b*b"));
+        machine.addPattern(Patterns.wildcardMatch("a*b*b"), nameState);
         // "abb" is matched by 4 wildcard prefixes: "a*", "a*b", "a*b*", "a*b*b"
         assertEquals(4, machine.evaluateComplexity(evaluator));
     }
@@ -181,7 +183,7 @@ public class MachineComplexityEvaluatorTest {
     @Test
     public void testEvaluateTwoWildcardsNormalPositionAndTrailingChar() {
         ByteMachine machine = new ByteMachine();
-        machine.addPattern(Patterns.wildcardMatch("a*bb*"));
+        machine.addPattern(Patterns.wildcardMatch("a*bb*"), nameState);
         // "abb" is matched by 4 wildcard prefixes: "a*", "a*b", "a*bb", "a*bb*"
         assertEquals(4, machine.evaluateComplexity(evaluator));
     }
@@ -189,7 +191,7 @@ public class MachineComplexityEvaluatorTest {
     @Test
     public void testEvaluateTwoWildcardsThirdLastCharAndTrailingChar() {
         ByteMachine machine = new ByteMachine();
-        machine.addPattern(Patterns.wildcardMatch("ab*b*"));
+        machine.addPattern(Patterns.wildcardMatch("ab*b*"), nameState);
         // "abb" is matched by 3 wildcard prefixes: "ab*", "ab*b", "ab*b*"
         assertEquals(3, machine.evaluateComplexity(evaluator));
     }
@@ -282,7 +284,7 @@ public class MachineComplexityEvaluatorTest {
     @Test
     public void testEvaluateFourWildcardsLeadingCharNormalPositionThirdLastCharAndTrailingChar() {
         ByteMachine machine = new ByteMachine();
-        machine.addPattern(Patterns.wildcardMatch("*ab*b*b*"));
+        machine.addPattern(Patterns.wildcardMatch("*ab*b*b*"), nameState);
         // "abbbab" is matched by 7 wildcard prefixes: "*", "*ab", "*ab*", "*ab*b", "*ab*b*", "*ab*b*b", "*ab*b*b*"
         assertEquals(7, machine.evaluateComplexity(evaluator));
     }
@@ -290,7 +292,7 @@ public class MachineComplexityEvaluatorTest {
     @Test
     public void testEvaluateLongSequenceofWildcards() {
         ByteMachine machine = new ByteMachine();
-        machine.addPattern(Patterns.wildcardMatch("*a*a*a*a*a*a*a*a*"));
+        machine.addPattern(Patterns.wildcardMatch("*a*a*a*a*a*a*a*a*"), nameState);
         // "aaaaaaaa" is matched by all 17 wildcard prefixes
         assertEquals(17, machine.evaluateComplexity(evaluator));
     }
@@ -397,38 +399,38 @@ public class MachineComplexityEvaluatorTest {
     @Test
     public void testEvaluateQuaminaExploder() {
         ByteMachine machine = new ByteMachine();
-        machine.addPattern(Patterns.wildcardMatch("aahed*"));
-        machine.addPattern(Patterns.wildcardMatch("aal*ii"));
-        machine.addPattern(Patterns.wildcardMatch("aargh*"));
-        machine.addPattern(Patterns.wildcardMatch("aarti*"));
-        machine.addPattern(Patterns.wildcardMatch("a*baca"));
-        machine.addPattern(Patterns.wildcardMatch("*abaci"));
-        machine.addPattern(Patterns.wildcardMatch("a*back"));
-        machine.addPattern(Patterns.wildcardMatch("ab*acs"));
-        machine.addPattern(Patterns.wildcardMatch("abaf*t"));
-        machine.addPattern(Patterns.wildcardMatch("*abaka"));
-        machine.addPattern(Patterns.wildcardMatch("ab*amp"));
-        machine.addPattern(Patterns.wildcardMatch("a*band"));
-        machine.addPattern(Patterns.wildcardMatch("*abase"));
-        machine.addPattern(Patterns.wildcardMatch("abash*"));
-        machine.addPattern(Patterns.wildcardMatch("abas*k"));
-        machine.addPattern(Patterns.wildcardMatch("ab*ate"));
-        machine.addPattern(Patterns.wildcardMatch("aba*ya"));
-        machine.addPattern(Patterns.wildcardMatch("abbas*"));
-        machine.addPattern(Patterns.wildcardMatch("abbed*"));
-        machine.addPattern(Patterns.wildcardMatch("ab*bes"));
-        machine.addPattern(Patterns.wildcardMatch("abbey*"));
-        machine.addPattern(Patterns.wildcardMatch("*abbot"));
-        machine.addPattern(Patterns.wildcardMatch("ab*cee"));
-        machine.addPattern(Patterns.wildcardMatch("abea*m"));
-        machine.addPattern(Patterns.wildcardMatch("abe*ar"));
-        machine.addPattern(Patterns.wildcardMatch("a*bele"));
-        machine.addPattern(Patterns.wildcardMatch("a*bers"));
-        machine.addPattern(Patterns.wildcardMatch("abet*s"));
-        machine.addPattern(Patterns.wildcardMatch("*abhor"));
-        machine.addPattern(Patterns.wildcardMatch("abi*de"));
-        machine.addPattern(Patterns.wildcardMatch("a*bies"));
-        machine.addPattern(Patterns.wildcardMatch("*abled"));
+        machine.addPattern(Patterns.wildcardMatch("aahed*"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("aal*ii"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("aargh*"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("aarti*"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("a*baca"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("*abaci"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("a*back"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("ab*acs"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("abaf*t"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("*abaka"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("ab*amp"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("a*band"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("*abase"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("abash*"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("abas*k"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("ab*ate"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("aba*ya"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("abbas*"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("abbed*"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("ab*bes"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("abbey*"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("*abbot"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("ab*cee"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("abea*m"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("abe*ar"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("a*bele"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("a*bers"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("abet*s"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("*abhor"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("abi*de"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("a*bies"), nameState);
+        machine.addPattern(Patterns.wildcardMatch("*abled"), nameState);
         assertEquals(45, machine.evaluateComplexity(evaluator));
     }
 
@@ -445,7 +447,7 @@ public class MachineComplexityEvaluatorTest {
         for (int i = 0; i < 10000; i++) {
             builder.append("F*e*a*t*u*r*e*");
         }
-        machine.addPattern(Patterns.wildcardMatch(builder.toString()));
+        machine.addPattern(Patterns.wildcardMatch(builder.toString()), nameState);
 
         // Start a complexity evaluation task.
         final int[] complexity = { -1 };
@@ -486,7 +488,7 @@ public class MachineComplexityEvaluatorTest {
         List<Patterns[]> patternPermutations = generateAllPermutations(patterns);
         for (Patterns[] patternPermutation : patternPermutations) {
             for (Patterns pattern : patternPermutation) {
-                machine.addPattern(pattern);
+                machine.addPattern(pattern, nameState);
             }
             assertEquals(expectedComplexity, machine.evaluateComplexity(evaluator));
             for (Patterns pattern : patternPermutation) {
