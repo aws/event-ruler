@@ -1,7 +1,6 @@
 package software.amazon.event.ruler;
 
 import javax.annotation.Nonnull;
-import java.util.function.Supplier;
 
 /**
  * Matches the Keys in the flattened event with the { [ "exists" : false ] } pattern.
@@ -22,11 +21,11 @@ public interface NameMatcher<R> {
     /**
      * Adds the given pattern to this name matcher and associate it with the existing or new match result.
      *
-     * @param pattern        the pattern to be added
-     * @param resultSupplier the supplier of match results
+     * @param pattern   the pattern to be added
+     * @param nameState the namestate
      * @return the match result with which the added pattern is associated
      */
-    R addPattern(@Nonnull Patterns pattern, @Nonnull Supplier<? extends R> resultSupplier);
+    R addPattern(@Nonnull Patterns pattern, @Nonnull NameState nameState);
 
     /**
      * Removes the given pattern from this name matcher.

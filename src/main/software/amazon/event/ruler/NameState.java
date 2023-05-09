@@ -34,6 +34,9 @@ class NameState {
     // Maps a key to the next NameState accessible via either valueTransitions or mustNotExistMatchers.
     private final Map<String, NameState> keyToNextNameState = new ConcurrentHashMap<>();
 
+    // All rules, both terminal and non-terminal, keyed by pattern, that led to this NameState.
+    private final Map<Patterns, Set<Object>> patternToRules = new ConcurrentHashMap<>();
+
     // All terminal sub-rules, keyed by pattern, that led to this NameState.
     private final Map<Patterns, Set<SubRule>> patternToTerminalSubRules = new ConcurrentHashMap<>();
 
@@ -143,14 +146,20 @@ class NameState {
      * @return True if and only if the sub-rule was found and deleted.
      */
     boolean deleteSubRule(final Object rule, final double subRuleId, final Patterns pattern, final boolean isTerminal) {
-        boolean deleted = false;
+        deleteFromPatternToSetMap(patternToRules, pattern, rule);
         Object setElement = isTerminal ? new SubRule(rule, subRuleId) : subRuleId;
         Map<Patterns, ?> patternToSubRules = isTerminal ? patternToTerminalSubRules : patternToNonTerminalSubRuleIds;
-        Set<?> set = (Set<?>) patternToSubRules.get(pattern);
+        return deleteFromPatternToSetMap(patternToSubRules, pattern, setElement);
+    }
+
+    private static boolean deleteFromPatternToSetMap(final Map<Patterns, ?> map, final Patterns pattern,
+                                                     final Object setElement) {
+        boolean deleted = false;
+        Set<?> set = (Set<?>) map.get(pattern);
         if (set != null) {
             deleted = set.remove(setElement);
             if (set.isEmpty()) {
-                patternToSubRules.remove(pattern);
+                map.remove(pattern);
             }
         }
         return deleted;
@@ -170,9 +179,11 @@ class NameState {
 
     boolean isEmpty() {
         return  valueTransitions.isEmpty() &&
+                mustNotExistMatchers.isEmpty() &&
+                keyToNextNameState.isEmpty() &&
+                patternToRules.isEmpty() &&
                 patternToTerminalSubRules.isEmpty() &&
-                patternToNonTerminalSubRuleIds.isEmpty() &&
-                mustNotExistMatchers.isEmpty();
+                patternToNonTerminalSubRuleIds.isEmpty();
     }
 
     /**
@@ -184,33 +195,30 @@ class NameState {
      * @param isTerminal True indicates that the sub-rule is using pattern to match on the final event field.
      */
     void addSubRule(final Object rule, final double subRuleId, final Patterns pattern, final boolean isTerminal) {
+        addToPatternToSetMap(patternToRules, pattern, rule);
         Object setElement = isTerminal ? new SubRule(rule, subRuleId) : subRuleId;
         Map<Patterns, ?> patternToSubRules = isTerminal ? patternToTerminalSubRules : patternToNonTerminalSubRuleIds;
-        if (!patternToSubRules.containsKey(pattern)) {
-            ((Map<Patterns, Set>) patternToSubRules).put(pattern, new HashSet<>());
+        addToPatternToSetMap(patternToSubRules, pattern, setElement);
+    }
+
+    private static void addToPatternToSetMap(final Map<Patterns, ?> map, final Patterns pattern,
+                                             final Object setElement) {
+        if (!map.containsKey(pattern)) {
+            ((Map<Patterns, Set>) map).put(pattern, new HashSet<>());
         }
-        ((Set) patternToSubRules.get(pattern)).add(setElement);
+        ((Set) map.get(pattern)).add(setElement);
     }
 
     /**
-     * Determines whether this NameState contains at least one terminal sub-rule accessible via the provided rule and
-     * pattern. Note that this method iterates through all terminal sub-rules for the provided pattern.
+     * Determines whether this NameState contains the provided rule accessible via the provided pattern.
      *
      * @param rule The rule, which may have multiple sub-rules.
      * @param pattern The pattern used by the rule to transition to this NameState.
-     * @return True indicates that this NameState contains at least one matching terminal sub-rule.
+     * @return True indicates that this NameState the provided rule for the provided pattern.
      */
-    boolean containsTerminalSubRule(final Object rule, final Patterns pattern) {
-        Set<SubRule> subRules = patternToTerminalSubRules.get(pattern);
-        if (subRules == null) {
-            return false;
-        }
-        for (SubRule subRule : subRules) {
-            if (subRule.getRule().equals(rule)) {
-                return true;
-            }
-        }
-        return false;
+    boolean containsRule(final Object rule, final Patterns pattern) {
+        Set<Object> rules = patternToRules.get(pattern);
+        return rules != null && rules.contains(rule);
     }
 
     void addTransition(final String key, final ByteMachine to) {
@@ -336,6 +344,7 @@ class NameState {
                 "valueTransitions=" + valueTransitions +
                 ", mustNotExistMatchers=" + mustNotExistMatchers +
                 ", keyToNextNameState=" + keyToNextNameState +
+                ", patternToRules=" + patternToRules +
                 ", patternToTerminalSubRules=" + patternToTerminalSubRules +
                 ", patternToNonTerminalSubRuleIds=" + patternToNonTerminalSubRuleIds +
                 '}';
@@ -376,5 +385,4 @@ class NameState {
             return Objects.hash(rule, id);
         }
     }
-
 }

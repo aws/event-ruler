@@ -2128,6 +2128,23 @@ public class MachineTest {
     }
 
     @Test
+    public void testSharedNameStateWithTwoSubRulesDifferingAtFirstNameState() throws Exception {
+        // Two different sub-rules here with a NameState after bar and after foo: (bar=1, foo=a) and (bar=2, foo=a).
+        String rule1 = "{\"$or\": [{\"bar\": [\"1\"]}, {\"bar\": [\"2\"]}]," +
+                        "\"foo\": [\"a\"] }";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+
+        String event = "{\"bar\": \"2\"," +
+                        "\"foo\": \"a\"}";
+
+        List<String> matches = machine.rulesForEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+    }
+
+    @Test
     public void testApproxSizeForSimplestPossibleMachine() throws Exception {
         String rule1 = "{ \"a\" : [ 1 ] }";
         String rule2 = "{ \"b\" : [ 2 ] }";
@@ -2214,7 +2231,7 @@ public class MachineTest {
 
         // Adding rule with non-terminal key having superset of values will be treated as new rule and increase count
         machine.addRule("r1", rule1b);
-        assertEquals(87, machine.approximateObjectCount());
+        assertEquals(91, machine.approximateObjectCount());
     }
 
     @Test

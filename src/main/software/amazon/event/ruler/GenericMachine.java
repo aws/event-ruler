@@ -482,13 +482,15 @@ public class GenericMachine<T> {
                          final Map<String, List<Patterns>> patterns,
                          final T ruleName) {
         List<String> addedKeys = new ArrayList<>();
-        List<NameState> nameStates = new ArrayList<>();
-        if (addStep(getStartState(), keys, 0, patterns, ruleName, addedKeys, nameStates)) {
+        if (addStep(getStartState(), keys, 0, patterns, ruleName, addedKeys)) {
             SubRuleContext context = subRuleContextGenerator.generate();
+            NameState nameState = getStartState();
             for (int i = 0; i < keys.size(); i++) {
+                String key = keys.get(i);
                 boolean isTerminal = i + 1 == keys.size();
-                for (Patterns pattern : patterns.get(keys.get(i))) {
-                    nameStates.get(i).addSubRule(ruleName, context.getId(), pattern, isTerminal);
+                nameState = nameState.getNextNameState(key);
+                for (Patterns pattern : patterns.get(key)) {
+                    nameState.addSubRule(ruleName, context.getId(), pattern, isTerminal);
                 }
             }
         }
@@ -504,7 +506,6 @@ public class GenericMachine<T> {
      * @param patterns Map of key to patterns.
      * @param ruleName Name of the rule.
      * @param addedKeys Pass in an empty list - this tracks keys that have been added.
-     * @param nameStateForEachKey Pass in an empty list - this tracks the NameState accessible by each key.
      * @return True if and only if the keys and patterns being added represent a new sub-rule. Specifically, there
      *         exists at least one key or at least one pattern for a key not present in another sub-rule of the rule.
      */
@@ -513,8 +514,7 @@ public class GenericMachine<T> {
                             final int keyIndex,
                             final Map<String, List<Patterns>> patterns,
                             final T ruleName,
-                            List<String> addedKeys,
-                            final List<NameState> nameStateForEachKey) {
+                            List<String> addedKeys) {
 
         final String key = keys.get(keyIndex);
         ByteMachine byteMachine = state.getTransitionOn(key);
@@ -541,28 +541,25 @@ public class GenericMachine<T> {
         }
         for (Patterns pattern : patterns.get(key)) {
             if (isNamePattern(pattern)) {
-                assert nameMatcher != null;
-                final NameState nameStateForSupplier = nextNameState;
-                nameMatcher.addPattern(pattern, () -> nameStateForSupplier);
+                nameMatcher.addPattern(pattern, nextNameState);
             } else {
                 byteMachine.addPattern(pattern, nextNameState);
             }
         }
-        nameStateForEachKey.add(nextNameState);
 
         // Determine if we are adding a new rule or not. If we are not yet at the terminal key, go deeper recursively.
-        // If we are at the terminal key, check if the NameState already contains a terminal sub-rule for the provided
-        // rule name and patterns, and propagate this result up the recursion stack.
+        // If we are at the terminal key, unwind recursion stack, checking each NameState to see if any pattern for
+        // rule name is new. As soon as one rule+pattern for any NameState is new, we know we are processing a new
+        // sub-rule and can continue returning true without further NameState checks.
         boolean isRuleNew = false;
         final int nextKeyIndex = keyIndex + 1;
         boolean isTerminal = nextKeyIndex == keys.size();
         if (!isTerminal) {
-            isRuleNew = addStep(nextNameState, keys, nextKeyIndex, patterns, ruleName, addedKeys, nameStateForEachKey);
-        } else {
-            for (Patterns pattern : patterns.get(key)) {
-                if (!nextNameState.containsTerminalSubRule(ruleName, pattern)) {
-                    return true;
-                }
+            isRuleNew = addStep(nextNameState, keys, nextKeyIndex, patterns, ruleName, addedKeys);
+        }
+        for (Patterns pattern : patterns.get(key)) {
+            if (isRuleNew || !nextNameState.containsRule(ruleName, pattern)) {
+                return true;
             }
         }
 

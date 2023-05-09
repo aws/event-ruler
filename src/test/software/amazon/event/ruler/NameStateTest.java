@@ -126,17 +126,17 @@ public class NameStateTest {
     }
 
     @Test
-    public void testContainsTerminalSubRule() {
+    public void testContainsRule() {
         NameState nameState = new NameState();
         nameState.addSubRule("rule1", 1.0, Patterns.exactMatch("a"), true);
         nameState.addSubRule("rule2", 2.0, Patterns.exactMatch("a"), false);
         nameState.addSubRule("rule1", 2.0, Patterns.exactMatch("b"), false);
 
-        assertTrue(nameState.containsTerminalSubRule("rule1", Patterns.exactMatch("a")));
-        assertFalse(nameState.containsTerminalSubRule("rule2", Patterns.exactMatch("a")));
-        assertFalse(nameState.containsTerminalSubRule("rule1", Patterns.exactMatch("b")));
-        assertFalse(nameState.containsTerminalSubRule("rule3", Patterns.exactMatch("a")));
-        assertFalse(nameState.containsTerminalSubRule("rule1", Patterns.exactMatch("c")));
+        assertTrue(nameState.containsRule("rule1", Patterns.exactMatch("a")));
+        assertTrue(nameState.containsRule("rule2", Patterns.exactMatch("a")));
+        assertTrue(nameState.containsRule("rule1", Patterns.exactMatch("b")));
+        assertFalse(nameState.containsRule("rule3", Patterns.exactMatch("a")));
+        assertFalse(nameState.containsRule("rule1", Patterns.exactMatch("c")));
     }
 
     @Test
