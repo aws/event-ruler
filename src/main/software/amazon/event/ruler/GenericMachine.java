@@ -225,7 +225,7 @@ public class GenericMachine<T> {
      *  want to remove partial rule from rule name.
      *
      * @param name ARN of the rule
-     * @param namevals names & values which make up the rule
+     * @param namevals names and values which make up the rule
      */
     public void deletePatternRule(final T name, final Map<String, List<Patterns>> namevals) {
         if (namevals.size() > MAXIMUM_RULE_SIZE) {

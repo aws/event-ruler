@@ -31,6 +31,7 @@
 
   <properties>
     <jdk.version>1.8</jdk.version>
+    <jdk.release.version>8</jdk.release.version>
     <jackson.version>2.15.0</jackson.version>
     <jsr.version>3.0.2</jsr.version>
     <junit.version>4.13.2</junit.version>
@@ -110,8 +111,8 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>${compiler.plugin.version}</version>
         <configuration>
-          <source>${jdk.version}</source>
-          <target>${jdk.version}</target>
+          <!-- JDK11+ warn about rulesForEvent() being deprecated -->
+          <release>${jdk.release.version}</release>
           <encoding>${project.build.sourceEncoding}</encoding>
         </configuration>
       </plugin>
