@@ -31,9 +31,6 @@ class NameState {
     // while add/delete Rule is active in another thread, without any locks.
     private final Map<String, NameMatcher<NameState>> mustNotExistMatchers = new ConcurrentHashMap<>(1);
 
-    // Maps a key to the next NameState accessible via either valueTransitions or mustNotExistMatchers.
-    private final Map<String, NameState> keyToNextNameState = new ConcurrentHashMap<>();
-
     // All rules, both terminal and non-terminal, keyed by pattern, that led to this NameState.
     private final Map<Patterns, Set<Object>> patternToRules = new ConcurrentHashMap<>();
 
@@ -60,21 +57,6 @@ class NameState {
      */
     Set<Patterns> getTerminalPatterns() {
         return patternToTerminalSubRules.keySet();
-    }
-
-    /**
-     * Get all the non-terminal patterns that have led to this NameState. "Terminal" means the pattern was used by the
-     * last field of a rule to lead to this NameState, and thus, the rule's matching criteria have been fully satisfied.
-     *
-     * NOTE: This function returns the raw key set from one of NameState's internal maps. Mutating it will corrupt the
-     * state of NameState. Although standard coding practice would warrant returning a copy of the set, or wrapping it
-     * to be immutable, we instead return the raw key set as a performance optimization. This avoids creating new data
-     * structures and/or copying elements between them.
-     *
-     * @return Set of all non-terminal patterns.
-     */
-    Set<Patterns> getNonTerminalPatterns() {
-        return patternToNonTerminalSubRuleIds.keySet();
     }
 
     /**
@@ -173,14 +155,13 @@ class NameState {
         mustNotExistMatchers.remove(name);
     }
 
-    void removeNextNameState(String key) {
-        keyToNextNameState.remove(key);
+    boolean hasTransitions() {
+        return !valueTransitions.isEmpty() || !mustNotExistMatchers.isEmpty();
     }
 
     boolean isEmpty() {
         return  valueTransitions.isEmpty() &&
                 mustNotExistMatchers.isEmpty() &&
-                keyToNextNameState.isEmpty() &&
                 patternToRules.isEmpty() &&
                 patternToTerminalSubRules.isEmpty() &&
                 patternToNonTerminalSubRuleIds.isEmpty();
@@ -227,10 +208,6 @@ class NameState {
 
     void addKeyTransition(final String key, final NameMatcher<NameState> to) {
         mustNotExistMatchers.put(key, to);
-    }
-
-    void addNextNameState(final String key, final NameState nextNameState) {
-        keyToNextNameState.put(key, nextNameState);
     }
 
     NameMatcher<NameState> getKeyTransitionOn(final String token) {
@@ -302,10 +279,6 @@ class NameState {
         return nextNameStates;
     }
 
-    public NameState getNextNameState(String key) {
-        return keyToNextNameState.get(key);
-    }
-
     public int evaluateComplexity(MachineComplexityEvaluator evaluator) {
         int maxComplexity = evaluator.getMaxComplexity();
         int complexity = 0;
@@ -343,7 +316,6 @@ class NameState {
         return "NameState{" +
                 "valueTransitions=" + valueTransitions +
                 ", mustNotExistMatchers=" + mustNotExistMatchers +
-                ", keyToNextNameState=" + keyToNextNameState +
                 ", patternToRules=" + patternToRules +
                 ", patternToTerminalSubRules=" + patternToTerminalSubRules +
                 ", patternToNonTerminalSubRuleIds=" + patternToNonTerminalSubRuleIds +

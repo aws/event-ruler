@@ -9,8 +9,6 @@ import java.util.Set;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class NameStateTest {
@@ -59,19 +57,6 @@ public class NameStateTest {
         Set<Patterns> expectedPatterns = new HashSet<>(Arrays.asList(
                 Patterns.exactMatch("a"), Patterns.exactMatch("c")));
         assertEquals(expectedPatterns, nameState.getTerminalPatterns());
-    }
-
-    @Test
-    public void testGetNonTerminalPatterns() {
-        NameState nameState = new NameState();
-        nameState.addSubRule("rule1", 1.0, Patterns.exactMatch("a"), false);
-        nameState.addSubRule("rule1", 2.0, Patterns.exactMatch("b"), true);
-        nameState.addSubRule("rule2", 3.0, Patterns.exactMatch("a"), true);
-        nameState.addSubRule("rule3", 4.0, Patterns.exactMatch("c"), false);
-
-        Set<Patterns> expectedPatterns = new HashSet<>(Arrays.asList(
-                Patterns.exactMatch("a"), Patterns.exactMatch("c")));
-        assertEquals(expectedPatterns, nameState.getNonTerminalPatterns());
     }
 
     @Test
@@ -137,17 +122,5 @@ public class NameStateTest {
         assertTrue(nameState.containsRule("rule1", Patterns.exactMatch("b")));
         assertFalse(nameState.containsRule("rule3", Patterns.exactMatch("a")));
         assertFalse(nameState.containsRule("rule1", Patterns.exactMatch("c")));
-    }
-
-    @Test
-    public void testGetNextNameState() {
-        NameState nameState = new NameState();
-        NameState nextNameState1 = new NameState();
-
-        nameState.addNextNameState("key1", nextNameState1);
-        assertSame(nextNameState1, nameState.getNextNameState("key1"));
-        assertNull(nameState.getNextNameState("key2"));
-        nameState.removeNextNameState("key1");
-        assertNull(nameState.getNextNameState("key1"));
     }
 }

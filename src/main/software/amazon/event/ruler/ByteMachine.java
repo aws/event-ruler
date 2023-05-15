@@ -648,26 +648,28 @@ class ByteMachine {
         return false;
     }
 
+    NameState addPattern(final Patterns pattern) {
+        return addPattern(pattern, null);
+    }
+
     /**
      * Adds one pattern to a byte machine.
      *
      * @param pattern The pattern to add.
      * @param nameState If non-null, transition to this NameState from the ByteMatch.
+     * @return NameState transitioned to from ByteMatch. Will be equal to provided NameState if it wasn't null.
      */
-    void addPattern(final Patterns pattern, final NameState nameState) {
+    NameState addPattern(final Patterns pattern, final NameState nameState) {
         switch (pattern.type()) {
             case NUMERIC_RANGE:
                 assert pattern instanceof Range;
-                addRangePattern((Range) pattern, nameState);
-                break;
+                return addRangePattern((Range) pattern, nameState);
             case ANYTHING_BUT:
                 assert pattern instanceof AnythingBut;
-                addAnythingButPattern((AnythingBut) pattern, nameState);
-                break;
+                return addAnythingButPattern((AnythingBut) pattern, nameState);
             case ANYTHING_BUT_IGNORE_CASE:
                 assert pattern instanceof AnythingButEqualsIgnoreCase;
-                addAnythingButEqualsIgnoreCasePattern((AnythingButEqualsIgnoreCase) pattern, nameState);
-                break;
+                return addAnythingButEqualsIgnoreCasePattern((AnythingButEqualsIgnoreCase) pattern, nameState);
 
             case ANYTHING_BUT_SUFFIX:
             case ANYTHING_BUT_PREFIX:
@@ -678,34 +680,54 @@ class ByteMachine {
             case EQUALS_IGNORE_CASE:
             case WILDCARD:
                 assert pattern instanceof ValuePatterns;
-                addMatchPattern((ValuePatterns) pattern, nameState);
-                break;
+                return addMatchPattern((ValuePatterns) pattern, nameState);
 
             case EXISTS:
-                addExistencePattern(pattern, nameState);
-                break;
+                return addExistencePattern(pattern, nameState);
             default:
                 throw new AssertionError(pattern + " is not implemented yet");
         }
     }
 
-    private void addExistencePattern(Patterns pattern, NameState nameState) {
-        addMatchValue(pattern, Patterns.EXISTS_BYTE_STRING, nameState);
+    private NameState addExistencePattern(Patterns pattern, NameState nameState) {
+        return addMatchValue(pattern, Patterns.EXISTS_BYTE_STRING, nameState);
     }
 
-    private void addAnythingButPattern(AnythingBut pattern, NameState nameState) {
-        for (String value : pattern.getValues()) {
-            addMatchValue(pattern, value, nameState);
+    private NameState addAnythingButPattern(AnythingBut pattern, NameState nameState) {
+
+        NameState nameStateToBeReturned = nameState;
+        NameState nameStateChecker = null;
+        for(String value : pattern.getValues()) {
+            nameStateToBeReturned = addMatchValue(pattern, value, nameStateToBeReturned);
+            if (nameStateChecker == null) {
+                nameStateChecker = nameStateToBeReturned;
+            }
+            // all the values in the list must point to the same NameState because they are sharing the same pattern
+            // object.
+            assert nameStateChecker == null || nameStateChecker == nameStateToBeReturned : " nameStateChecker == nameStateToBeReturned";
         }
+
+        return nameStateToBeReturned;
     }
 
-    private void addAnythingButEqualsIgnoreCasePattern(AnythingButEqualsIgnoreCase pattern, NameState nameState) {
-        for (String value : pattern.getValues()) {
-            addMatchValue(pattern, value, nameState);
+    private NameState addAnythingButEqualsIgnoreCasePattern(AnythingButEqualsIgnoreCase pattern, NameState nameState) {
+
+        NameState nameStateToBeReturned = nameState;
+        NameState nameStateChecker = null;
+        for(String value : pattern.getValues()) {
+            nameStateToBeReturned = addMatchValue(pattern, value, nameStateToBeReturned);
+            if (nameStateChecker == null) {
+                nameStateChecker = nameStateToBeReturned;
+            }
+            // all the values in the list must point to the same NameState because they are sharing the same pattern
+            // object.
+            assert nameStateChecker == null || nameStateChecker == nameStateToBeReturned : " nameStateChecker == nameStateToBeReturned";
         }
+
+        return nameStateToBeReturned;
     }
 
-    private void addMatchValue(Patterns pattern, String value, NameState nameStateToBeReturned) {
+    private NameState addMatchValue(Patterns pattern, String value, NameState nameStateToBeReturned) {
 
         final InputCharacter[] characters = getParser().parse(pattern.type(), value);
         ByteState byteState = startState;
@@ -732,7 +754,7 @@ class ByteMachine {
             byteState = stateToReuse;
         }
         // we found our way through the machine with all characters except the last having matches or shortcut.
-        addEndOfMatch(byteState, prevByteState, characters, i, pattern, nameStateToBeReturned);
+        return addEndOfMatch(byteState, prevByteState, characters, i, pattern, nameStateToBeReturned);
     }
 
     private boolean canReuseNextByteState(ByteState byteState, ByteState nextByteState, InputCharacter[] characters,
@@ -1098,7 +1120,12 @@ class ByteMachine {
     //  add a numeric range expression to the byte machine.  Note; the code assumes that the patterns
     //  are encoded as pure strings containing only decimal digits, and that the top and bottom values
     //  are equal in length.
-    private void addRangePattern(final Range range, final NameState nextNameState) {
+    private NameState addRangePattern(final Range range, final NameState nameState) {
+
+        // we prepare for one new NameSate here which will be used for range match to point to next NameSate.
+        // however, it will not be used if match is already existing. in that case, we will reuse NameSate
+        // from that match.
+        NameState nextNameState = nameState == null ? new NameState() : nameState;
 
         ByteState forkState = startState;
         int forkOffset = 0;
@@ -1135,7 +1162,7 @@ class ByteMachine {
 
         // fill in matches in the fork state
         for (byte bb : Range.digitSequence(range.bottom[forkOffset], range.top[forkOffset], false, false)) {
-            insertMatchForRangePattern(bb, forkState, nextNameState, range);
+            nextNameState = insertMatchForRangePattern(bb, forkState, nextNameState, range);
         }
 
         // process all the transitions on the bottom range bytes
@@ -1160,7 +1187,7 @@ class ByteMachine {
 
                 // now add transitions for values greater than this non-9 digit
                 for (byte bb : Range.digitSequence(b, Constants.MAX_DIGIT, false, true)) {
-                    insertMatchForRangePattern(bb, state, nextNameState, range);
+                    nextNameState = insertMatchForRangePattern(bb, state, nextNameState, range);
                 }
             }
         }
@@ -1181,14 +1208,14 @@ class ByteMachine {
 
             // now we insert matches for possible values of last digit
             if (!range.openBottom) {
-                insertMatchForRangePattern(lastBottom, state, nextNameState, range);
+                nextNameState = insertMatchForRangePattern(lastBottom, state, nextNameState, range);
             }
 
             // unless the last digit is also at the fork position, fill in the extra matches due to
             //  the strictly-less-than condition (see discussion above)
             if (forkOffset < (range.bottom.length - 1)) {
                 for (byte bb : Range.digitSequence(lastBottom, Constants.MAX_DIGIT, false, true)) {
-                    insertMatchForRangePattern(bb, state, nextNameState, range);
+                    nextNameState = insertMatchForRangePattern(bb, state, nextNameState, range);
                 }
             }
         }
@@ -1212,7 +1239,7 @@ class ByteMachine {
 
                 // now add transitions for values less than this non-0 digit
                 for (byte bb : Range.digitSequence((byte) '0', range.top[offsetT], true, false)) {
-                    insertMatchForRangePattern(bb, state, nextNameState, range);
+                    nextNameState = insertMatchForRangePattern(bb, state, nextNameState, range);
                 }
             }
         }
@@ -1231,17 +1258,19 @@ class ByteMachine {
 
             // now we insert matches for possible values of last digit
             if (!range.openTop) {
-                insertMatchForRangePattern(lastTop, state, nextNameState, range);
+                nextNameState = insertMatchForRangePattern(lastTop, state, nextNameState, range);
             }
 
             // unless the last digit is also at the fork position, fill in the extra matches due to
             //  the strictly-less-than condition (see discussion above)
             if (forkOffset < (range.top.length - 1)) {
                 for (byte bb : Range.digitSequence((byte) '0', lastTop, true, false)) {
-                    insertMatchForRangePattern(bb, state, nextNameState, range);
+                    nextNameState = insertMatchForRangePattern(bb, state, nextNameState, range);
                 }
             }
         }
+
+        return nextNameState;
     }
 
     // If we meet shortcut trans, that means Range have byte overlapped with shortcut matches,
@@ -1311,7 +1340,8 @@ class ByteMachine {
             //    substring satisfies wildcard. The composite will self-reference and would create unintended matches.
             nextState = new ByteState();
             nextState.setIndeterminatePrefix(state.hasIndeterminatePrefix());
-            addTransitionNextState(state, character, characters, currentIndex, prevState, pattern, nextState, nameState);
+            addTransitionNextState(state, character, characters, currentIndex, prevState, pattern, nextState,
+                    nameState);
         }
 
         return nextState;
@@ -1327,26 +1357,27 @@ class ByteMachine {
     }
 
     // add a match type pattern, i.e. anything but a numeric range, to the byte machine.
-    private void addMatchPattern(final ValuePatterns pattern, final NameState nameState) {
-        addMatchValue(pattern, pattern.pattern(), nameState);
+    private NameState addMatchPattern(final ValuePatterns pattern, final NameState nameState) {
+        return addMatchValue(pattern, pattern.pattern(), nameState);
     }
 
     // We can reach to this function when we have checked the existing characters array from left to right and found we
     // need add the match in the tail character or we find we can shortcut to tail directly without creating new byte
     // transition in the middle. If we met the shortcut transition, we need compare the input value to adjust it
     // accordingly. Please refer to detail comments in ShortcutTransition.java.
-    private void addEndOfMatch(ByteState state,
-                               ByteState prevState,
-                               final InputCharacter[] characters,
-                               final int charIndex,
-                               final Patterns pattern,
-                               final NameState nameState) {
+    private NameState addEndOfMatch(ByteState state,
+                                    ByteState prevState,
+                                    final InputCharacter[] characters,
+                                    final int charIndex,
+                                    final Patterns pattern,
+                                    final NameState nameStateCandidate) {
         final int length = characters.length;
+        NameState nameState = (nameStateCandidate == null) ? new NameState() : nameStateCandidate;
 
         if (length == 1 && isWildcard(characters[0])) {
             // Only character is '*'. Make the start state a match so empty input is matched.
             startStateMatch = new ByteMatch(pattern, nameState);
-            return;
+            return nameState;
         }
 
         ByteTransition trans = getTransition(state, characters[charIndex]);
@@ -1359,7 +1390,7 @@ class ByteMachine {
             assert match != null && SHORTCUT_MATCH_TYPES.contains(match.getPattern().type());
             // If it is the same pattern, just return.
             if (pattern.equals(match.getPattern())) {
-                return;
+                return match.getNextNameState();
             }
             // Have asserted current match pattern must be value patterns
             String valueInCurrentPos = ((ValuePatterns) match.getPattern()).pattern();
@@ -1456,14 +1487,13 @@ class ByteMachine {
         if (SHORTCUT_MATCH_TYPES.contains(pattern.type())) {
             // For exactly match, if it is last character already, we just put the real transition with match there.
             if (j == length - 1) {
-                insertMatch(characters, j, state, nameState, pattern, prevState);
-                return;
+                return insertMatch(characters, j, state, nameState, pattern, prevState);
             } else if (isEligibleForShortcut) {
                 // If current character is not last character, create the shortcut transition with the next
                 ByteMatch byteMatch = new ByteMatch(pattern, nameState);
                 addTransition(state, characters[j], new ShortcutTransition().setMatch(byteMatch));
                 addMatchReferences(byteMatch);
-                return;
+                return nameState;
             }
         }
 
@@ -1475,24 +1505,28 @@ class ByteMachine {
             state = nextByteState;
         }
 
-        insertMatch(characters, length - 1, state, nameState, pattern, prevState);
+        return insertMatch(characters, length - 1, state, nameState, pattern, prevState);
     }
 
-    private void insertMatchForRangePattern(byte b, ByteState state, NameState nextNameState,
-                                            Patterns pattern) {
-        insertMatch(new InputCharacter[] { getParser().parse(b) }, 0, state, nextNameState, pattern, null);
+    private NameState insertMatchForRangePattern(byte b, ByteState state, NameState nextNameState,
+                                                 Patterns pattern) {
+        return insertMatch(new InputCharacter[] { getParser().parse(b) }, 0, state, nextNameState, pattern, null);
     }
 
-    private void insertMatch(InputCharacter[] characters, int currentIndex, ByteState state,
+    private NameState insertMatch(InputCharacter[] characters, int currentIndex, ByteState state,
                                   NameState nextNameState, Patterns pattern, ByteState prevState) {
         InputCharacter character = characters[currentIndex];
 
         ByteMatch match = findMatch(getTransition(state, character).getMatches(), pattern);
         if (match != null) {
-            return;
+            // There is a match linked to the transition that's the same type, so we just re-use its nextNameState
+            return match.getNextNameState();
         }
 
-        match = new ByteMatch(pattern, nextNameState);
+        // we make a new NameState and hook it up
+        NameState nameState = nextNameState == null ? new NameState() : nextNameState;
+
+        match = new ByteMatch(pattern, nameState);
         addMatchReferences(match);
 
         if (isWildcard(character)) {
@@ -1522,6 +1556,8 @@ class ByteMachine {
                 addTransition(prevState, character, match);
             }
         }
+
+        return nameState;
     }
 
     /**

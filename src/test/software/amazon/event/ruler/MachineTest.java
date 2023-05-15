@@ -2301,7 +2301,7 @@ public class MachineTest {
         for(int i = 0 ; i < 1000; i ++) {
             machine.addRule("lots-values-" + i, "{ \"many-values-key\" :  [ \"value" + i + " \" ] }");
         }
-        assertEquals(4109, machine.approximateObjectCount());
+        assertEquals(5108, machine.approximateObjectCount());
     }
 
     @Test
@@ -2333,7 +2333,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name7\",\"Name8\",\"Name9\",\"Name10\",\"Name11\",\"Name12\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(57, machine.approximateObjectCount());
+        assertEquals(63, machine.approximateObjectCount());
     }
 
     @Test
@@ -2364,7 +2364,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name6\",\"Name7\",\"Name8\",\"Name9\",\"Name10\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(79, machine.approximateObjectCount());
+        assertEquals(90, machine.approximateObjectCount());
     }
 
 }

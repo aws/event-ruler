@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import software.amazon.event.ruler.input.ParseException;
-import org.junit.Before;
 import org.junit.Test;
 
 import static software.amazon.event.ruler.PermutationsGenerator.generateAllPermutations;
@@ -19,17 +18,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class ByteMachineTest {
-
-    private NameState nameState;
-
-    @Before
-    public void setup() {
-        nameState = new NameState();
-    }
 
     @Test
     public void WHEN_ManyOverLappingStringsAreAdded_THEN_TheyAreParsedProperly() {
@@ -43,7 +36,7 @@ public class ByteMachineTest {
 
         ByteMachine cut = new ByteMachine();
         for (String pattern : patterns) {
-            cut.addPattern(Patterns.exactMatch(pattern), nameState);
+            cut.addPattern(Patterns.exactMatch(pattern));
         }
 
         for (String pattern : patterns) {
@@ -62,7 +55,7 @@ public class ByteMachineTest {
     public void WHEN_AnythingButPrefixPatternIsAdded_THEN_ItMatchesAppropriately() {
         Patterns abpp = Patterns.anythingButPrefix("foo");
         ByteMachine bm = new ByteMachine();
-        bm.addPattern(abpp, nameState);
+        bm.addPattern(abpp);
         String[] shouldMatch = {
           "f",
           "fo",
@@ -95,7 +88,7 @@ public class ByteMachineTest {
         abs.add("foo");
         AnythingBut ab = AnythingBut.anythingButMatch(abs);
 
-        bm.addPattern(abpp, nameState);
+        bm.addPattern(abpp);
         Patterns[] trickyPatterns = {
                 Patterns.prefixMatch("foo"),
                 Patterns.anythingButPrefix("f"),
@@ -118,7 +111,7 @@ public class ByteMachineTest {
     public void WHEN_NumericEQIsAdded_THEN_ItMatchesMultipleNumericForms() {
 
         ByteMachine cut = new ByteMachine();
-        cut.addPattern(Patterns.numericEquals(300.0), nameState);
+        cut.addPattern(Patterns.numericEquals(300.0));
         String[] threeHundreds = { "300", "3.0e+2", "300.0000" };
         for (String threeHundred : threeHundreds) {
             assertEquals(1, cut.transitionOn(threeHundred).size());
@@ -140,7 +133,7 @@ public class ByteMachineTest {
             int rangeIdx = 0;
             ByteMachine cut = new ByteMachine();
             for (int i = 1; i < data.length; i++) {
-                cut.addPattern(Range.lessThan(data[i]), nameState);
+                cut.addPattern(Range.lessThan(data[i]));
                 ranges[rangeIdx++] = Range.lessThan(data[i]);
             }
             // shuffle the array
@@ -157,7 +150,7 @@ public class ByteMachineTest {
         // first: less than
         for (int i = 1; i < data.length; i++) {
             ByteMachine cut = new ByteMachine();
-            cut.addPattern(Range.lessThan(data[i]), nameState);
+            cut.addPattern(Range.lessThan(data[i]));
             for (double aData : data) {
                 String num = String.format("%f", aData);
                 Set<NameStateWithPattern> matched = cut.transitionOn(num);
@@ -174,7 +167,7 @@ public class ByteMachineTest {
         // <=
         for (int i = 1; i < data.length; i++) {
             ByteMachine cut = new ByteMachine();
-            cut.addPattern(Range.lessThanOrEqualTo(data[i]), nameState);
+            cut.addPattern(Range.lessThanOrEqualTo(data[i]));
             for (double aData : data) {
                 String num = String.format("%f", aData);
                 Set<NameStateWithPattern> matched = cut.transitionOn(num);
@@ -191,7 +184,7 @@ public class ByteMachineTest {
         // >
         for (int i = 0; i < (data.length - 1); i++) {
             ByteMachine cut = new ByteMachine();
-            cut.addPattern(Range.greaterThan(data[i]), nameState);
+            cut.addPattern(Range.greaterThan(data[i]));
             for (double aData : data) {
                 String num = String.format("%f", aData);
                 Set<NameStateWithPattern> matched = cut.transitionOn(num);
@@ -209,7 +202,7 @@ public class ByteMachineTest {
         for (int i = 0; i < (data.length - 1); i++) {
             ByteMachine cut = new ByteMachine();
             Range nr = Range.greaterThanOrEqualTo(data[i]);
-            cut.addPattern(nr, nameState);
+            cut.addPattern(nr);
             for (double aData : data) {
                 String num = String.format("%f", aData);
                 Set<NameStateWithPattern> matched = cut.transitionOn(num);
@@ -228,7 +221,7 @@ public class ByteMachineTest {
             for (int j = i + 2; j < data.length; j++) {
                 ByteMachine cut = new ByteMachine();
                 Range r = Range.between(data[i], true, data[j], true);
-                cut.addPattern(r, nameState);
+                cut.addPattern(r);
                 for (double aData : data) {
                     String num = String.format("%f", aData);
                     Set<NameStateWithPattern> matched = cut.transitionOn(num);
@@ -248,7 +241,7 @@ public class ByteMachineTest {
             for (int j = i + 2; j < data.length; j++) {
                 ByteMachine cut = new ByteMachine();
                 Range r = Range.between(data[i], true, data[j], false);
-                cut.addPattern(r, nameState);
+                cut.addPattern(r);
                 for (double aData : data) {
                     String num = String.format("%f", aData);
                     Set<NameStateWithPattern> matched = cut.transitionOn(num);
@@ -268,7 +261,7 @@ public class ByteMachineTest {
             for (int j = i + 2; j < data.length; j++) {
                 ByteMachine cut = new ByteMachine();
                 Range r = Range.between(data[i], false, data[j], true);
-                cut.addPattern(r, nameState);
+                cut.addPattern(r);
                 for (double aData : data) {
                     String num = String.format("%f", aData);
                     Set<NameStateWithPattern> matched = cut.transitionOn(num);
@@ -287,7 +280,7 @@ public class ByteMachineTest {
             for (int j = i + 2; j < data.length; j++) {
                 ByteMachine cut = new ByteMachine();
                 Range r = Range.between(data[i], false, data[j], false);
-                cut.addPattern(r, nameState);
+                cut.addPattern(r);
                 for (double aData : data) {
                     String num = String.format("%f", aData);
                     Set<NameStateWithPattern> matched = cut.transitionOn(num);
@@ -308,7 +301,7 @@ public class ByteMachineTest {
         for (int i = 0; i < (data.length - 2); i++) {
             for (int j = i + 2; j < data.length; j++) {
                 Range r = Range.between(data[i], false, data[j], false);
-                cut.addPattern(r, nameState);
+                cut.addPattern(r);
                 for (int k = 0; k < data.length; k++) {
                     if (data[k] >= data[i] && data[k] <= data[j]) {
                         containedCount[k]++;
@@ -348,7 +341,7 @@ public class ByteMachineTest {
         for (int i = 0; i < (data.length - 2); i++) {
             for (int j = i + 2; j < data.length; j++) {
                 Range r = Range.between(data[i], true, data[j], true);
-                cut.addPattern(r, nameState);
+                cut.addPattern(r);
                 for (int k = 0; k < data.length; k++) {
                     if (data[k] > data[i] && data[k] < data[j]) {
                         containedCount[k]++;
@@ -385,8 +378,8 @@ public class ByteMachineTest {
     @Test
     public void WHEN_AnExactMatchAndAPrefixMatchCoincide_THEN_TwoNameStateJumpsAreGenerated() {
         ByteMachine cut = new ByteMachine();
-        cut.addPattern(Patterns.exactMatch("horse"), nameState);
-        cut.addPattern(Patterns.prefixMatch("horse"), nameState);
+        cut.addPattern(Patterns.exactMatch("horse"));
+        cut.addPattern(Patterns.prefixMatch("horse"));
         assertEquals(2, cut.transitionOn("horse").size());
         assertEquals(1, cut.transitionOn("horseback").size());
     }
@@ -395,8 +388,8 @@ public class ByteMachineTest {
     public void WHEN_TheSamePatternIsAddedTwice_THEN_ItOnlyCausesOneNamestateJump() {
 
         ByteMachine cut = new ByteMachine();
-        cut.addPattern(Patterns.exactMatch("foo"), nameState);
-        cut.addPattern(Patterns.exactMatch("foo"), nameState);
+        cut.addPattern(Patterns.exactMatch("foo"));
+        cut.addPattern(Patterns.exactMatch("foo"));
 
         Set<NameStateWithPattern> l = cut.transitionOn("foo");
         assertEquals(1, l.size());
@@ -406,7 +399,7 @@ public class ByteMachineTest {
     public void WHEN_AnyThingButPatternsAreAdded_THEN_TheyWork() {
 
         ByteMachine cut = new ByteMachine();
-        cut.addPattern(Patterns.anythingButMatch("foo"), nameState);
+        cut.addPattern(Patterns.anythingButMatch("foo"));
         String[] notFoos = { "bar", "baz", "for", "too", "fro", "fo", "foobar" };
         for (String notFoo : notFoos) {
             assertEquals(1, cut.transitionOn(notFoo).size());
@@ -418,7 +411,7 @@ public class ByteMachineTest {
     public void WHEN_AnyThingButStringListPatternsAreAdded_THEN_TheyWork() {
 
         ByteMachine cut = new ByteMachine();
-        cut.addPattern(Patterns.anythingButMatch(new HashSet<>(Arrays.asList("bab","ford"))), nameState);
+        cut.addPattern(Patterns.anythingButMatch(new HashSet<>(Arrays.asList("bab","ford"))));
         String[] notFoos = { "bar", "baz", "for", "too", "fro", "fo", "foobar" };
         for (String notFoo : notFoos) {
             assertEquals(1, cut.transitionOn(notFoo).size());
@@ -432,9 +425,9 @@ public class ByteMachineTest {
 
         ByteMachine cut = new ByteMachine();
         cut.addPattern(Patterns.anythingButNumberMatch(
-                new HashSet<>(Arrays.asList(1.11, 2d))), nameState);
+                new HashSet<>(Arrays.asList(1.11, 2d))));
         cut.addPattern(Patterns.anythingButNumberMatch(
-                new HashSet<>(Arrays.asList(3.33, 2d))), nameState);
+                new HashSet<>(Arrays.asList(3.33, 2d))));
         String[] notFoos = { "0", "1.1", "5", "9", "112", "fo", "foobar" };
         for (String notFoo : notFoos) {
             assertEquals(2, cut.transitionOn(notFoo).size());
@@ -468,7 +461,7 @@ public class ByteMachineTest {
         assertTrue(cut.isEmpty());
 
         cut.addPattern(Patterns.anythingButNumberMatch(
-                new HashSet<>(Arrays.asList(3.33, 2d))), nameState);
+                new HashSet<>(Arrays.asList(3.33, 2d))));
         assertEquals(0, cut.transitionOn("2").size());
         assertEquals(0, cut.transitionOn("3.33").size());
         assertEquals(1, cut.transitionOn("2022").size());
@@ -482,26 +475,26 @@ public class ByteMachineTest {
         ByteMachine cut = new ByteMachine();
         Patterns p = Patterns.exactMatch("foo");
 
-        cut.addPattern(p, nameState);
+        cut.addPattern(p);
         p = Patterns.prefixMatch("foo");
-        cut.addPattern(p, nameState);
+        cut.addPattern(p);
         p = Patterns.anythingButMatch("foo");
-        cut.addPattern(p, nameState);
+        cut.addPattern(p);
 
         p = Patterns.numericEquals(3);
-        cut.addPattern(p, nameState);
+        cut.addPattern(p);
         p = Range.lessThan(3);
-        cut.addPattern(p, nameState);
+        cut.addPattern(p);
         p = Range.greaterThan(3);
-        cut.addPattern(p, nameState);
+        cut.addPattern(p);
         p = Range.lessThanOrEqualTo(3);
-        cut.addPattern(p, nameState);
+        cut.addPattern(p);
         p = Range.greaterThanOrEqualTo(3);
-        cut.addPattern(p, nameState);
+        cut.addPattern(p);
         p = Range.between(0, false, 8, false);
-        cut.addPattern(p, nameState);
+        cut.addPattern(p);
         p = Range.between(0, true, 8, true);
-        cut.addPattern(p, nameState);
+        cut.addPattern(p);
 
         String[] notFoos =    { "bar", "baz", "for", "too", "fro", "fo", "foobar" };
         int[] notFooMatches = { 1,     1,      1,    1,      1,     1,    2 };
@@ -521,8 +514,8 @@ public class ByteMachineTest {
     public void WHEN_AnythingButIsAPrefixOfAnotherPattern_THEN_TheyWork() {
 
         ByteMachine cut = new ByteMachine();
-        cut.addPattern(Patterns.exactMatch("football"), nameState);
-        cut.addPattern(Patterns.anythingButMatch("foo"), nameState);
+        cut.addPattern(Patterns.exactMatch("football"));
+        cut.addPattern(Patterns.anythingButMatch("foo"));
 
         assertEquals(2, cut.transitionOn("football").size());
         assertEquals(0, cut.transitionOn("foo").size());
@@ -531,7 +524,7 @@ public class ByteMachineTest {
     @Test
     public void WHEN_NumericEQIsRequested_THEN_DifferentNumberSyntaxesMatch() {
         ByteMachine cut = new ByteMachine();
-        cut.addPattern(Patterns.numericEquals(300.0), nameState);
+        cut.addPattern(Patterns.numericEquals(300.0));
         assertEquals(1, cut.transitionOn("300").size());
         assertEquals(1, cut.transitionOn("300.0000").size());
         assertEquals(1, cut.transitionOn("3.0e+2").size());
@@ -543,9 +536,10 @@ public class ByteMachineTest {
                 1234, 5678.1234, 7890
         };
 
-        ByteMatch cut = new ByteMatch(Range.lessThan(data[0]), nameState);
-        ByteMatch cc = new ByteMatch(Range.lessThan(data[1]), nameState);
-        ByteMatch s2 = new ByteMatch(Range.lessThan(data[2]), nameState);
+        NameState ns = new NameState();
+        ByteMatch cut = new ByteMatch(Range.lessThan(data[0]), ns);
+        ByteMatch cc = new ByteMatch(Range.lessThan(data[1]), ns);
+        ByteMatch s2 = new ByteMatch(Range.lessThan(data[2]), ns);
 
         Range range1 = (Range) cut.getPattern().clone();
         Range range2 = (Range) cc.getPattern().clone();
@@ -566,8 +560,8 @@ public class ByteMachineTest {
         ByteMachine cut = new ByteMachine();
         Range r = Range.between(0, true, 4, false);
         Range r1 = Range.between(1, true, 3, false);
-        cut.addPattern(r, nameState);
-        cut.addPattern(r1, nameState);
+        cut.addPattern(r);
+        cut.addPattern(r1);
 
         String num = String.format("%f", 2.0);
         assertEquals(2, cut.transitionOn(num).size());
@@ -589,10 +583,10 @@ public class ByteMachineTest {
         Range r3 = (Range) r2.clone();
 
         assertEquals(0, cut.transitionOn(num).size());
-        cut.addPattern(r, nameState);
+        cut.addPattern(r);
         assertEquals(1, cut.transitionOn(num).size());
-        cut.addPattern(r1, nameState);
-        cut.addPattern(r2, nameState);
+        cut.addPattern(r1);
+        cut.addPattern(r2);
 
         assertNotNull("must find the range pattern", cut.findPattern(r1));
         assertEquals(cut.findPattern(r1), cut.findPattern(r3));
@@ -619,7 +613,7 @@ public class ByteMachineTest {
         ByteMachine cut = new ByteMachine();
         Range r = Range.between(0, true, 4, false);
         assertNull("must NOT find the range pattern", cut.findPattern(r));
-        cut.addPattern(r, nameState);
+        cut.addPattern(r);
         assertNotNull("must find the range pattern", cut.findPattern(r));
 
         for (int i = 0; i < 1000; i++) {
@@ -662,10 +656,10 @@ public class ByteMachineTest {
         }
 
         // other pattern
-        cut.addPattern(Patterns.exactMatch("test"), nameState);
-        cut.addPattern(Patterns.prefixMatch("test"), nameState);
-        cut.addPattern(Patterns.anythingButMatch("test"), nameState);
-        cut.addPattern(Patterns.numericEquals(1.11), nameState);
+        cut.addPattern(Patterns.exactMatch("test"));
+        cut.addPattern(Patterns.prefixMatch("test"));
+        cut.addPattern(Patterns.anythingButMatch("test"));
+        cut.addPattern(Patterns.numericEquals(1.11));
         assertNotNull("must find the pattern", cut.findPattern(Patterns.exactMatch("test")));
         assertNotNull("must find the pattern", cut.findPattern(Patterns.prefixMatch("test")));
         assertNotNull("must find the pattern", cut.findPattern(Patterns.anythingButMatch("test")));
@@ -688,7 +682,7 @@ public class ByteMachineTest {
     public void whenKeyExistencePatternAdded_itCouldBeFound_AndBecomesEmptyWithOneDelete() {
         ByteMachine cut = new ByteMachine();
 
-        cut.addPattern(Patterns.existencePatterns(), nameState);
+        cut.addPattern(Patterns.existencePatterns());
 
         NameState stateFound;
 
@@ -704,7 +698,7 @@ public class ByteMachineTest {
     public void testExistencePatternFindsMatch() {
         ByteMachine cut = new ByteMachine();
 
-        cut.addPattern(Patterns.existencePatterns(), nameState);
+        cut.addPattern(Patterns.existencePatterns());
 
         Set<NameStateWithPattern> matches = cut.transitionOn("someValue");
         assertEquals(1, matches.size());
@@ -728,8 +722,8 @@ public class ByteMachineTest {
         ByteMachine cut = new ByteMachine();
         String val = "value";
 
-        cut.addPattern(Patterns.existencePatterns(), nameState);
-        cut.addPattern(Patterns.exactMatch(val), nameState);
+        cut.addPattern(Patterns.existencePatterns());
+        cut.addPattern(Patterns.exactMatch(val));
 
         Set<NameStateWithPattern> matches = cut.transitionOn("anotherValue");
         assertEquals(1, matches.size());
@@ -753,7 +747,7 @@ public class ByteMachineTest {
     public void testNonNumericValue_DoesNotMatchNumericPattern() {
         ByteMachine cut = new ByteMachine();
         String val = "0A,";
-        cut.addPattern(Range.greaterThanOrEqualTo(-1e9), nameState);
+        cut.addPattern(Range.greaterThanOrEqualTo(-1e9));
 
         Set<NameStateWithPattern> matches = cut.transitionOn(val);
         assertTrue(matches.isEmpty());
@@ -764,8 +758,8 @@ public class ByteMachineTest {
         ByteMachine cut = new ByteMachine();
         String val = "value";
 
-        cut.addPattern(Patterns.existencePatterns(), nameState);
-        cut.addPattern(Patterns.exactMatch(val), nameState);
+        cut.addPattern(Patterns.existencePatterns());
+        cut.addPattern(Patterns.exactMatch(val));
 
         Set<NameStateWithPattern> matches = cut.transitionOn("NewValue");
         assertEquals(1, matches.size());
@@ -791,7 +785,7 @@ public class ByteMachineTest {
         String [] values = {"a", "ab", "abc", "abcd", "a", "ab", "abc", "abcd", "ac", "acb", "aabc", "abcdeffg"};
         // add them in ordering, no proxy transition is reburied.
         for (String value : values) {
-            cut.addPattern(Patterns.exactMatch(value), nameState);
+            cut.addPattern(Patterns.exactMatch(value));
         }
         for (String value :values) {
             assertEquals(value + " did not have a match", 1, cut.transitionOn(value).size());
@@ -803,7 +797,7 @@ public class ByteMachineTest {
 
         // add them in reverse ordering, there is only one proxy transition existing.
         for (int i = values.length-1; i >=0; i--) {
-            cut.addPattern(Patterns.exactMatch(values[i]), nameState);
+            cut.addPattern(Patterns.exactMatch(values[i]));
         }
         for (String value :values) {
             assertEquals(1, cut.transitionOn(value).size());
@@ -818,7 +812,7 @@ public class ByteMachineTest {
             //add them in random order, it should work
             randomizeArray(copiedValues);
             for (int i = values.length - 1; i >= 0; i--) {
-                cut.addPattern(Patterns.exactMatch(copiedValues[i]), nameState);
+                cut.addPattern(Patterns.exactMatch(copiedValues[i]));
             }
             for (String value : values) {
                 assertEquals(1, cut.transitionOn(value).size());
@@ -836,12 +830,12 @@ public class ByteMachineTest {
             randomizeArray(copiedValues);
             // add them in ordering, both exactly match and prefix match
             for (String value : copiedValues) {
-                cut.addPattern(Patterns.exactMatch(value), nameState);
+                cut.addPattern(Patterns.exactMatch(value));
             }
             randomizeArray(copiedValues);
             // add them in ordering, both exactly match and prefix match
             for (String value : copiedValues) {
-                cut.addPattern(Patterns.prefixMatch(value), nameState);
+                cut.addPattern(Patterns.prefixMatch(value));
             }
             int[] expected = {2, 3, 4, 5, 2, 3, 4, 5, 3, 4, 3, 6};
             for (int i = 0; i < values.length; i++) {
@@ -870,7 +864,7 @@ public class ByteMachineTest {
     @Test
     public void testSuffixPattern() {
         ByteMachine cut = new ByteMachine();
-        cut.addPattern(Patterns.suffixMatch("java"), nameState);
+        cut.addPattern(Patterns.suffixMatch("java"));
         String[] shouldBeMatched = { "java", ".java", "abc.java", "jjjava", "123java" };
         String[] shouldNOTBeMatched = { "vav", "javaa", "xjavax", "foo", "foojaoova" };
         for (String foo : shouldBeMatched) {
@@ -1190,7 +1184,7 @@ public class ByteMachineTest {
     @Test
     public void testWildcardInvalidEscapeCharacter() {
         try {
-            new ByteMachine().addPattern(Patterns.wildcardMatch("he\\llo"), nameState);
+            new ByteMachine().addPattern(Patterns.wildcardMatch("he\\llo"));
             fail("Expected ParseException");
         } catch (ParseException e) {
             assertEquals("Invalid escape character at pos 2", e.getMessage());
@@ -1903,8 +1897,8 @@ public class ByteMachineTest {
     @Test
     public void testWildcardAddTwiceDeleteOnceLeadingWildcard() {
         ByteMachine cut = new ByteMachine();
-        cut.addPattern(Patterns.wildcardMatch("*hello"), nameState);
-        cut.addPattern(Patterns.wildcardMatch("*hello"), nameState);
+        cut.addPattern(Patterns.wildcardMatch("*hello"));
+        cut.addPattern(Patterns.wildcardMatch("*hello"));
         cut.deletePattern(Patterns.wildcardMatch("*hello"));
         assertTrue(cut.isEmpty());
     }
@@ -1912,8 +1906,8 @@ public class ByteMachineTest {
     @Test
     public void testWildcardAddTwiceDeleteOnceNormalPositionWildcard() {
         ByteMachine cut = new ByteMachine();
-        cut.addPattern(Patterns.wildcardMatch("h*llo"), nameState);
-        cut.addPattern(Patterns.wildcardMatch("h*llo"), nameState);
+        cut.addPattern(Patterns.wildcardMatch("h*llo"));
+        cut.addPattern(Patterns.wildcardMatch("h*llo"));
         cut.deletePattern(Patterns.wildcardMatch("h*llo"));
         assertTrue(cut.isEmpty());
     }
@@ -1921,8 +1915,8 @@ public class ByteMachineTest {
     @Test
     public void testWildcardAddTwiceDeleteOnceSecondLastCharWildcard() {
         ByteMachine cut = new ByteMachine();
-        cut.addPattern(Patterns.wildcardMatch("hell*o"), nameState);
-        cut.addPattern(Patterns.wildcardMatch("hell*o"), nameState);
+        cut.addPattern(Patterns.wildcardMatch("hell*o"));
+        cut.addPattern(Patterns.wildcardMatch("hell*o"));
         cut.deletePattern(Patterns.wildcardMatch("hell*o"));
         assertTrue(cut.isEmpty());
     }
@@ -1930,8 +1924,8 @@ public class ByteMachineTest {
     @Test
     public void testWildcardAddTwiceDeleteOnceTrailingWildcard() {
         ByteMachine cut = new ByteMachine();
-        cut.addPattern(Patterns.wildcardMatch("hello*"), nameState);
-        cut.addPattern(Patterns.wildcardMatch("hello*"), nameState);
+        cut.addPattern(Patterns.wildcardMatch("hello*"));
+        cut.addPattern(Patterns.wildcardMatch("hello*"));
         cut.deletePattern(Patterns.wildcardMatch("hello*"));
         assertTrue(cut.isEmpty());
     }
@@ -1939,8 +1933,8 @@ public class ByteMachineTest {
     @Test
     public void testWildcardAddTwiceDeleteOnceMultipleWildcard() {
         ByteMachine cut = new ByteMachine();
-        cut.addPattern(Patterns.wildcardMatch("h*l*o"), nameState);
-        cut.addPattern(Patterns.wildcardMatch("h*l*o"), nameState);
+        cut.addPattern(Patterns.wildcardMatch("h*l*o"));
+        cut.addPattern(Patterns.wildcardMatch("h*l*o"));
         cut.deletePattern(Patterns.wildcardMatch("h*l*o"));
         assertTrue(cut.isEmpty());
     }
@@ -1948,8 +1942,8 @@ public class ByteMachineTest {
     @Test
     public void testWildcardAddTwiceDeleteOnceLastCharAndThirdLastCharWildcard() {
         ByteMachine cut = new ByteMachine();
-        cut.addPattern(Patterns.wildcardMatch("he*l*"), nameState);
-        cut.addPattern(Patterns.wildcardMatch("he*l*"), nameState);
+        cut.addPattern(Patterns.wildcardMatch("he*l*"));
+        cut.addPattern(Patterns.wildcardMatch("he*l*"));
         cut.deletePattern(Patterns.wildcardMatch("he*l*"));
         assertTrue(cut.isEmpty());
     }
@@ -1957,8 +1951,8 @@ public class ByteMachineTest {
     @Test
     public void testWildcardAddTwiceDeleteOnceSingleCharWildcard() {
         ByteMachine cut = new ByteMachine();
-        cut.addPattern(Patterns.wildcardMatch("*"), nameState);
-        cut.addPattern(Patterns.wildcardMatch("*"), nameState);
+        cut.addPattern(Patterns.wildcardMatch("*"));
+        cut.addPattern(Patterns.wildcardMatch("*"));
         cut.deletePattern(Patterns.wildcardMatch("*"));
         assertTrue(cut.isEmpty());
     }
@@ -1967,13 +1961,13 @@ public class ByteMachineTest {
     public void testWildcardAddTwiceDeleteOnceMixed() {
         ByteMachine cut = new ByteMachine();
         for (int i = 0; i < 2; i ++){
-            cut.addPattern(Patterns.wildcardMatch("h*llo"), nameState);
-            cut.addPattern(Patterns.wildcardMatch("*"), nameState);
-            cut.addPattern(Patterns.wildcardMatch("*hello"), nameState);
-            cut.addPattern(Patterns.wildcardMatch("hello*"), nameState);
-            cut.addPattern(Patterns.wildcardMatch("hell*o"), nameState);
-            cut.addPattern(Patterns.wildcardMatch("h*l*o"), nameState);
-            cut.addPattern(Patterns.wildcardMatch("he*l*"), nameState);
+            cut.addPattern(Patterns.wildcardMatch("h*llo"));
+            cut.addPattern(Patterns.wildcardMatch("*"));
+            cut.addPattern(Patterns.wildcardMatch("*hello"));
+            cut.addPattern(Patterns.wildcardMatch("hello*"));
+            cut.addPattern(Patterns.wildcardMatch("hell*o"));
+            cut.addPattern(Patterns.wildcardMatch("h*l*o"));
+            cut.addPattern(Patterns.wildcardMatch("he*l*"));
         }
         cut.deletePattern(Patterns.wildcardMatch("h*llo"));
         cut.deletePattern(Patterns.wildcardMatch("*"));
@@ -1988,7 +1982,7 @@ public class ByteMachineTest {
     @Test
     public void testWildcardMachineNotEmptyWithSingleWildcardCharacterPattern() {
         ByteMachine cut = new ByteMachine();
-        cut.addPattern(Patterns.wildcardMatch("*"), nameState);
+        cut.addPattern(Patterns.wildcardMatch("*"));
         assertFalse(cut.isEmpty());
         cut.deletePattern(Patterns.wildcardMatch("*"));
         assertTrue(cut.isEmpty());
@@ -1998,7 +1992,7 @@ public class ByteMachineTest {
     public void testWildcardRuleIsNotDuplicated() {
         ByteMachine cut = new ByteMachine();
         for (int i = 0; i < 10; i++) {
-            cut.addPattern(Patterns.wildcardMatch("1*2345"), nameState);
+            cut.addPattern(Patterns.wildcardMatch("1*2345"));
         }
         assertEquals(2, cut.evaluateComplexity(new MachineComplexityEvaluator(Integer.MAX_VALUE)));
     }
@@ -2007,7 +2001,7 @@ public class ByteMachineTest {
     public void testWildcardRuleIsNotDuplicatedWildcardIsFirstChar() {
         ByteMachine cut = new ByteMachine();
         for (int i = 0; i < 10; i++) {
-            cut.addPattern(Patterns.wildcardMatch("*123"), nameState);
+            cut.addPattern(Patterns.wildcardMatch("*123"));
         }
         assertEquals(2, cut.evaluateComplexity(new MachineComplexityEvaluator(Integer.MAX_VALUE)));
     }
@@ -2016,7 +2010,7 @@ public class ByteMachineTest {
     public void testWildcardRuleIsNotDuplicatedWildcardIsSecondLastChar() {
         ByteMachine cut = new ByteMachine();
         for (int i = 0; i < 10; i++) {
-            cut.addPattern(Patterns.wildcardMatch("1*2"), nameState);
+            cut.addPattern(Patterns.wildcardMatch("1*2"));
         }
         assertEquals(2, cut.evaluateComplexity(new MachineComplexityEvaluator(Integer.MAX_VALUE)));
     }
@@ -2025,7 +2019,7 @@ public class ByteMachineTest {
     public void testWildcardRuleIsNotDuplicatedWildcardIsLastChar() {
         ByteMachine cut = new ByteMachine();
         for (int i = 0; i < 10; i++) {
-            cut.addPattern(Patterns.wildcardMatch("1*"), nameState);
+            cut.addPattern(Patterns.wildcardMatch("1*"));
         }
         assertEquals(2, cut.evaluateComplexity(new MachineComplexityEvaluator(Integer.MAX_VALUE)));
     }
@@ -2034,7 +2028,7 @@ public class ByteMachineTest {
     public void testWildcardRuleIsNotDuplicatedWildcardIsThirdLastAndLastChar() {
         ByteMachine cut = new ByteMachine();
         for (int i = 0; i < 10; i++) {
-            cut.addPattern(Patterns.wildcardMatch("12*3*"), nameState);
+            cut.addPattern(Patterns.wildcardMatch("12*3*"));
         }
         assertEquals(3, cut.evaluateComplexity(new MachineComplexityEvaluator(Integer.MAX_VALUE)));
     }
@@ -2096,11 +2090,63 @@ public class ByteMachineTest {
     @Test
     public void testWildcardNoConsecutiveWildcardCharacters() {
         try {
-            new ByteMachine().addPattern(Patterns.wildcardMatch("h**o"), nameState);
+            new ByteMachine().addPattern(Patterns.wildcardMatch("h**o"));
             fail("Expected ParseException");
         } catch (ParseException e) {
             assertEquals("Consecutive wildcard characters at pos 1", e.getMessage());
         }
+    }
+
+    @Test
+    public void testAddMatchPatternGivenNameStateReturned() {
+        NameState nameState = new NameState();
+        ByteMachine cut = new ByteMachine();
+        assertSame(nameState, cut.addPattern(Patterns.exactMatch("a"), nameState));
+    }
+
+    @Test
+    public void testAddMatchPatternNoNameStateGiven() {
+        ByteMachine cut = new ByteMachine();
+        assertNotNull(cut.addPattern(Patterns.exactMatch("a")));
+    }
+
+    @Test
+    public void testAddExistencePatternGivenNameStateReturned() {
+        NameState nameState = new NameState();
+        ByteMachine cut = new ByteMachine();
+        assertSame(nameState, cut.addPattern(Patterns.existencePatterns(), nameState));
+    }
+
+    @Test
+    public void testAddExistencePatternNoNameStateGiven() {
+        ByteMachine cut = new ByteMachine();
+        assertNotNull(cut.addPattern(Patterns.existencePatterns()));
+    }
+
+    @Test
+    public void testAddAnythingButPatternGivenNameStateReturned() {
+        NameState nameState = new NameState();
+        ByteMachine cut = new ByteMachine();
+        assertSame(nameState, cut.addPattern(Patterns.anythingButMatch("z"), nameState));
+    }
+
+    @Test
+    public void testAddAnythingButPatternNoNameStateGiven() {
+        ByteMachine cut = new ByteMachine();
+        assertNotNull(cut.addPattern(Patterns.anythingButMatch("z")));
+    }
+
+    @Test
+    public void testAddRangePatternGivenNameStateReturned() {
+        NameState nameState = new NameState();
+        ByteMachine cut = new ByteMachine();
+        assertSame(nameState, cut.addPattern(Range.lessThan(5), nameState));
+    }
+
+    @Test
+    public void testAddRangePatternNoNameStateGiven() {
+        ByteMachine cut = new ByteMachine();
+        assertNotNull(cut.addPattern(Range.lessThan(5)));
     }
 
     private void testPatternPermutations(PatternMatch ... patternMatches) {
@@ -2161,7 +2207,7 @@ public class ByteMachineTest {
     private void testPatternPermutation(ByteMachine cut, PatternMatch[] additionPermutation,
                                         PatternMatch[] deletionPermutation, Matches matches) {
         for (PatternMatch patternMatch : additionPermutation) {
-            cut.addPattern(matches.registerPattern(patternMatch), nameState);
+            cut.addPattern(matches.registerPattern(patternMatch));
             for (Match match : matches.get()) {
                 assertEquals("Failed on " + match.value,
                         match.getNumPatternsRegistered(), cut.transitionOn(match.value).size());

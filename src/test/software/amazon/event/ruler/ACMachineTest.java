@@ -10,7 +10,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -19,8 +18,6 @@ import java.util.concurrent.TimeUnit;
 import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -2140,60 +2137,4 @@ public class ACMachineTest {
         assertTrue(matches.contains("rule1"));
     }
 
-    @Test
-    public void testSharedNameStateOnlyOneCreated() throws Exception {
-        // Only one NameState should be created since there is only one unique key.
-        Machine machine = new Machine();
-        machine.addRule("rule1", "{\"bar\":[\"x\", \"y\"]}");
-        machine.addRule("rule2", "{\"bar\":[\"x\"]}");
-        machine.addRule("rule3", "{\"bar\":[\"y\"]}");
-
-        // Assert there is only one NameState despite what value we use to transition through ByteMachine.
-        ByteMachine barByteMachine = machine.getStartState().getTransitionOn("bar");
-        Set<NameStateWithPattern> nameStateWithPatternsX = barByteMachine.transitionOn("\"x\"");
-        assertEquals(1, nameStateWithPatternsX.size());
-        NameState nameState = nameStateWithPatternsX.iterator().next().getNameState();
-        Set<NameStateWithPattern> nameStateWithPatternsY = barByteMachine.transitionOn("\"y\"");
-        assertEquals(1, nameStateWithPatternsY.size());
-        assertSame(nameState, nameStateWithPatternsY.iterator().next().getNameState());
-        assertSame(nameState, machine.getStartState().getNextNameState("bar"));
-
-        // Add rules again in different order. No new NameStates should be created.
-        machine.addRule("rule2", "{\"bar\":[\"x\"]}");
-        machine.addRule("rule3", "{\"bar\":[\"y\"]}");
-        machine.addRule("rule1", "{\"bar\":[\"x\", \"y\"]}");
-
-        // Assert there is only one NameState despite what value we use to transition through ByteMachine.
-        barByteMachine = machine.getStartState().getTransitionOn("bar");
-        nameStateWithPatternsX = barByteMachine.transitionOn("\"x\"");
-        assertEquals(1, nameStateWithPatternsX.size());
-        assertSame(nameState, nameStateWithPatternsX.iterator().next().getNameState());
-        nameStateWithPatternsY = barByteMachine.transitionOn("\"y\"");
-        assertEquals(1, nameStateWithPatternsY.size());
-        assertSame(nameState, nameStateWithPatternsY.iterator().next().getNameState());
-        assertSame(nameState, machine.getStartState().getNextNameState("bar"));
-
-        // Assert NameState is still accessible via "x" after rule2 is deleted.
-        machine.deleteRule("rule2", "{\"bar\":[\"x\"]}");
-        barByteMachine = machine.getStartState().getTransitionOn("bar");
-        nameStateWithPatternsX = barByteMachine.transitionOn("\"x\"");
-        assertEquals(1, nameStateWithPatternsX.size());
-        assertSame(nameState, nameStateWithPatternsX.iterator().next().getNameState());
-        assertSame(nameState, machine.getStartState().getNextNameState("bar"));
-
-        // Assert NameState is still accessible via "y", but not "x", after rule1 is deleted.
-        machine.deleteRule("rule1", "{\"bar\":[\"x\", \"y\"]}");
-        barByteMachine = machine.getStartState().getTransitionOn("bar");
-        nameStateWithPatternsX = barByteMachine.transitionOn("\"x\"");
-        assertEquals(0, nameStateWithPatternsX.size());
-        nameStateWithPatternsY = barByteMachine.transitionOn("\"y\"");
-        assertEquals(1, nameStateWithPatternsY.size());
-        assertSame(nameState, nameStateWithPatternsY.iterator().next().getNameState());
-        assertSame(nameState, machine.getStartState().getNextNameState("bar"));
-
-        // Assert NameState is no longer accessible via startState after rule3 is deleted.
-        machine.deleteRule("rule3", "{\"bar\":[\"y\"]}");
-        assertNull(machine.getStartState().getTransitionOn("bar"));
-        assertNull(machine.getStartState().getNextNameState("bar"));
-    }
 }
