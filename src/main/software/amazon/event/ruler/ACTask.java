@@ -6,7 +6,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
-import java.util.stream.Collectors;
+
+import static software.amazon.event.ruler.SetOperations.intersection;
 
 /**
  * Represents the state of an Array-Consistent rule-finding project.
@@ -17,8 +18,8 @@ class ACTask {
     public final Event event;
     final int fieldCount;
 
-    // the sub-rules that matched the event, if we find any
-    private final Set<NameState.SubRule> matchingSubRules = new HashSet<>();
+    // the rules that matched the event, if we find any
+    private final Set<Object> matchingRules = new HashSet<>();
 
     // Steps queued up for processing
     private final Queue<ACStep> stepQueue = new ArrayDeque<>();
@@ -53,27 +54,22 @@ class ACTask {
     }
 
     List<Object> getMatchedRules() {
-        return new ArrayList<>(matchingSubRules.stream()
-                .map(r -> r.getRule())
-                .collect(Collectors.toSet()));
+        return new ArrayList<>(matchingRules);
     }
 
-    void collectRules(final Set<Double> candidateSubRuleIds, final NameStateWithPattern nameStateWithPattern) {
-        Set<NameState.SubRule> terminalSubRules = nameStateWithPattern.getNameState().getTerminalSubRulesForPattern(
-                nameStateWithPattern.getPattern());
-        if (terminalSubRules == null) {
+    void collectRules(final Set<Double> candidateSubRuleIds, final NameState nameState, final Patterns pattern) {
+        Set<Double> terminalSubRuleIds = nameState.getTerminalSubRuleIdsForPattern(pattern);
+        if (terminalSubRuleIds == null) {
             return;
         }
 
         // If no candidates, that means we're on the first step, so all sub-rules are candidates.
-        if (candidateSubRuleIds.isEmpty()) {
-            matchingSubRules.addAll(terminalSubRules);
-        } else {
-            for (NameState.SubRule subRule : terminalSubRules) {
-                if (candidateSubRuleIds.contains(subRule.getId())) {
-                    matchingSubRules.add(subRule);
-                }
+        if (candidateSubRuleIds == null || candidateSubRuleIds.isEmpty()) {
+            for (Double terminalSubRuleId : terminalSubRuleIds) {
+                matchingRules.add(nameState.getRule(terminalSubRuleId));
             }
+        } else {
+            intersection(candidateSubRuleIds, terminalSubRuleIds, matchingRules, id -> nameState.getRule(id));
         }
     }
 }

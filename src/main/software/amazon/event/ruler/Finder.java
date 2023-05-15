@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static software.amazon.event.ruler.SetOperations.intersection;
+
 /*
  * Notes on the implementation:
  *
@@ -32,6 +34,8 @@ import java.util.Set;
  */
 @ThreadSafe
 class Finder {
+
+    private static final Patterns ABSENCE_PATTERN = Patterns.absencePatterns();
 
     private Finder() { }
 
@@ -64,7 +68,7 @@ class Finder {
         if (startState == null) {
             return Collections.emptyList();
         }
-        moveFrom(null, new NameStateWithPattern(startState, null), 0, task);
+        moveFrom(null, startState, 0, task);
 
         // each iteration removes a Step and adds zero or more new ones
         while (task.stepsRemain()) {
@@ -75,43 +79,8 @@ class Finder {
     }
 
     // Move from a state.  Give all the remaining tokens a chance to transition from it
-    private static void moveFrom(final Step step, final NameStateWithPattern nameStateWithPattern, final int tokenIndex,
-                                 final Task task) {
-        // There is no step for initial move. Use empty candidate sub-rule set when adding steps. Do not proceed with
-        // rest of function as it is only relevant for subsequent moves.
-        if (step == null) {
-            tryNameMatching(null, nameStateWithPattern.getNameState(), task, tokenIndex);
-
-            for (int i = tokenIndex; i < task.event.length; i += 2) {
-                if (task.isFieldUsed(task.event[i])) {
-                    // Calculate candidate sub-rule IDs for next step. If we have a pattern, use it to calculate
-                    // candidates. Otherwise, use empty candidate set, meaning we are on first step and everything is
-                    // still a candidate.
-                    Set<Double> candidateSubRuleIdsForNextStep;
-                    if (nameStateWithPattern.getPattern() != null) {
-                        candidateSubRuleIdsForNextStep = calculateCandidateSubRulesForNextStep(null,
-                                nameStateWithPattern);
-                        // If there are no more candidate sub-rules, there is no need to proceed further.
-                        if (candidateSubRuleIdsForNextStep == null || candidateSubRuleIdsForNextStep.isEmpty()) {
-                            break;
-                        }
-                    } else {
-                        candidateSubRuleIdsForNextStep = new HashSet<>();
-                    }
-
-                    task.addStep(new Step(i, nameStateWithPattern.getNameState(), candidateSubRuleIdsForNextStep));
-                }
-            }
-            return;
-        }
-
-        Set<Double> candidateSubRuleIdsForNextStep = calculateCandidateSubRulesForNextStep(step.candidateSubRuleIds,
-                nameStateWithPattern);
-        // If there are no more candidate sub-rules, there is no need to proceed further.
-        if (candidateSubRuleIdsForNextStep == null || candidateSubRuleIdsForNextStep.isEmpty()) {
-            return;
-        }
-
+    private static void moveFrom(final Set<Double> candidateSubRuleIdsForNextStep, final NameState nameState,
+                                 final int tokenIndex, final Task task) {
         /*
          * The Name Matchers look for an [ { exists: false } ] match. They
          * will match if a particular key is not present
@@ -127,15 +96,27 @@ class Finder {
          * the final state can still be evaluated to true if the particular event
          * does not have the key configured for [ { exists: false } ].
          */
-        tryNameMatching(new Step(tokenIndex, nameStateWithPattern.getNameState(), candidateSubRuleIdsForNextStep),
-                nameStateWithPattern.getNameState(), task, tokenIndex);
+        tryNameMatching(candidateSubRuleIdsForNextStep, nameState, task, tokenIndex);
 
         // Add more steps using our new set of candidate sub-rules.
         for (int i = tokenIndex; i < task.event.length; i += 2) {
             if (task.isFieldUsed(task.event[i])) {
-                task.addStep(new Step(i, nameStateWithPattern.getNameState(), candidateSubRuleIdsForNextStep));
+                task.addStep(new Step(i, nameState, candidateSubRuleIdsForNextStep));
             }
         }
+    }
+
+    private static void moveFromWithPriorCandidates(final Set<Double> candidateSubRuleIds,
+                                                    final NameState fromState, final Patterns fromPattern,
+                                                    final int tokenIndex, final Task task) {
+        Set<Double> candidateSubRuleIdsForNextStep = calculateCandidateSubRuleIdsForNextStep(candidateSubRuleIds,
+                fromState, fromPattern);
+
+        // If there are no more candidate sub-rules, there is no need to proceed further.
+        if (candidateSubRuleIdsForNextStep != null && !candidateSubRuleIdsForNextStep.isEmpty()) {
+            moveFrom(candidateSubRuleIdsForNextStep, fromState, tokenIndex, task);
+        }
+
     }
 
     /**
@@ -143,22 +124,17 @@ class Finder {
      *
      * @param currentCandidateSubRuleIds The candidate sub-rule IDs for the current step. Use null to indicate that we
      *                                   are on first step and so there are not yet any candidate sub-rules.
-     * @param fromStateWithPattern The NameStateWithPattern for the NameState we are transitioning from.
+     * @param fromState The NameState we are transitioning from.
+     * @param fromPattern The pattern we used to transition from fromState.
      * @return The set of candidate sub-rule IDs for the next step. Null means there are no candidates and thus, there
      *         is no point to evaluating subsequent steps.
      */
-    private static Set<Double> calculateCandidateSubRulesForNextStep(
-            final Set<Double> currentCandidateSubRuleIds, final NameStateWithPattern fromStateWithPattern) {
-        // Start out with the candidate sub-rule IDs from the current step.
-        Set<Double> candidateSubRuleIdsForNextStep = new HashSet<>();
-        if (currentCandidateSubRuleIds != null) {
-            candidateSubRuleIdsForNextStep.addAll(currentCandidateSubRuleIds);
-        }
-
-        // These are all the sub-rule IDs that use the matched pattern to transition to the next NameState. Note that
-        // they are not all candidates as they may have required different values for previously evaluated fields.
-        Set<Double> subRuleIds = fromStateWithPattern.getNameState().getNonTerminalSubRuleIdsForPattern(
-                fromStateWithPattern.getPattern());
+    private static Set<Double> calculateCandidateSubRuleIdsForNextStep(final Set<Double> currentCandidateSubRuleIds,
+                                                                       final NameState fromState,
+                                                                       final Patterns fromPattern) {
+        // These are all the sub-rules that use the matched pattern to transition to the next NameState. Note that they
+        // are not all candidates as they may have required different values for previously evaluated fields.
+        Set<Double> subRuleIds = fromState.getNonTerminalSubRuleIdsForPattern(fromPattern);
 
         // If no sub-rules used the matched pattern to transition to the next NameState, then there are no matches to be
         // found by going further.
@@ -167,14 +143,15 @@ class Finder {
         }
 
         // If there are no candidate sub-rules, this means we are on the first NameState and must initialize the
-        // candidate sub-rules to those that used the matched pattern to transition to the next NameState. If there are
-        // already candidates, then retain only those that used the matched pattern to transition to the next NameState.
-        if (candidateSubRuleIdsForNextStep.isEmpty()) {
-            candidateSubRuleIdsForNextStep.addAll(subRuleIds);
-        } else {
-            candidateSubRuleIdsForNextStep.retainAll(subRuleIds);
+        // candidate sub-rules to those that used the matched pattern to transition to the next NameState.
+        if (currentCandidateSubRuleIds == null || currentCandidateSubRuleIds.isEmpty()) {
+            return subRuleIds;
         }
 
+        // There are candidate sub-rules, so retain only those that used the matched pattern to transition to the next
+        // NameState.
+        Set<Double> candidateSubRuleIdsForNextStep = new HashSet<>();
+        intersection(subRuleIds, currentCandidateSubRuleIds, candidateSubRuleIdsForNextStep);
         return candidateSubRuleIdsForNextStep;
     }
 
@@ -203,28 +180,31 @@ class Finder {
 
             // loop through the value pattern matches
             for (NameStateWithPattern nextNameStateWithPattern : valueMatcher.transitionOn(task.event[step.keyIndex + 1])) {
-                addNameState(step, nextNameStateWithPattern, task, nextKeyIndex);
+                addNameState(step.candidateSubRuleIds, nextNameStateWithPattern.getNameState(),
+                        nextNameStateWithPattern.getPattern(), task, nextKeyIndex);
             }
         }
     }
 
-    private static void tryNameMatching(final Step step, final NameState nameState, final Task task, int keyIndex) {
+    private static void tryNameMatching(final Set<Double> candidateSubRuleIds, final NameState nameState,
+                                        final Task task, int keyIndex) {
         if (!nameState.hasKeyTransitions()) {
             return;
         }
 
         for (NameState nextNameState : nameState.getNameTransitions(task.event)) {
             if (nextNameState != null) {
-                addNameState(step, new NameStateWithPattern(nextNameState, Patterns.absencePatterns()), task, keyIndex);
+                addNameState(candidateSubRuleIds, nextNameState, ABSENCE_PATTERN, task, keyIndex);
             }
         }
     }
 
-    private static void addNameState(Step step, NameStateWithPattern nameStateWithPattern, Task task, int nextKeyIndex) {
+    private static void addNameState(Set<Double> candidateSubRuleIds, NameState nameState, Patterns pattern, Task task,
+                                     int nextKeyIndex) {
         // one of the matches might imply a rule match
-        task.collectRules(step == null ? new HashSet<>() : step.candidateSubRuleIds, nameStateWithPattern);
+        task.collectRules(candidateSubRuleIds, nameState, pattern);
 
-        moveFrom(step, nameStateWithPattern, nextKeyIndex, task);
+        moveFromWithPriorCandidates(candidateSubRuleIds, nameState, pattern, nextKeyIndex, task);
     }
 }
 

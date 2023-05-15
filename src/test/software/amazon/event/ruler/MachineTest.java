@@ -2169,13 +2169,13 @@ public class MachineTest {
 
         Machine machine = new Machine();
         machine.addRule("r1", rule1);
-        assertEquals(80, machine.approximateObjectCount());
+        assertEquals(79, machine.approximateObjectCount());
 
         // Adding the same rule multiple times should not increase object count
         for (int i = 0; i < 100; i++) {
             machine.addRule("r1", rule1);
         }
-        assertEquals(80, machine.approximateObjectCount());
+        assertEquals(79, machine.approximateObjectCount());
     }
 
     @Test
@@ -2185,11 +2185,11 @@ public class MachineTest {
 
         Machine machine = new Machine();
         machine.addRule("r1", rule1a);
-        assertEquals(80, machine.approximateObjectCount());
+        assertEquals(79, machine.approximateObjectCount());
 
         // Adding rule with terminal key having subset of values will be treated as same rule and thus increase size
         machine.addRule("r1", rule1b);
-        assertEquals(80, machine.approximateObjectCount());
+        assertEquals(79, machine.approximateObjectCount());
     }
 
     @Test
@@ -2199,11 +2199,11 @@ public class MachineTest {
 
         Machine machine = new Machine();
         machine.addRule("r1", rule1a);
-        assertEquals(80, machine.approximateObjectCount());
+        assertEquals(79, machine.approximateObjectCount());
 
         // Adding rule with non-terminal key having subset of values will be treated as same rule and not affect count
         machine.addRule("r1", rule1b);
-        assertEquals(80, machine.approximateObjectCount());
+        assertEquals(79, machine.approximateObjectCount());
     }
 
     @Test
@@ -2213,11 +2213,11 @@ public class MachineTest {
 
         Machine machine = new Machine();
         machine.addRule("r1", rule1a);
-        assertEquals(80, machine.approximateObjectCount());
+        assertEquals(79, machine.approximateObjectCount());
 
         // Adding rule with terminal key having superset of values will be treated as new rule and increase count
         machine.addRule("r1", rule1b);
-        assertEquals(91, machine.approximateObjectCount());
+        assertEquals(89, machine.approximateObjectCount());
     }
 
     @Test
@@ -2227,11 +2227,11 @@ public class MachineTest {
 
         Machine machine = new Machine();
         machine.addRule("r1", rule1a);
-        assertEquals(80, machine.approximateObjectCount());
+        assertEquals(79, machine.approximateObjectCount());
 
         // Adding rule with non-terminal key having superset of values will be treated as new rule and increase count
         machine.addRule("r1", rule1b);
-        assertEquals(91, machine.approximateObjectCount());
+        assertEquals(89, machine.approximateObjectCount());
     }
 
     @Test
@@ -2263,7 +2263,7 @@ public class MachineTest {
                         "    \"c\": [{ \"numeric\": [\">\", 50] }]\n" +
                         "}");
 
-        assertEquals(518, machine.approximateObjectCount());
+        assertEquals(517, machine.approximateObjectCount());
     }
 
     @Test
@@ -2314,7 +2314,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name1\",\"Name2\",\"Name3\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(26, machine.approximateObjectCount());
+        assertEquals(25, machine.approximateObjectCount());
 
         machine.addRule("rule-with-six-elements",
                 "{\n" +
@@ -2323,7 +2323,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name1\",\"Name2\",\"Name3\",\"Name4\",\"Name5\",\"Name6\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(37, machine.approximateObjectCount());
+        assertEquals(35, machine.approximateObjectCount());
 
 
         machine.addRule("rule-with-six-more-elements",
@@ -2333,7 +2333,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name7\",\"Name8\",\"Name9\",\"Name10\",\"Name11\",\"Name12\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(63, machine.approximateObjectCount());
+        assertEquals(60, machine.approximateObjectCount());
     }
 
     @Test
@@ -2346,7 +2346,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name1\",\"Name2\",\"Name3\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(36, machine.approximateObjectCount());
+        assertEquals(35, machine.approximateObjectCount());
 
         machine.addRule("rule-with-two-more-source-and-eventNames",
                 "{\n" +
@@ -2355,7 +2355,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name1\",\"Name2\",\"Name3\",\"Name4\",\"Name5\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(50, machine.approximateObjectCount());
+        assertEquals(48, machine.approximateObjectCount());
 
         machine.addRule("rule-with-more-unique-source-and-eventNames",
                 "{\n" +
@@ -2364,7 +2364,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name6\",\"Name7\",\"Name8\",\"Name9\",\"Name10\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(90, machine.approximateObjectCount());
+        assertEquals(87, machine.approximateObjectCount());
     }
 
 }
