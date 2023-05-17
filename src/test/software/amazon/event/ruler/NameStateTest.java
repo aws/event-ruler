@@ -31,16 +31,25 @@ public class NameStateTest {
     public void testDeleteSubRule() {
         NameState nameState = new NameState();
         nameState.addSubRule("rule1", 1.0, Patterns.exactMatch("a"), true);
+        nameState.addSubRule("rule2", 2.0, Patterns.exactMatch("b"), true);
 
         assertEquals(new HashSet<>(asList(1.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
+        assertEquals(new HashSet<>(asList(2.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("b")));
         nameState.deleteSubRule(1.0, Patterns.exactMatch("b"), true);
         assertEquals(new HashSet<>(asList(1.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
+        assertEquals(new HashSet<>(asList(2.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("b")));
+        nameState.deleteSubRule(2.0, Patterns.exactMatch("b"), true);
+        assertEquals(new HashSet<>(asList(1.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
+        assertNull(nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("b")));
         nameState.deleteSubRule(2.0, Patterns.exactMatch("a"), true);
         assertEquals(new HashSet<>(asList(1.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
+        assertNull(nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("b")));
         nameState.deleteSubRule(1.0, Patterns.exactMatch("a"), false);
         assertEquals(new HashSet<>(asList(1.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
+        assertNull(nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("b")));
         nameState.deleteSubRule(1.0, Patterns.exactMatch("a"), true);
         assertNull(nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
+        assertNull(nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("b")));
     }
 
     @Test

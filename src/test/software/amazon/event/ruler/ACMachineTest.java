@@ -2137,4 +2137,23 @@ public class ACMachineTest {
         assertTrue(matches.contains("rule1"));
     }
 
+    @Test
+    public void testInitialSharedNameStateAlreadyExistsWithNonLeadingValue() throws Exception {
+        // When rule2 is added, a NameState will already exist for bar=b. Adding bar=a will lead to a new initial
+        // NameState, and then the existing NameState for bar=b will be encountered.
+        String rule1 = "{\"bar\" :[\"b\"], \"foo\": [\"c\"]}";
+        String rule2 = "{\"bar\": [\"a\", \"b\"], \"foo\": [\"c\"]}";
+
+        Machine machine = new Machine();
+
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        String event = "{\"bar\": \"a\"," +
+                "\"foo\": \"c\"}";
+
+        List<String> matches = machine.rulesForJSONEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule2"));
+    }
 }

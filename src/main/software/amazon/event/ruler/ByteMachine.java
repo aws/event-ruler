@@ -656,8 +656,9 @@ class ByteMachine {
      * Adds one pattern to a byte machine.
      *
      * @param pattern The pattern to add.
-     * @param nameState If non-null, transition to this NameState from the ByteMatch.
-     * @return NameState transitioned to from ByteMatch. Will be equal to provided NameState if it wasn't null.
+     * @param nameState If non-null, attempt to transition to this NameState from the ByteMatch. May be ignored if the
+     *                  ByteMatch already exists with its own NameState.
+     * @return NameState transitioned to from ByteMatch. May or may not equal provided NameState if it wasn't null.
      */
     NameState addPattern(final Patterns pattern, final NameState nameState) {
         switch (pattern.type()) {
