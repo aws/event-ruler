@@ -738,7 +738,7 @@ Here are some suggestions on processing rules and events:
 3. if your team does Rule Json parsing by yourself, you are recommended to just pass the Json described rule string directly to Ruler, in which will do some pre-processing, e.g. add “”.
 4. In order to well protect the system and prevent ruler from hitting worse condition, limit number of fields in event and rule, e.g. for big event, consider to split to multiple small event and call ruler multiple times. while number of rule is purely depending on your memory budget which is up to you to decide that, but number of fields described in the rule is most important and sensitive on performance, if possible, try to design it as small as possible.
 
-From performance consideration, Ruler is sensitive on below items, so, when you design the schema of your even and rule, here are some suggestions:
+From performance consideration, Ruler is sensitive on below items, so, when you design the schema of your event and rule, here are some suggestions:
 1. Try to make Key be diverse both in event and rules, the more heterogeneous fields in event and rule, the higher performance.
 2. Shorten number of fields inside rules, the less key in the rules, the short path to find them out.
 3. Shorten number of fields inside event,  the less key inside event, the less attempts will be required to find out rules.
