@@ -17,7 +17,7 @@ public class SingleStateNameMatcherTest {
 
     @Before
     public void setup() {
-        nameMatcher.addPattern(Patterns.absencePatterns(), () -> nameState);
+        nameMatcher.addPattern(Patterns.absencePatterns(), nameState);
     }
 
     @After
@@ -29,7 +29,7 @@ public class SingleStateNameMatcherTest {
     public void testInsertingSamePatternTwice_returnsThePreviouslyAddedNameState() {
         NameState anotherNameState = new NameState();
 
-        NameState state = nameMatcher.addPattern(Patterns.absencePatterns(), () -> anotherNameState);
+        NameState state = nameMatcher.addPattern(Patterns.absencePatterns(), anotherNameState);
         assertThat(state, is(equalTo(nameState)));
     }
 
@@ -38,7 +38,7 @@ public class SingleStateNameMatcherTest {
         nameMatcher.deletePattern(Patterns.absencePatterns());
 
         NameState anotherNameState = new NameState();
-        NameState state = nameMatcher.addPattern(Patterns.absencePatterns(), () -> anotherNameState);
+        NameState state = nameMatcher.addPattern(Patterns.absencePatterns(), anotherNameState);
         assertThat(state, is(equalTo(anotherNameState)));
     }
 

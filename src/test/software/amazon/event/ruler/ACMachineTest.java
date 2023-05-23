@@ -30,7 +30,6 @@ public class ACMachineTest {
 
     private String toIP(int ip) {
         StringBuilder sb = new StringBuilder();
-        int octet;
         sb.append((ip >> 24) & 0xFF).append('.');
         sb.append((ip >> 16) & 0xFF).append('.');
         sb.append((ip >> 8) & 0xFF).append('.');
@@ -775,7 +774,6 @@ public class ACMachineTest {
         machine.addPatternRule(rule.name, rule.fields);
         List<String> actual = machine.rulesForJSONEvent(e.toString());
         assertEquals(1, actual.size());
-        //System.out.println("matched rule:" + actual);
 
         rule1 = new Rule("R1");
         rule1.setKeys("a", "b","gamma");
@@ -783,7 +781,6 @@ public class ACMachineTest {
         machine.addPatternRule(rule1.name, rule1.fields);
         List<String> actual1 = machine.rulesForJSONEvent(e.toString());
         assertEquals(1, actual1.size());
-        //System.out.println("matched rule:" + actual1);
 
 
         // delete R1 subset with rule.fields
@@ -791,7 +788,6 @@ public class ACMachineTest {
 
         List<String> actual2 = machine.rulesForJSONEvent(e.toString());
         assertEquals(1, actual2.size());
-        //System.out.println("matched rule:" + actual2);
 
         // delete R1 subset with rule1 fields, after this step,
         // the machine will become empty as if no rule was added before.
@@ -799,8 +795,6 @@ public class ACMachineTest {
 
         List<String> actual3 = machine.rulesForJSONEvent(e.toString());
         assertEquals(0, actual3.size());
-        //System.out.println("matched rule:" + actual3);
-
     }
 
     /**
@@ -1617,5 +1611,549 @@ public class ACMachineTest {
         List<String> matchedRules = cut.rulesForJSONEvent(event2);
         assertEquals(1, matchedRules.size());
         assertEquals("r2", matchedRules.get(0));
+    }
+
+    @Test
+    public void testExists() throws Exception {
+        String rule1 = "{\"abc\": [{\"exists\": false}]}";
+        String rule2 = "{\"abc\": [{\"exists\": true}]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        String event1 = "{\"abc\": \"xyz\"}";
+        String event2 = "{\"xyz\": \"abc\"}";
+
+        List<String> matches = machine.rulesForJSONEvent(event1);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule2"));
+        matches = machine.rulesForJSONEvent(event2);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+    }
+
+    @Test
+    public void testAddAndDeleteTwoRulesSamePattern() throws Exception {
+        final Machine machine = new Machine();
+        String event = "{\n" +
+                "  \"x\": \"y\"\n" +
+                "}";
+
+        String rule1 = "{\n" +
+                "  \"x\": [ \"y\" ]\n" +
+                "}";
+
+        String rule2 = "{\n" +
+                "  \"x\": [ \"y\" ]\n" +
+                "}";
+
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        List<String> found = machine.rulesForJSONEvent(event);
+        assertEquals(2, found.size());
+        assertTrue(found.contains("rule1"));
+        assertTrue(found.contains("rule2"));
+
+        machine.deleteRule("rule1", rule1);
+        found = machine.rulesForJSONEvent(event);
+        assertEquals(1, found.size());
+        machine.deleteRule("rule2", rule2);
+        found = machine.rulesForJSONEvent(event);
+        assertEquals(0, found.size());
+        assertTrue(machine.isEmpty());
+    }
+
+    @Test
+    public void testAddAndDeleteTwoRulesSameCaseInsensitivePatternEqualsIgnoreCase() throws Exception {
+        final Machine machine = new Machine();
+        String event = "{\n" +
+                "  \"x\": \"y\"\n" +
+                "}";
+
+        String rule1 = "{\n" +
+                "  \"x\": [ { \"equals-ignore-case\": \"y\" } ]\n" +
+                "}";
+
+        String rule2 = "{\n" +
+                "  \"x\": [ { \"equals-ignore-case\": \"Y\" } ]\n" +
+                "}";
+
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        List<String> found = machine.rulesForJSONEvent(event);
+        assertEquals(2, found.size());
+        assertTrue(found.contains("rule1"));
+        assertTrue(found.contains("rule2"));
+
+        machine.deleteRule("rule1", rule1);
+        found = machine.rulesForJSONEvent(event);
+        assertEquals(1, found.size());
+        machine.deleteRule("rule2", rule2);
+        found = machine.rulesForJSONEvent(event);
+        assertEquals(0, found.size());
+        assertTrue(machine.isEmpty());
+    }
+
+    @Test
+    public void testDuplicateKeyLastOneWins() throws Exception {
+        final Machine machine = new Machine();
+        String event1 = "{\n" +
+                "  \"x\": \"y\"\n" +
+                "}";
+        String event2 = "{\n" +
+                "  \"x\": \"z\"\n" +
+                "}";
+
+        String rule1 = "{\n" +
+                "  \"x\": [ \"y\" ],\n" +
+                "  \"x\": [ \"z\" ]\n" +
+                "}";
+
+        machine.addRule("rule1", rule1);
+
+        List<String> found = machine.rulesForJSONEvent(event1);
+        assertEquals(0, found.size());
+        found = machine.rulesForJSONEvent(event2);
+        assertEquals(1, found.size());
+        assertTrue(found.contains("rule1"));
+    }
+
+    @Test
+    public void testSharedNameState() throws Exception {
+        // "bar" will be the first key (alphabetical)
+        String rule1 = "{\"foo\":[\"a\"], \"bar\":[\"x\", \"y\"]}";
+        String rule2 = "{\"foo\":[\"a\", \"b\"], \"bar\":[\"x\"]}";
+        String rule3 = "{\"foo\":[\"a\", \"b\"], \"bar\":[\"y\"]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+        machine.addRule("rule3", rule3);
+
+        String event = "{" +
+                "\"foo\": \"a\"," +
+                "\"bar\": \"x\"" +
+                "}";
+
+        // Ensure rule3 does not piggyback on rule1's shared NameState accessed by both "x" and "y" for "bar"
+        List<String> matches = machine.rulesForJSONEvent(event);
+        assertEquals(2, matches.size());
+        assertTrue(matches.contains("rule1"));
+        assertTrue(matches.contains("rule2"));
+    }
+
+    @Test
+    public void testRuleDeletionFromSharedNameState() throws Exception {
+        // "bar" will be the first key (alphabetical) and both rules have a match on "x", leading to a shared NameState
+        String rule1 = "{\"foo\":[\"a\"], \"bar\":[\"x\", \"y\"]}";
+        String rule2 = "{\"foo\":[\"b\"], \"bar\":[\"x\"]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        String event1 = "{" +
+                "\"foo\": \"a\"," +
+                "\"bar\": \"x\"" +
+                "}";
+        String event2 = "{" +
+                "\"foo\": \"a\"," +
+                "\"bar\": \"y\"" +
+                "}";
+
+        List<String> matches = machine.rulesForJSONEvent(event1);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+        matches = machine.rulesForJSONEvent(event2);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+
+        // Shared NameState will remain as it is used by rule1
+        machine.deleteRule("rule2", rule2);
+
+        matches = machine.rulesForJSONEvent(event1);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+        matches = machine.rulesForJSONEvent(event2);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+
+        // "y" also leads to the shared NameState. The shared NameState will get extended by rule2's "foo" field. By
+        // checking that only events with a "bar" of "y" and not a "bar" of "x", we verify that no remnants of the
+        // original rule2 were left in the shared NameState.
+        String rule2b = "{\"foo\":[\"a\"], \"bar\":[\"y\"]}";
+
+        machine.addRule("rule2", rule2b);
+
+        matches = machine.rulesForJSONEvent(event1);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+        matches = machine.rulesForJSONEvent(event2);
+        assertEquals(2, matches.size());
+        assertTrue(matches.contains("rule1"));
+        assertTrue(matches.contains("rule2"));
+    }
+
+    @Test
+    public void testPrefixRuleDeletionFromSharedNameState() throws Exception {
+        // "bar", "foo", "zoo" will be the key order (alphabetical)
+        String rule1 = "{\"zoo\":[\"1\"], \"foo\":[\"a\"], \"bar\":[\"x\"]}";
+        String rule2 = "{\"foo\":[\"a\"], \"bar\":[\"x\"]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        String event = "{" +
+                "\"zoo\": \"1\"," +
+                "\"foo\": \"a\"," +
+                "\"bar\": \"x\"" +
+                "}";
+
+        // Only rule1 should match
+        List<String> matches = machine.rulesForJSONEvent(event);
+        assertEquals(2, matches.size());
+        assertTrue(matches.contains("rule1"));
+        assertTrue(matches.contains("rule2"));
+
+        // Delete rule2, which is a subpath/prefix of rule1, and ensure full path still exists for rule1 to match
+        machine.deleteRule("rule2", rule2);
+
+        matches = machine.rulesForJSONEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+    }
+
+    @Test
+    public void testDifferentValuesFromOrRuleBothGoThroughSharedNameState() throws Exception {
+        // "bar", "foo", "zoo" will be the key order (alphabetical)
+        String rule1 = "{\"foo\":[\"a\"], \"bar\":[\"x\", \"y\"]}";
+        String rule2 = "{\"zoo\":[\"1\"], \"bar\":[\"x\"]}";
+        String rule2b = "{\"foo\":[\"a\"], \"bar\":[\"y\"]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+        machine.addRule("rule2", rule2b);
+
+        String event = "{" +
+                "\"foo\": \"a\"," +
+                "\"bar\": \"x\"" +
+                "}";
+
+        // Only rule1 should match
+        List<String> matches = machine.rulesForJSONEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+    }
+
+    @Test
+    public void testDifferentValuesFromExplicitOrRuleBothGoThroughSharedNameState() throws Exception {
+        // "bar", "foo", "zoo" will be the key order (alphabetical)
+        String rule1 = "{\"foo\":[\"a\"], \"bar\":[\"x\", \"y\"]}";
+        String rule2 = "{\"$or\":[{\"zoo\":[\"1\"], \"bar\":[\"x\"]}, {\"foo\":[\"a\"], \"bar\":[\"y\"]}]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        String event = "{" +
+                "\"foo\": \"a\"," +
+                "\"bar\": \"x\"" +
+                "}";
+
+        // Only rule1 should match
+        List<String> matches = machine.rulesForJSONEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+    }
+
+    @Test
+    public void testRuleIsSingleItemSubsetOfOtherRule() throws Exception {
+        // Second rule added pertains to same field as first rule but has a subset of the allowed values.
+        String rule1 = "{\"foo\": [\"a\", \"b\", \"c\"]}";
+        String rule2 = "{\"foo\": [\"b\"]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        String event = "{" +
+                "\"foo\": \"a\"" +
+                "}";
+
+        // Only rule1 should match
+        List<String> matches = machine.rulesForJSONEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+    }
+
+    @Test
+    public void testRuleIsMultipleItemSubsetOfOtherRule() throws Exception {
+        // Second rule added pertains to same field as first rule but has a subset of the allowed values.
+        String rule1 = "{\"foo\": [\"a\", \"b\", \"c\", \"d\", \"e\", \"f\", \"g\"]}";
+        String rule2 = "{\"foo\": [\"b\", \"d\", \"f\"]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        String event = "{" +
+                "\"foo\": \"e\"" +
+                "}";
+
+        // Only rule1 should match
+        List<String> matches = machine.rulesForJSONEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+    }
+
+    @Test
+    public void testRuleIsSingleItemSubsetOfOtherRuleWithPrecedingKey() throws Exception {
+        // Second rule added pertains to same field as first rule but has a subset of the allowed values.
+        String rule1 = "{\"bar\": [\"1\"], \"foo\": [\"a\", \"b\", \"c\"]}";
+        String rule2 = "{\"bar\": [\"1\"], \"foo\": [\"b\"]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        String event = "{" +
+                "\"bar\": \"1\"," +
+                "\"foo\": \"a\"" +
+                "}";
+
+        // Only rule1 should match
+        List<String> matches = machine.rulesForJSONEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+    }
+
+    @Test
+    public void testRuleIsMultipleItemSubsetOfOtherRuleWithPrecedingKey() throws Exception {
+        // Second rule added pertains to same field as first rule but has a subset of the allowed values.
+        String rule1 = "{\"bar\": [\"1\"], \"foo\": [\"a\", \"b\", \"c\", \"d\", \"e\", \"f\", \"g\"]}";
+        String rule2 = "{\"bar\": [\"1\"], \"foo\": [\"b\", \"d\", \"f\"]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        String event = "{" +
+                "\"bar\": \"1\"," +
+                "\"foo\": \"e\"" +
+                "}";
+
+        // Only rule1 should match
+        List<String> matches = machine.rulesForJSONEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+    }
+
+    @Test
+    public void testRuleIsSingleItemSubsetOfOtherRuleWithFollowingKey() throws Exception {
+        // Second rule added pertains to same field as first rule but has a subset of the allowed values.
+        String rule1 = "{\"zoo\": [\"1\"], \"foo\": [\"a\", \"b\", \"c\"]}";
+        String rule2 = "{\"zoo\": [\"1\"], \"foo\": [\"b\"]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        String event = "{" +
+                "\"zoo\": \"1\"," +
+                "\"foo\": \"a\"" +
+                "}";
+
+        // Only rule1 should match
+        List<String> matches = machine.rulesForJSONEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+    }
+
+    @Test
+    public void testRuleIsMultipleItemSubsetOfOtherRuleWithFollowingKey() throws Exception {
+        // Second rule added pertains to same field as first rule but has a subset of the allowed values.
+        String rule1 = "{\"zoo\": [\"1\"], \"foo\": [\"a\", \"b\", \"c\", \"d\", \"e\", \"f\", \"g\"]}";
+        String rule2 = "{\"zoo\": [\"1\"], \"foo\": [\"b\", \"d\", \"f\"]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        String event = "{" +
+                "\"zoo\": \"1\"," +
+                "\"foo\": \"e\"" +
+                "}";
+
+        // Only rule1 should match
+        List<String> matches = machine.rulesForJSONEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+    }
+
+    @Test
+    public void testExistsFalseAsFinalKeyAfterSharedNameState() throws Exception {
+        // Second rule added uses same NameState for bar, but then has a final key, foo, that must not exist.
+        String rule1 = "{\"bar\": [\"a\", \"b\"]}";
+        String rule2 = "{\"bar\": [\"b\"], \"foo\": [{\"exists\": false}]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        String event = "{" +
+                "\"bar\": \"a\"" +
+                "}";
+
+        // Only rule1 should match
+        List<String> matches = machine.rulesForJSONEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+    }
+
+    @Test
+    public void testExistsTrueAsFinalKeyAfterSharedNameState() throws Exception {
+        // Second rule added uses same NameState for bar, but then has a final key, foo, that must exist.
+        String rule1 = "{\"bar\": [\"a\", \"b\"]}";
+        String rule2 = "{\"bar\": [\"b\"], \"foo\": [{\"exists\": true}]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        String event = "{" +
+                "\"bar\": \"a\"," +
+                "\"foo\": \"1\"" +
+                "}";
+
+        // Only rule1 should match
+        List<String> matches = machine.rulesForJSONEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+    }
+
+    @Test
+    public void testExistsFalseNameStateSharedWithSpecificValueMatch() throws Exception {
+        // First rule adds a NameState for exists=false. Second rule will use this same NameState and add a value of "1"
+        // to it. Third rule will now use this same shared NameState as well due to its value of "1".
+        String rule1 = "{\"foo\": [\"a\"], \"bar\": [{\"exists\": false}]}";
+        String rule2 = "{\"foo\": [\"b\"], \"bar\": [{\"exists\": false}, \"1\"]}";
+        String rule3 = "{\"foo\": [\"a\"], \"bar\": [\"1\"]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+        machine.addRule("rule3", rule3);
+
+        String event = "{" +
+                "\"foo\": \"a\"" +
+                "}";
+
+        // Only rule1 should match
+        List<String> matches = machine.rulesForJSONEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+    }
+
+    @Test
+    public void testExistsTrueNameStateSharedWithSpecificValueMatch() throws Exception {
+        // First rule adds a NameState for exists=true. Second rule will use this same NameState and add a value of "1"
+        // to it. Third rule will now use this same shared NameState as well due to its value of "1".
+        String rule1 = "{\"foo\": [\"a\"], \"bar\": [{\"exists\": true}]}";
+        String rule2 = "{\"foo\": [\"b\"], \"bar\": [{\"exists\": true}, \"1\"]}";
+        String rule3 = "{\"foo\": [\"a\"], \"bar\": [\"1\"]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+        machine.addRule("rule3", rule3);
+
+        String event = "{" +
+                "\"foo\": \"a\"," +
+                "\"bar\": \"1\"" +
+                "}";
+
+        // Only rule1 and rule3 should match
+        List<String> matches = machine.rulesForJSONEvent(event);
+        assertEquals(2, matches.size());
+        assertTrue(matches.contains("rule1"));
+        assertTrue(matches.contains("rule3"));
+    }
+
+    @Test
+    public void testInitialSharedNameStateWithTwoMustNotExistsIsTerminalForOnlyOne() throws Exception {
+        // Initial NameState has two different (bar and foo) exists=false patterns. One is terminal, whereas the other
+        // leads to another NameState with another key (zoo).
+        String rule1 = "{\"bar\": [{\"exists\": false}]}";
+        String rule2 = "{\"foo\": [{\"exists\": false}], \"zoo\": [\"a\"]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        String event = "{" +
+                "\"zoo\": \"a\"" +
+                "}";
+
+        List<String> matches = machine.rulesForJSONEvent(event);
+        assertEquals(2, matches.size());
+        assertTrue(matches.contains("rule1"));
+        assertTrue(matches.contains("rule2"));
+    }
+
+    @Test
+    public void testSharedNameStateForMultipleAnythingButPatterns() throws Exception {
+        // Every event will match this rule because any bar that is "a" cannot also be "b".
+        String rule1 = "{\"bar\": [{\"anything-but\": \"a\"}, {\"anything-but\": \"b\"}]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+
+        String event = "{\"bar\": \"b\"}";
+
+        List<String> matches = machine.rulesForJSONEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+    }
+
+    @Test
+    public void testSharedNameStateWithTwoSubRulesDifferingAtFirstNameState() throws Exception {
+        // Two different sub-rules here with a NameState after bar and after foo: (bar=1, foo=a) and (bar=2, foo=a).
+        String rule1 = "{\"$or\": [{\"bar\": [\"1\"]}, {\"bar\": [\"2\"]}]," +
+                        "\"foo\": [\"a\"] }";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+
+        String event = "{\"bar\": \"2\"," +
+                        "\"foo\": \"a\"}";
+
+        List<String> matches = machine.rulesForJSONEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+    }
+
+    @Test
+    public void testInitialSharedNameStateAlreadyExistsWithNonLeadingValue() throws Exception {
+        // When rule2 is added, a NameState will already exist for bar=b. Adding bar=a will lead to a new initial
+        // NameState, and then the existing NameState for bar=b will be encountered.
+        String rule1 = "{\"bar\" :[\"b\"], \"foo\": [\"c\"]}";
+        String rule2 = "{\"bar\": [\"a\", \"b\"], \"foo\": [\"c\"]}";
+
+        Machine machine = new Machine();
+
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        String event = "{\"bar\": \"a\"," +
+                "\"foo\": \"c\"}";
+
+        List<String> matches = machine.rulesForJSONEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule2"));
     }
 }

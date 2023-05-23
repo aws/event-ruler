@@ -10,13 +10,16 @@ import software.amazon.event.ruler.input.MultiByte;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import javax.annotation.concurrent.ThreadSafe;
 
 import static software.amazon.event.ruler.CompoundByteTransition.coalesce;
@@ -76,15 +79,15 @@ class ByteMachine {
     //  and lazily allocating Matches only when you have unique values, but all of these things would add
     //  considerable complexity, and this is also easy to understand, and probably not much slower.
     //
-    private final Set<NameState> anythingButs = ConcurrentHashMap.newKeySet();
+    private final Map<NameState, List<Patterns>> anythingButs = new ConcurrentHashMap<>();
 
     // Multiple different next-namestate steps can result from  processing a single field value, for example
     //  "foot" matches "foot" exactly, "foo" as a prefix, and "hand" as an anything-but.  So, this
     //  method returns a list.
-    Set<NameState> transitionOn(String valString) {
+    Set<NameStateWithPattern> transitionOn(String valString) {
 
         // not thread-safe, but this is only used in the scope of this method on one thread
-        final Set<NameState> transitionTo = new HashSet<>();
+        final Set<NameStateWithPattern> transitionTo = new HashSet<>();
         boolean fieldValueIsNumeric = false;
         if (hasNumeric.get() > 0) {
             try {
@@ -444,8 +447,9 @@ class ByteMachine {
         }
     }
 
-    private void doTransitionOn(final String valString, final Set<NameState> transitionTo, boolean fieldValueIsNumeric) {
-        final Set<NameState> failedAnythingButs = new HashSet<>();
+    private void doTransitionOn(final String valString, final Set<NameStateWithPattern> transitionTo,
+                                boolean fieldValueIsNumeric) {
+        final Map<NameState, List<Patterns>> failedAnythingButs = new HashMap<>();
         final byte[] val = valString.getBytes(StandardCharsets.UTF_8);
 
         // we need to add the name state for key existence
@@ -455,7 +459,7 @@ class ByteMachine {
         addSuffixMatch(val, transitionTo, failedAnythingButs);
 
         if (startStateMatch != null) {
-            transitionTo.add(startStateMatch.getNextNameState());
+            transitionTo.add(new NameStateWithPattern(startStateMatch.getNextNameState(), startStateMatch.getPattern()));
         }
 
         // we have to do old-school indexing rather than "for (byte b : val)" because there is some special-casing
@@ -475,18 +479,18 @@ class ByteMachine {
                         case EQUALS_IGNORE_CASE:
                         case WILDCARD:
                             if (valIndex == (val.length - 1)) {
-                                transitionTo.add(match.getNextNameState());
+                                transitionTo.add(new NameStateWithPattern(match.getNextNameState(), match.getPattern()));
                             }
                             break;
                         case NUMERIC_EQ:
                             // only matches at last character
                             if (fieldValueIsNumeric && valIndex == (val.length - 1)) {
-                                transitionTo.add(match.getNextNameState());
+                                transitionTo.add(new NameStateWithPattern(match.getNextNameState(), match.getPattern()));
                             }
                             break;
 
                         case PREFIX:
-                            transitionTo.add(match.getNextNameState());
+                            transitionTo.add(new NameStateWithPattern(match.getNextNameState(), match.getPattern()));
                             break;
                         case ANYTHING_BUT_SUFFIX:
                         case SUFFIX:
@@ -499,7 +503,7 @@ class ByteMachine {
                             // as soon as you see the match, you've matched
                             Range range = (Range) match.getPattern();
                             if ((fieldValueIsNumeric && !range.isCIDR) || (!fieldValueIsNumeric && range.isCIDR)) {
-                                transitionTo.add(match.getNextNameState());
+                                transitionTo.add(new NameStateWithPattern(match.getNextNameState(), match.getPattern()));
                             }
                             break;
 
@@ -507,17 +511,17 @@ class ByteMachine {
                             AnythingBut anythingBut = (AnythingBut) match.getPattern();
                             // only applies if at last character
                             if (valIndex == (val.length - 1) && anythingBut.isNumeric() == fieldValueIsNumeric) {
-                                failedAnythingButs.add(match.getNextNameState());
+                                addToAnythingButsMap(failedAnythingButs, match.getNextNameState(), match.getPattern());
                             }
                             break;
                         case ANYTHING_BUT_IGNORE_CASE:
                             // only applies if at last character
                             if (valIndex == (val.length - 1)) {
-                                failedAnythingButs.add(match.getNextNameState());
+                                addToAnythingButsMap(failedAnythingButs, match.getNextNameState(), match.getPattern());
                             }
                             break;
                         case ANYTHING_BUT_PREFIX:
-                            failedAnythingButs.add(match.getNextNameState());
+                            addToAnythingButsMap(failedAnythingButs, match.getNextNameState(), match.getPattern());
                             break;
 
                         default:
@@ -536,17 +540,36 @@ class ByteMachine {
         // This may look like premature optimization, but the first "if" here yields roughly 10x performance
         // improvement.
         if (!anythingButs.isEmpty()) {
-            if (!failedAnythingButs.isEmpty()) {
-                transitionTo.addAll(anythingButs.stream()
-                                                .filter(anythingBut -> !failedAnythingButs.contains(anythingBut))
-                                                .collect(Collectors.toList()));
-            } else {
-                transitionTo.addAll(anythingButs);
+            for (Map.Entry<NameState, List<Patterns>> entry : anythingButs.entrySet()) {
+                boolean failedAnythingButsContainsKey = failedAnythingButs.containsKey(entry.getKey());
+                for (Patterns pattern : entry.getValue()) {
+                    if (!failedAnythingButsContainsKey ||
+                            !failedAnythingButs.get(entry.getKey()).contains(pattern)) {
+                        transitionTo.add(new NameStateWithPattern(entry.getKey(), pattern));
+                    }
+                }
             }
         }
     }
 
-    private void addExistenceMatch(final Set<NameState> transitionTo) {
+    private void addToAnythingButsMap(Map<NameState, List<Patterns>> map, NameState nameState, Patterns pattern) {
+        if (!map.containsKey(nameState)) {
+            map.put(nameState, new ArrayList<>());
+        }
+        map.get(nameState).add(pattern);
+    }
+
+    private void removeFromAnythingButsMap(Map<NameState, List<Patterns>> map, NameState nameState, Patterns pattern) {
+        List<Patterns> patterns = map.get(nameState);
+        if (patterns != null) {
+            patterns.remove(pattern);
+            if (patterns.isEmpty()) {
+                map.remove(nameState);
+            }
+        }
+    }
+
+    private void addExistenceMatch(final Set<NameStateWithPattern> transitionTo) {
         final byte[] val = Patterns.EXISTS_BYTE_STRING.getBytes(StandardCharsets.UTF_8);
 
         ByteTransition trans = startState;
@@ -562,13 +585,14 @@ class ByteMachine {
 
         for (ByteMatch match : nextTrans.getMatches()) {
             if (match.getPattern().type() == EXISTS) {
-                transitionTo.add(match.getNextNameState());
+                transitionTo.add(new NameStateWithPattern(match.getNextNameState(), match.getPattern()));
                 break;
             }
         }
     }
 
-    private void addSuffixMatch(final byte[] val, final Set<NameState> transitionTo, Set<NameState> failedAnythingButs) {
+    private void addSuffixMatch(final byte[] val, final Set<NameStateWithPattern> transitionTo,
+                                final Map<NameState, List<Patterns>> failedAnythingButs) {
         // we only attempt to evaluate suffix matches when there is suffix match in current byte machine instance.
         // it works as performance level to avoid other type of matches from being affected by suffix checking.
         if (hasSuffix.get() > 0) {
@@ -581,9 +605,9 @@ class ByteMachine {
                     // to be collected.
                     MatchType patternType = match.getPattern().type();
                     if (patternType == SUFFIX) {
-                        transitionTo.add(match.getNextNameState());
-                    } else if(patternType == ANYTHING_BUT_SUFFIX) {
-                        failedAnythingButs.add(match.getNextNameState());
+                        transitionTo.add(new NameStateWithPattern(match.getNextNameState(), match.getPattern()));
+                    } else if (patternType == ANYTHING_BUT_SUFFIX) {
+                        addToAnythingButsMap(failedAnythingButs, match.getNextNameState(), match.getPattern());
                     }
                 }
                 trans = nextTrans.getTransitionForNextByteStates();
@@ -608,7 +632,7 @@ class ByteMachine {
      * @return True iff match was added to transitionTo Set.
      */
     private boolean attemptAddShortcutTransitionMatch(final ByteTransition transition, final String value,
-            final MatchType expectedMatchType, final Set<NameState> transitionTo) {
+            final MatchType expectedMatchType, final Set<NameStateWithPattern> transitionTo) {
         for (ShortcutTransition shortcut : transition.getShortcuts()) {
             ByteMatch match = shortcut.getMatch();
             assert match != null;
@@ -616,7 +640,7 @@ class ByteMachine {
                 ValuePatterns valuePatterns = (ValuePatterns) match.getPattern();
                 if (valuePatterns.pattern().equals(value)) {
                     // Only one match is possible for shortcut transition
-                    transitionTo.add(match.getNextNameState());
+                    transitionTo.add(new NameStateWithPattern(match.getNextNameState(), match.getPattern()));
                     return true;
                 }
             }
@@ -624,18 +648,29 @@ class ByteMachine {
         return false;
     }
 
-    // Adds one pattern to a byte machine.
     NameState addPattern(final Patterns pattern) {
+        return addPattern(pattern, null);
+    }
+
+    /**
+     * Adds one pattern to a byte machine.
+     *
+     * @param pattern The pattern to add.
+     * @param nameState If non-null, attempt to transition to this NameState from the ByteMatch. May be ignored if the
+     *                  ByteMatch already exists with its own NameState.
+     * @return NameState transitioned to from ByteMatch. May or may not equal provided NameState if it wasn't null.
+     */
+    NameState addPattern(final Patterns pattern, final NameState nameState) {
         switch (pattern.type()) {
             case NUMERIC_RANGE:
                 assert pattern instanceof Range;
-                return addRangePattern((Range) pattern);
+                return addRangePattern((Range) pattern, nameState);
             case ANYTHING_BUT:
                 assert pattern instanceof AnythingBut;
-                return addAnythingButPattern((AnythingBut) pattern);
+                return addAnythingButPattern((AnythingBut) pattern, nameState);
             case ANYTHING_BUT_IGNORE_CASE:
                 assert pattern instanceof AnythingButEqualsIgnoreCase;
-                return addAnythingButEqualsIgnoreCasePattern((AnythingButEqualsIgnoreCase) pattern);
+                return addAnythingButEqualsIgnoreCasePattern((AnythingButEqualsIgnoreCase) pattern, nameState);
 
             case ANYTHING_BUT_SUFFIX:
             case ANYTHING_BUT_PREFIX:
@@ -646,22 +681,22 @@ class ByteMachine {
             case EQUALS_IGNORE_CASE:
             case WILDCARD:
                 assert pattern instanceof ValuePatterns;
-                return addMatchPattern((ValuePatterns) pattern);
+                return addMatchPattern((ValuePatterns) pattern, nameState);
 
             case EXISTS:
-                return addExistencePattern(pattern);
+                return addExistencePattern(pattern, nameState);
             default:
                 throw new AssertionError(pattern + " is not implemented yet");
         }
     }
 
-    private NameState addExistencePattern(Patterns pattern) {
-        return addMatchValue(pattern, Patterns.EXISTS_BYTE_STRING, null);
+    private NameState addExistencePattern(Patterns pattern, NameState nameState) {
+        return addMatchValue(pattern, Patterns.EXISTS_BYTE_STRING, nameState);
     }
 
-    private NameState addAnythingButPattern(AnythingBut pattern) {
+    private NameState addAnythingButPattern(AnythingBut pattern, NameState nameState) {
 
-        NameState nameStateToBeReturned = null;
+        NameState nameStateToBeReturned = nameState;
         NameState nameStateChecker = null;
         for(String value : pattern.getValues()) {
             nameStateToBeReturned = addMatchValue(pattern, value, nameStateToBeReturned);
@@ -676,9 +711,9 @@ class ByteMachine {
         return nameStateToBeReturned;
     }
 
-    private NameState addAnythingButEqualsIgnoreCasePattern(AnythingButEqualsIgnoreCase pattern) {
+    private NameState addAnythingButEqualsIgnoreCasePattern(AnythingButEqualsIgnoreCase pattern, NameState nameState) {
 
-        NameState nameStateToBeReturned = null;
+        NameState nameStateToBeReturned = nameState;
         NameState nameStateChecker = null;
         for(String value : pattern.getValues()) {
             nameStateToBeReturned = addMatchValue(pattern, value, nameStateToBeReturned);
@@ -909,7 +944,7 @@ class ByteMachine {
 
                     SingleByteTransition nextByteState = eachTrans.getNextByteState();
                     if (nextByteState == null) {
-                        return null;
+                        continue;
                     }
 
                     // We are interested in the first state that hasn't simply led back to trans
@@ -1086,12 +1121,12 @@ class ByteMachine {
     //  add a numeric range expression to the byte machine.  Note; the code assumes that the patterns
     //  are encoded as pure strings containing only decimal digits, and that the top and bottom values
     //  are equal in length.
-    private NameState addRangePattern(final Range range) {
+    private NameState addRangePattern(final Range range, final NameState nameState) {
 
         // we prepare for one new NameSate here which will be used for range match to point to next NameSate.
         // however, it will not be used if match is already existing. in that case, we will reuse NameSate
         // from that match.
-        NameState nextNameState = new NameState();
+        NameState nextNameState = nameState == null ? new NameState() : nameState;
 
         ByteState forkState = startState;
         int forkOffset = 0;
@@ -1290,8 +1325,8 @@ class ByteMachine {
 
     //  Return the next byte state after transitioning from state using character at currentIndex. Will create it if it
     //  doesn't exist.
-    private ByteState findOrMakeNextByteState(ByteState state, ByteState prevState,
-                                              final InputCharacter[] characters, int currentIndex, Patterns pattern) {
+    private ByteState findOrMakeNextByteState(ByteState state, ByteState prevState, final InputCharacter[] characters,
+                                              int currentIndex, Patterns pattern, NameState nameState) {
         final InputCharacter character = characters[currentIndex];
         ByteTransition trans = getTransition(state, character);
         trans = extendShortcutTransition(state, trans, character, currentIndex);
@@ -1306,7 +1341,8 @@ class ByteMachine {
             //    substring satisfies wildcard. The composite will self-reference and would create unintended matches.
             nextState = new ByteState();
             nextState.setIndeterminatePrefix(state.hasIndeterminatePrefix());
-            addTransitionNextState(state, character, characters, currentIndex, prevState, pattern, nextState);
+            addTransitionNextState(state, character, characters, currentIndex, prevState, pattern, nextState,
+                    nameState);
         }
 
         return nextState;
@@ -1322,8 +1358,8 @@ class ByteMachine {
     }
 
     // add a match type pattern, i.e. anything but a numeric range, to the byte machine.
-    private NameState addMatchPattern(final ValuePatterns pattern) {
-        return addMatchValue(pattern, pattern.pattern(), null);
+    private NameState addMatchPattern(final ValuePatterns pattern, final NameState nameState) {
+        return addMatchValue(pattern, pattern.pattern(), nameState);
     }
 
     // We can reach to this function when we have checked the existing characters array from left to right and found we
@@ -1465,7 +1501,7 @@ class ByteMachine {
         // For other match type, keep the old logic to extend all characters to byte state path and put the match in the
         // tail state.
         for (; j < (length - 1); j++) {
-            ByteState nextByteState = findOrMakeNextByteState(state, prevState, characters, j, pattern);
+            ByteState nextByteState = findOrMakeNextByteState(state, prevState, characters, j, pattern, nameState);
             prevState = state;
             state = nextByteState;
         }
@@ -1567,20 +1603,20 @@ class ByteMachine {
             }
             break;
         case ANYTHING_BUT:
-            anythingButs.add(match.getNextNameState());
+            addToAnythingButsMap(anythingButs, match.getNextNameState(), match.getPattern());
             if (((AnythingBut) pattern).isNumeric()) {
                 hasNumeric.incrementAndGet();
             }
             break;
         case ANYTHING_BUT_IGNORE_CASE:
-            anythingButs.add(match.getNextNameState());
+            addToAnythingButsMap(anythingButs, match.getNextNameState(), match.getPattern());
             break;
         case ANYTHING_BUT_SUFFIX:
             hasSuffix.incrementAndGet();
-            anythingButs.add(match.getNextNameState());
+            addToAnythingButsMap(anythingButs, match.getNextNameState(), match.getPattern());
             break;
         case ANYTHING_BUT_PREFIX:
-            anythingButs.add(match.getNextNameState());
+            addToAnythingButsMap(anythingButs, match.getNextNameState(), match.getPattern());
             break;
         default:
             throw new AssertionError("Not implemented yet");
@@ -1669,20 +1705,20 @@ class ByteMachine {
             }
             break;
         case ANYTHING_BUT:
-            anythingButs.remove(match.getNextNameState());
+            removeFromAnythingButsMap(anythingButs, match.getNextNameState(), match.getPattern());
             if (((AnythingBut) pattern).isNumeric()) {
                 hasNumeric.decrementAndGet();
             }
             break;
         case ANYTHING_BUT_IGNORE_CASE:
-            anythingButs.remove(match.getNextNameState());
+            removeFromAnythingButsMap(anythingButs, match.getNextNameState(), match.getPattern());
             break;
         case ANYTHING_BUT_SUFFIX:
             hasSuffix.decrementAndGet();
-            anythingButs.remove(match.getNextNameState());
+            removeFromAnythingButsMap(anythingButs, match.getNextNameState(), match.getPattern());
             break;
         case ANYTHING_BUT_PREFIX:
-            anythingButs.remove(match.getNextNameState());
+            removeFromAnythingButsMap(anythingButs, match.getNextNameState(), match.getPattern());
             break;
         default:
             throw new AssertionError("Not implemented yet");
@@ -1737,7 +1773,7 @@ class ByteMachine {
 
     private static void addTransitionNextState(ByteState state, InputCharacter character, InputCharacter[] characters,
                                                int currentIndex, ByteState prevState, Patterns pattern,
-                                               ByteState nextState) {
+                                               ByteState nextState, NameState nameState) {
         if (isWildcard(character)) {
             addTransitionNextStateForWildcard(state, nextState);
         } else {
@@ -1745,7 +1781,7 @@ class ByteMachine {
             // the transition (turning it into a composite) before adding transitions from state and prevState.
             SingleByteTransition single = nextState;
             if (isWildcard(characters[characters.length - 1]) && currentIndex == characters.length - 2) {
-                ByteMatch match = new ByteMatch(pattern, new NameState());
+                ByteMatch match = new ByteMatch(pattern, nameState);
                 single = nextState.setMatch(match);
                 nextState.setIndeterminatePrefix(true);
             } else if (isMultiByteSet(character)) {
@@ -1920,7 +1956,7 @@ class ByteMachine {
         if (!objectSet.contains(this)) { // stops looping
             objectSet.add(this);
             startState.gatherObjects(objectSet);
-            for (NameState states : anythingButs) {
+            for (NameState states : anythingButs.keySet()) {
                 states.gatherObjects(objectSet);
             }
         }

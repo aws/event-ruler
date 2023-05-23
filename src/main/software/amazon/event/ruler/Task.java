@@ -9,18 +9,19 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 
+import static software.amazon.event.ruler.SetOperations.intersection;
+
 /**
  * Represents the state of a rule-finding project.
  */
 @ThreadSafe
 class Task {
 
-  public static final String[] INITIAL = new String[0];
-  // What we're trying to match rules to
+    // What we're trying to match rules to
     public final String[] event;
 
-    // the rules, if we find any
-    private final Set<Object> rules = new HashSet<>();
+    // the rules that matched the event, if we find any
+    private final Set<Object> matchingRules = new HashSet<>();
 
     // Steps queued up for processing
     private final Queue<Step> stepQueue = new ArrayDeque<>();
@@ -38,7 +39,7 @@ class Task {
     private final GenericMachine<?> machine;
 
     Task(final List<String> event, final GenericMachine<?> machine) {
-        this(event.toArray(INITIAL), machine);
+        this(event.toArray(new String[0]), machine);
     }
 
     Task(final String[] event, final GenericMachine<?> machine) {
@@ -53,7 +54,7 @@ class Task {
     // The field used means all steps in the field must be all used individually.
     boolean isFieldUsed(final String field) {
         if (field.contains(".")) {
-            final String[] steps = field.split("\\.");
+            String[] steps = field.split("\\.");
             return Arrays.stream(steps).allMatch(machine::isFieldStepUsed);
         }
         return machine.isFieldStepUsed(field);
@@ -67,7 +68,7 @@ class Task {
         // queue it up only if it's the first time we're trying to queue it up
         // otherwise bad things happen, see comment on seenSteps collection
         if (seenSteps.add(step)) {
-          stepQueue.add(step);
+            stepQueue.add(step);
         }
     }
 
@@ -76,10 +77,22 @@ class Task {
     }
 
     List<Object> getMatchedRules() {
-        return new ArrayList<>(rules);
+        return new ArrayList<>(matchingRules);
     }
 
-    void collectRules(final NameState nameState) {
-      rules.addAll(nameState.getRules());
+    void collectRules(final Set<Double> candidateSubRuleIds, final NameState nameState, final Patterns pattern) {
+        Set<Double> terminalSubRuleIds = nameState.getTerminalSubRuleIdsForPattern(pattern);
+        if (terminalSubRuleIds == null) {
+            return;
+        }
+
+        // If no candidates, that means we're on the first step, so all sub-rules are candidates.
+        if (candidateSubRuleIds == null || candidateSubRuleIds.isEmpty()) {
+            for (Double terminalSubRuleId : terminalSubRuleIds) {
+                matchingRules.add(nameState.getRule(terminalSubRuleId));
+            }
+        } else {
+            intersection(candidateSubRuleIds, terminalSubRuleIds, matchingRules, id -> nameState.getRule(id));
+        }
     }
 }

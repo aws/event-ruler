@@ -1,7 +1,5 @@
 package software.amazon.event.ruler;
 
-import java.util.function.Supplier;
-
 import javax.annotation.Nonnull;
 
 /**
@@ -23,12 +21,12 @@ public class SingleStateNameMatcher implements NameMatcher<NameState> {
     }
 
     @Override
-    public NameState addPattern(@Nonnull final Patterns pattern,
-            @Nonnull final Supplier<? extends NameState> resultSupplier) {
-        if (nameState == null) {
-            nameState = resultSupplier.get();
+    public NameState addPattern(@Nonnull final Patterns pattern, final NameState nameState) {
+        if (this.nameState == null) {
+            this.nameState = nameState;
         }
-        return nameState;
+
+        return this.nameState;
     }
 
     @Override
