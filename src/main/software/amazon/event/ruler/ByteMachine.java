@@ -831,13 +831,12 @@ class ByteMachine {
         }
 
         // Scenario 2 where multiple transitions will later converge: equals_ignore_case lower and upper case paths.
-        // Parse the next Java character into lower and upper case multibyte representations. Check if there are
-        // multiple multibytes (paths) and that there exists a transition that both lead to.
+        // Parse the next Java character into lower and upper case representations. Check if there are multiple
+        // multibytes (paths) and that there exists a transition that both lead to.
         String value = extractNextJavaCharacterFromInputCharacters(characters, i);
         InputCharacter[] inputCharacters = getParser().parse(MatchType.EQUALS_IGNORE_CASE, value);
-        InputMultiByteSet inputMultiByteSet = InputMultiByteSet.cast(inputCharacters[0]);
-        ByteTransition transition = getTransition(byteState, inputMultiByteSet);
-        return inputMultiByteSet.getMultiBytes().size() > 1 && transition != null;
+        ByteTransition transition = getTransition(byteState, inputCharacters[0]);
+        return inputCharacters[0] instanceof InputMultiByteSet && transition != null;
     }
 
     private boolean isNextCharacterFirstByteOfMultiByte(InputCharacter[] characters, int i) {
