@@ -36,22 +36,22 @@ public class EqualsIgnoreCaseParserTest {
     public void testParseSimpleStringWithNonLetters() {
         assertArrayEquals(new InputCharacter[] {
                 set(new MultiByte((byte) 97), new MultiByte((byte) 65)),
-                set(new MultiByte((byte) 49)),
+                new InputByte((byte) 49),
                 set(new MultiByte((byte) 98), new MultiByte((byte) 66)),
-                set(new MultiByte((byte) 50)),
+                new InputByte((byte) 50),
                 set(new MultiByte((byte) 99), new MultiByte((byte) 67)),
-                set(new MultiByte((byte) 33)),
+                new InputByte((byte) 33),
         }, parser.parse("a1B2c!"));
     }
 
     @Test
     public void testParseStringWithSingleBytesMultiBytesCharactersNonCharactersAndDifferingLengthMultiBytes() {
         assertArrayEquals(new InputCharacter[] {
-                set(new MultiByte((byte) 49)),
+                new InputByte((byte) 49),
                 set(new MultiByte((byte) 97), new MultiByte((byte) 65)),
                 set(new MultiByte((byte) 97), new MultiByte((byte) 65)),
-                set(new MultiByte((byte) 42)),
-                set(new MultiByte((byte) -30, (byte) -128, (byte) -96)),
+                new InputByte((byte) 42),
+                new InputByte((byte) -30), new InputByte((byte) -128), new InputByte((byte) -96),
                 set(new MultiByte((byte) -61, (byte) -87), new MultiByte((byte) -61, (byte) -119)),
                 set(new MultiByte((byte) -30, (byte) -79, (byte) -91), new MultiByte((byte) -56, (byte) -70))
         }, parser.parse("1aA*†Éⱥ"));

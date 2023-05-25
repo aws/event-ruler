@@ -1061,6 +1061,17 @@ public class ByteMachineTest {
     }
 
     @Test
+    public void testEqualsIgnoreCaseWithExactMatchLeadingCharacterSameLowerAndUpperCase() {
+        String[] noMatches = new String[] { "", "!", "!A", "a", "A", "b", "B" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.equalsIgnoreCaseMatch("!b"),
+                        "!b", "!B"),
+                new PatternMatch(Patterns.exactMatch("!a"),
+                        "!a")
+        );
+    }
+
+    @Test
     public void testWildcardSingleWildcardCharacter() {
         testPatternPermutations(
                 new PatternMatch(Patterns.wildcardMatch("*"),
