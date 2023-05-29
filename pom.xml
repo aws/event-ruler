@@ -39,7 +39,7 @@
     <source.plugin.version>3.3.0</source.plugin.version>
     <gpg.plugin.version>3.1.0</gpg.plugin.version>
     <staging.plugin.version>1.6.13</staging.plugin.version>
-    <checkstyle.plugin.version>3.2.2</checkstyle.plugin.version>
+    <checkstyle.plugin.version>3.3.0</checkstyle.plugin.version>
     <spotbugs.plugin.version>4.7.3.4</spotbugs.plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
