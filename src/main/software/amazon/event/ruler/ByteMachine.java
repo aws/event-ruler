@@ -264,7 +264,7 @@ class ByteMachine {
             ByteTransition skipWildcardTransition = getTransition(byteState, characters[charIndex + 1]);
             for (SingleByteTransition eachTrans : skipWildcardTransition.expand()) {
                 ByteState skipWildcardState = eachTrans.getNextByteState();
-                if (eachTrans.getMatches().isEmpty() && skipWildcardState != null &&
+                if (!eachTrans.getMatches().iterator().hasNext() && skipWildcardState != null &&
                         (skipWildcardState.hasNoTransitions() ||
                          skipWildcardState.hasOnlySelfReferentialTransition())) {
                     removeTransition(byteState, characters[charIndex + 1], eachTrans);
@@ -1926,7 +1926,7 @@ class ByteMachine {
         }
     }
 
-    private static ByteMatch findMatch(Set<ByteMatch> matches, Patterns pattern) {
+    private static ByteMatch findMatch(Iterable<ByteMatch> matches, Patterns pattern) {
         for (ByteMatch match : matches) {
             if (match.getPattern().equals(pattern)) {
                 return match;

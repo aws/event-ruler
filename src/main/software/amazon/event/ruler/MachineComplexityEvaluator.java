@@ -50,7 +50,8 @@ public class MachineComplexityEvaluator {
         int maxSize = 0;
 
         // We'll do a breadth-first-search but it shouldn't matter.
-        Queue<ByteTransition> transitions = new LinkedList<>(state.getTransitions());
+        Queue<ByteTransition> transitions = new LinkedList<>();
+        state.getTransitions().forEach(trans -> transitions.add(trans));
         while (!transitions.isEmpty()) {
             ByteTransition transition = transitions.remove();
             if (visited.contains(transition)) {
@@ -68,10 +69,9 @@ public class MachineComplexityEvaluator {
                 // foo will also match foo*, we also need to include in our size wildcard patterns accessible from foo*.
                 ByteState nextState = single.getNextByteState();
                 if (nextState != null) {
-                    Set<SingleByteTransition> transitionsForAllBytes = nextState.getTransitionForAllBytes().expand();
-                    for (SingleByteTransition transitionForAllBytes : transitionsForAllBytes) {
+                    for (SingleByteTransition transitionForAllBytes : nextState.getTransitionForAllBytes().expand()) {
                         if (!(transitionForAllBytes instanceof ByteMachine.EmptyByteTransition) &&
-                                !(transition.expand().contains(transitionForAllBytes))) {
+                                !contains(transition.expand(), transitionForAllBytes)) {
                             size += getWildcardPatterns(matchesAccessibleFromEachTransition.get(transitionForAllBytes))
                                     .size();
                         }
@@ -89,7 +89,7 @@ public class MachineComplexityEvaluator {
             // that could be accessed with a particular byte value.
             ByteTransition nextTransition = transition.getTransitionForNextByteStates();
             if (nextTransition != null) {
-                transitions.addAll(nextTransition.getTransitions());
+                nextTransition.getTransitions().forEach(trans -> transitions.add(trans));
             }
         }
 
@@ -153,7 +153,7 @@ public class MachineComplexityEvaluator {
             visited.add(transition);
 
             // Add all matches directly accessible from this transition.
-            matches.addAll(transition.getMatches());
+            transition.getMatches().forEach(match -> matches.add(match));
 
             // Push the next round of deeper states into the stack. By the time we return back to the current transition
             // on the stack, all matches for deeper states will have been computed.
@@ -170,6 +170,18 @@ public class MachineComplexityEvaluator {
         }
 
         return result;
+    }
+
+    private static boolean contains(Iterable<SingleByteTransition> iterable, SingleByteTransition single) {
+        if (iterable instanceof Set) {
+            return ((Set) iterable).contains(single);
+        }
+        for (SingleByteTransition eachSingle : iterable) {
+            if (single.equals(eachSingle)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static Set<Patterns> getWildcardPatterns(Set<ByteMatch> matches) {

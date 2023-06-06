@@ -6,8 +6,6 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static software.amazon.event.ruler.CompoundByteTransition.coalesce;
 import static org.junit.Assert.assertEquals;
@@ -68,7 +66,7 @@ public class ByteStateTest {
 
         assertTrue(transition instanceof CompositeByteTransition);
         assertSame(state, transition.getNextByteState());
-        assertEquals(new HashSet<>(Arrays.asList(match)), transition.getMatches());
+        assertEquals(match, transition.getMatches());
     }
 
     @Test
@@ -428,7 +426,7 @@ public class ByteStateTest {
     public void getTransitionsWithSingleByteTransitionEntryShouldReturnExpectedTransition() {
         SingleByteTransition trans1 = new ByteState();
         state.addTransition((byte) 'a', trans1);
-        assertEquals(Stream.of(trans1).collect(Collectors.toSet()), state.getTransitions());
+        assertEquals(trans1, state.getTransitions());
     }
 
     @Test

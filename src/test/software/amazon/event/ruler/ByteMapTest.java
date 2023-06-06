@@ -310,7 +310,37 @@ public class ByteMapTest {
     }
 
     @Test
-    public void testGetTransitionForAllBytes() {
+    public void testGetTransitionForAllBytesAllOneTransitionExceptOneWithTwo() {
+        map.addTransitionForAllBytes(trans1);
+        map.addTransition((byte) 'a', trans2);
+        assertEquals(coalesce(new HashSet<>(Arrays.asList(trans1))), map.getTransitionForAllBytes());
+    }
+
+    @Test
+    public void testGetTransitionForAllBytesAllTwoTransitionsExceptOneWithOne() {
+        map.addTransitionForAllBytes(trans1);
+        map.addTransitionForAllBytes(trans2);
+        map.removeTransition((byte) 'a', trans2);
+        assertEquals(coalesce(new HashSet<>(Arrays.asList(trans1))), map.getTransitionForAllBytes());
+    }
+
+    @Test
+    public void testGetTransitionForAllBytesAllOneTransitionExceptOneWithZero() {
+        map.addTransitionForAllBytes(trans1);
+        map.removeTransition((byte) 'a', trans1);
+        assertEquals(ByteMachine.EmptyByteTransition.INSTANCE, map.getTransitionForAllBytes());
+    }
+
+    @Test
+    public void testGetTransitionForAllBytesAllOneTransitionExceptOneDifferent() {
+        map.addTransitionForAllBytes(trans1);
+        map.removeTransition((byte) 'a', trans1);
+        map.addTransition((byte) 'a', trans2);
+        assertEquals(ByteMachine.EmptyByteTransition.INSTANCE, map.getTransitionForAllBytes());
+    }
+
+    @Test
+    public void testGetTransitionForAllBytesAllThreeTransitionsExceptOneWithTwo() {
         map.addTransitionForAllBytes(trans1);
         map.addTransitionForAllBytes(trans2);
         map.addTransitionForAllBytes(trans3);

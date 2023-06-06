@@ -96,14 +96,14 @@ class ByteState extends SingleByteTransition {
     }
 
     @Override
-    Set<ByteTransition> getTransitions() {
+    Iterable<ByteTransition> getTransitions() {
         // Saving the value to avoid reading an updated value
         Object transitionStore = this.transitionStore;
         if (transitionStore == null) {
             return Collections.emptySet();
         } else if (transitionStore instanceof SingleByteTransitionEntry) {
             SingleByteTransitionEntry entry = (SingleByteTransitionEntry) transitionStore;
-            return Stream.of(entry.transition).collect(Collectors.toSet());
+            return entry.transition;
         }
         ByteMap map = (ByteMap) transitionStore;
         return map.getTransitions();
