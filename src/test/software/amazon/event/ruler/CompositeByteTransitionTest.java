@@ -3,9 +3,7 @@ package software.amazon.event.ruler;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -54,8 +52,8 @@ public class CompositeByteTransitionTest {
     }
 
     @Test
-    public void getMatchesShouldReturnSetMatch() {
-        assertEquals(new HashSet<>(Arrays.asList(match)), compositeTransition.getMatches());
+    public void getMatchesShouldReturnMatch() {
+        assertEquals(match, compositeTransition.getMatches());
     }
 
     @Test
@@ -97,7 +95,7 @@ public class CompositeByteTransitionTest {
 
     @Test
     public void expandShouldReturnComposite() {
-        assertEquals(new HashSet<>(Arrays.asList(compositeTransition)), compositeTransition.expand());
+        assertEquals(compositeTransition, compositeTransition.expand());
     }
 
     @Test

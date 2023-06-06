@@ -1,5 +1,6 @@
 package software.amazon.event.ruler;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -47,7 +48,7 @@ class ByteMap {
         for (Map.Entry<Integer, ByteTransition> entry : newMap.entrySet()) {
             Set<SingleByteTransition> newSingles = new HashSet<>();
             ByteTransition storedTransition = entry.getValue();
-            newSingles.addAll(expand(storedTransition));
+            expand(storedTransition).forEach(single -> newSingles.add(single));
             newSingles.add(transition);
             entry.setValue(coalesce(newSingles));
         }
@@ -63,7 +64,7 @@ class ByteMap {
         for (Map.Entry<Integer, ByteTransition> entry : newMap.entrySet()) {
             Set<SingleByteTransition> newSingles = new HashSet<>();
             ByteTransition storedTransition = entry.getValue();
-            newSingles.addAll(expand(storedTransition));
+            expand(storedTransition).forEach(single -> newSingles.add(single));
             newSingles.remove(transition);
             entry.setValue(coalesce(newSingles));
         }
@@ -71,57 +72,42 @@ class ByteMap {
     }
 
     /**
-     *  Updates one ceiling=>transition mapping and leaves the map in a consistent state.
-     *  It's a two-step process. First of all, we go through the map and find the entry that contains the byte value.
-     *  Then we figure out whether the new byte value is at the bottom and/or the top of the entry (can be both if it's
-     *  a singleton mapping). If it's not at the bottom, we write a new entry representing the part of the entry less
-     *  than the byte value. Then we write a new entry for the byte value. Then if not at the top we write a new entry
-     *  representing the proportion greater than the byte value. Then we merge entries mapping to the same transition.
-     *  One effect is that you can remove the transition at position X by putting (X, null). An earlier implementation
-     *  expanded the map to a ByteMapExtent[256] array of singletons, did the update, then contracted it, but that drove
-     *  the compute/memory cost up so much that addRule and deleteRule were showing up in the profiler. Another earlier
-     *  implementation tried to do the merging at the same time as the entry wrangling and dissolved into an
-     *  incomprehensible pile of special-case code.
+     *  Updates one ceiling=>transition mapping and leaves the map in a consistent state. We go through the map and find
+     *  the entry that contains the byte value. If the new byte value is not at the bottom of the entry, we write a new
+     *  entry representing the part of the entry less than the byte value. Then we write a new entry for the byte value.
+     *  Then we merge entries mapping to the same transition.
      */
     private void updateTransition(final byte utf8byte, final SingleByteTransition transition, Operation operation) {
         final int index = utf8byte & 0xFF;
-        final NavigableMap<Integer, ByteTransition> newMap = new TreeMap<>();
+        ByteTransition target =  map.higherEntry(index).getValue();
 
-        newMap.putAll(map.headMap(index, true));
-        Map.Entry<Integer, ByteTransition> targetEntry = map.higherEntry(index);
-        int targetCeiling = targetEntry.getKey();
-        ByteTransition target = targetEntry.getValue();
-
-        final boolean atBottom = (index == 0) || (!newMap.isEmpty() && newMap.lastKey() == index);
-        if (!atBottom) {
-            newMap.put(index, target);
-        }
-
-        Set<SingleByteTransition> singles = new HashSet<>();
-        if (operation != Operation.PUT) {
-            singles.addAll(expand(target));
-        }
-        if (operation == Operation.REMOVE) {
-            singles.remove(transition);
+        ByteTransition coalesced;
+        if (operation == Operation.PUT) {
+            coalesced = coalesce(transition);
         } else {
-            singles.add(transition);
+            Iterable<SingleByteTransition> targetIterable = expand(target);
+            if (!targetIterable.iterator().hasNext()) {
+                coalesced = operation == Operation.ADD ? coalesce(transition) : null;
+            } else {
+                Set<SingleByteTransition> singles = new HashSet<>();
+                targetIterable.forEach(single -> singles.add(single));
+                if (operation == Operation.ADD) {
+                    singles.add(transition);
+                } else {
+                    singles.remove(transition);
+                }
+                coalesced = coalesce(singles);
+            }
         }
-        ByteTransition coalesced = coalesce(singles);
-        newMap.put(index + 1, coalesced);
 
-        final boolean atTop = index == targetCeiling - 1;
-        if (!atTop) {
-            newMap.put(targetCeiling, target);
+        final boolean atBottom = index == 0 || map.containsKey(index);
+        if (!atBottom) {
+            map.put(index, target);
         }
-
-        newMap.putAll(map.tailMap(targetCeiling, false));
+        map.put(index + 1, coalesced);
 
         // Merge adjacent mappings with the same transition.
-        mergeAdjacentInMapIfNeeded(newMap);
-
-        // Update map in last step to enforce the happen-before relationship.
-        // We don't update content in map directly to avoid change being felt by other threads before complete.
-        map = newMap;
+        mergeAdjacentInMapIfNeeded(map);
     }
 
     /**
@@ -129,7 +115,7 @@ class ByteMap {
      *
      * @param inputMap The map on which we merge adjacent entries with equal transitions.
      */
-    private void mergeAdjacentInMapIfNeeded(final NavigableMap<Integer, ByteTransition> inputMap) {
+    private static void mergeAdjacentInMapIfNeeded(final NavigableMap<Integer, ByteTransition> inputMap) {
         Iterator<Map.Entry<Integer, ByteTransition>> iterator = inputMap.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<Integer, ByteTransition> next1 = iterator.next();
@@ -169,14 +155,35 @@ class ByteMap {
         if (firstByteTransition == null) {
             return ByteMachine.EmptyByteTransition.INSTANCE;
         }
-        candidates.addAll(firstByteTransition.expand());
+        firstByteTransition.expand().forEach(single -> candidates.add(single));
 
         while (iterator.hasNext()) {
             ByteTransition nextByteTransition = iterator.next();
             if (nextByteTransition == null) {
                 return ByteMachine.EmptyByteTransition.INSTANCE;
             }
-            candidates.retainAll(nextByteTransition.expand());
+            Iterable<SingleByteTransition> singles = nextByteTransition.expand();
+            if (singles instanceof Set) {
+                candidates.retainAll((Set) singles);
+            } else if (singles instanceof SingleByteTransition) {
+                SingleByteTransition single = (SingleByteTransition) singles;
+                if (candidates.contains(single)) {
+                    if (candidates.size() > 1) {
+                        candidates.clear();
+                        candidates.add(single);
+                    }
+                } else {
+                    if (!candidates.isEmpty()) {
+                        candidates.clear();
+                    }
+                }
+            } else {
+                // singles should always be a Set or SingleByteTransition. Thus, this "else" is expected to be dead code
+                // but it is here for logical correctness if anything changes in the future.
+                Set<SingleByteTransition> set = new HashSet<>();
+                singles.forEach(single -> set.add(single));
+                candidates.retainAll(set);
+            }
             if (candidates.isEmpty()) {
                 return ByteMachine.EmptyByteTransition.INSTANCE;
             }
@@ -218,15 +225,15 @@ class ByteMap {
         Set<SingleByteTransition> allTransitions = new HashSet<>();
         for (ByteTransition transition : map.values()) {
             if (transition != null) {
-                allTransitions.addAll(expand(transition));
+                expand(transition).forEach(single -> allTransitions.add(single));
             }
         }
         return allTransitions;
     }
 
-    private static Set<SingleByteTransition> expand(ByteTransition transition) {
+    private static Iterable<SingleByteTransition> expand(ByteTransition transition) {
         if (transition == null) {
-            return new HashSet<>();
+            return Collections.EMPTY_SET;
         }
         return transition.expand();
     }

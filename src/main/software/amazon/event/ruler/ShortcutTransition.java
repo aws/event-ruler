@@ -78,8 +78,8 @@ public class ShortcutTransition extends SingleByteTransition {
     }
 
     @Override
-    public Set<ShortcutTransition> getShortcuts() {
-        return Collections.singleton(this);
+    public Iterable<ShortcutTransition> getShortcuts() {
+        return this;
     }
 
     @Override

@@ -36,31 +36,31 @@ abstract class ByteTransition implements Cloneable {
     /**
      * Get all the unique transitions (single or compound) reachable from this transition by any UTF-8 byte value.
      *
-     * @return Set of all transitions reachable from this transition.
+     * @return Iterable of all transitions reachable from this transition.
      */
-    abstract Set<ByteTransition> getTransitions();
+    abstract Iterable<ByteTransition> getTransitions();
 
     /**
      * Returns matches that are triggered if this transition is made. This is a convenience function that traverses the
-     * linked list of matches and returns all of them in a Set.
+     * linked list of matches and returns all of them in an Iterable.
      *
      * @return matches that are triggered if this transition is made.
      */
-    abstract Set<ByteMatch> getMatches();
+    abstract Iterable<ByteMatch> getMatches();
 
     /**
      * Returns all shortcuts that are available if this transition is made.
      *
      * @return all shortcuts
      */
-    abstract Set<ShortcutTransition> getShortcuts();
+    abstract Iterable<ShortcutTransition> getShortcuts();
 
     /**
      * Get all transitions represented by this transition (can be more than one if this is a compound transition).
      *
-     * @return A set of all transitions represented by this transition.
+     * @return An iterable of all transitions represented by this transition.
      */
-    abstract Set<SingleByteTransition> expand();
+    abstract Iterable<SingleByteTransition> expand();
 
     /**
      * Get a transition that represents all of the next byte states for this transition.
@@ -93,7 +93,7 @@ abstract class ByteTransition implements Cloneable {
      * @return boolean
      */
     boolean isEmpty() {
-        return getMatches().isEmpty() && getNextByteState() == null;
+        return !getMatches().iterator().hasNext() && getNextByteState() == null;
     }
 
     /**

@@ -3,6 +3,7 @@ package software.amazon.event.ruler;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
@@ -62,13 +63,23 @@ public final class CompoundByteTransition extends ByteTransition {
         }
     }
 
-    static <T extends ByteTransition> T coalesce(Set<SingleByteTransition> singles) {
-        if (singles.isEmpty()) {
+    static <T extends ByteTransition> T coalesce(Iterable<SingleByteTransition> singles) {
+        Iterator<SingleByteTransition> iterator = singles.iterator();
+        if (!iterator.hasNext()) {
             return null;
-        } else if (singles.size() == 1) {
-            return (T) singles.iterator().next();
+        }
+
+        SingleByteTransition firstElement = iterator.next();
+        if (!iterator.hasNext()) {
+            return (T) firstElement;
+        } else if (singles instanceof Set) {
+            return (T) new CompoundByteTransition((Set) singles);
         } else {
-            return (T) new CompoundByteTransition(singles);
+            // We expect Iterables with more than one element to always be Sets, so this should be dead code, but adding
+            // it here for future-proofing.
+            Set<SingleByteTransition> set = new HashSet();
+            singles.forEach(single -> set.add(single));
+            return (T) new CompoundByteTransition(set);
         }
     }
 
@@ -129,7 +140,7 @@ public final class CompoundByteTransition extends ByteTransition {
     public Set<ByteMatch> getMatches() {
         Set<ByteMatch> matches = new HashSet<>();
         for (SingleByteTransition single : matchableTransitions) {
-            matches.addAll(single.getMatches());
+            single.getMatches().forEach(match -> matches.add(match));
         }
         return matches;
     }
@@ -151,13 +162,7 @@ public final class CompoundByteTransition extends ByteTransition {
         for (SingleByteTransition transition : this.byteTransitions) {
             ByteTransition nextTransition = transition.getTransition(utf8byte);
             if (nextTransition != null) {
-                if (nextTransition instanceof SingleByteTransition) {
-                    // A little hacky. Could just expand nextTransition like in the else case, but it is measurably more
-                    // performant to avoid the intermediate Set creation.
-                    singles.add((SingleByteTransition) nextTransition);
-                } else {
-                    nextTransition.expand().forEach(t -> singles.add(t));
-                }
+                nextTransition.expand().forEach(t -> singles.add(t));
             }
         }
         return coalesce(singles);

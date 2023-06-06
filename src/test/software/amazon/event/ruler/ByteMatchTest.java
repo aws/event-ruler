@@ -10,9 +10,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Collections;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class ByteMatchTest {
 
@@ -43,7 +40,7 @@ public class ByteMatchTest {
 
         assertTrue(transition instanceof CompositeByteTransition);
         assertSame(nextState, transition.getNextByteState());
-        assertEquals(Stream.of(match).collect(Collectors.toSet()), transition.getMatches());
+        assertEquals(match, transition.getMatches());
     }
 
     @Test
@@ -54,8 +51,7 @@ public class ByteMatchTest {
 
     @Test
     public void getMatchesShouldReturnThisMatch() {
-        Set<ByteMatch> actualMatches = match.getMatches();
-        assertEquals(Stream.of(match).collect(Collectors.toSet()), actualMatches);
+        assertEquals(match, match.getMatches());
     }
 
     @Test
@@ -72,7 +68,7 @@ public class ByteMatchTest {
 
     @Test
     public void expandShouldReturnMatch() {
-        assertEquals(Stream.of(match).collect(Collectors.toSet()), match.expand());
+        assertEquals(match, match.expand());
     }
 
     @Test

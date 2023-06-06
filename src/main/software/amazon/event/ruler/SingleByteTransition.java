@@ -1,13 +1,15 @@
 package software.amazon.event.ruler;
 
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
  * This class represents a singular ByteTransition. This is in contrast to a compound ByteTransition that represents
  * having taken multiple distinct transitions simultaneously (i.e. for NFA traversal).
  */
-abstract class SingleByteTransition extends ByteTransition {
+abstract class SingleByteTransition extends ByteTransition implements Iterable {
 
     /**
      * Returns the match that is triggered if this transition is made.
@@ -36,22 +38,43 @@ abstract class SingleByteTransition extends ByteTransition {
     abstract ByteTransition getTransitionForAllBytes();
 
     @Override
-    Set<ByteMatch> getMatches() {
+    Iterable<ByteMatch> getMatches() {
         ByteMatch match = getMatch();
         if (match == null) {
             return Collections.emptySet();
         }
-        return Collections.singleton(match);
+        return match;
     }
 
     /**
      * Get all transitions represented by this transition, which is simply this as this is a single byte transition.
      *
-     * @return A set of all transitions represented by this transition.
+     * @return An iterable of all transitions represented by this transition.
      */
     @Override
-    Set<SingleByteTransition> expand() {
-        return Collections.singleton(this);
+    Iterable<SingleByteTransition> expand() {
+        return this;
+    }
+
+    @Override
+    public Iterator<SingleByteTransition> iterator() {
+        return new Iterator<SingleByteTransition>() {
+            private boolean hasNext = true;
+
+            @Override
+            public boolean hasNext() {
+                return hasNext;
+            }
+
+            @Override
+            public SingleByteTransition next() {
+                if (!hasNext) {
+                    throw new NoSuchElementException();
+                }
+                hasNext = false;
+                return SingleByteTransition.this;
+            }
+        };
     }
 
     @Override
