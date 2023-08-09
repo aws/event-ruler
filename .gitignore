@@ -21,3 +21,5 @@ buildNumber.properties
 
 # Idea
 .idea/
+
+.DS_Store

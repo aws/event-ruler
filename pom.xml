@@ -102,6 +102,7 @@
 
   <modules>
     <module>ruler</module>
+    <module>benchmark</module>
   </modules>
 
   <packaging>pom</packaging>
