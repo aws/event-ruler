@@ -100,9 +100,15 @@
 
   </dependencies>
 
+  <modules>
+    <module>ruler</module>
+  </modules>
+
+  <packaging>pom</packaging>
+
   <build>
-    <sourceDirectory>src/main</sourceDirectory>
-    <testSourceDirectory>src/test</testSourceDirectory>
+    <sourceDirectory>ruler/src/main</sourceDirectory>
+    <testSourceDirectory>ruler/src/test</testSourceDirectory>
     <finalName>${project.artifactId}-${project.version}</finalName>
     <plugins>
       <plugin>
