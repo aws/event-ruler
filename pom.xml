@@ -78,121 +78,12 @@
     </repository>
   </distributionManagement>
 
-  <dependencies>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <version>${jackson.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
-      <version>${jsr.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>${junit.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-  </dependencies>
-
   <modules>
     <module>ruler</module>
     <module>benchmark</module>
   </modules>
 
   <packaging>pom</packaging>
-
-  <build>
-    <sourceDirectory>ruler/src/main</sourceDirectory>
-    <testSourceDirectory>ruler/src/test</testSourceDirectory>
-    <finalName>${project.artifactId}-${project.version}</finalName>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>${compiler.plugin.version}</version>
-        <configuration>
-          <source>${jdk.version}</source>
-          <target>${jdk.version}</target>
-          <encoding>${project.build.sourceEncoding}</encoding>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-source-plugin</artifactId>
-        <version>${source.plugin.version}</version>
-        <executions>
-          <execution>
-            <id>attach-sources</id>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <version>${javadoc.plugin.version}</version>
-        <configuration>
-          <additionalJOption>-Xdoclint:none</additionalJOption>
-        </configuration>
-        <executions>
-          <execution>
-            <id>attach-javadocs</id>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>${checkstyle.plugin.version}</version>
-        <configuration>
-          <configLocation>${basedir}/config/checkstyle/checkstyle.xml</configLocation>
-          <encoding>${project.build.sourceEncoding}</encoding>
-          <consoleOutput>true</consoleOutput>
-          <failsOnError>false</failsOnError>
-          <linkXRef>false</linkXRef>
-          <includeTestSourceDirectory>true</includeTestSourceDirectory>
-        </configuration>
-        <executions>
-          <execution>
-            <id>validate</id>
-            <phase>validate</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>com.github.spotbugs</groupId>
-        <artifactId>spotbugs-maven-plugin</artifactId>
-        <version>${spotbugs.plugin.version}</version>
-        <configuration>
-          <omitVisitors>FindReturnRef</omitVisitors>
-          <xmlOutput>true</xmlOutput>
-        </configuration>
-        <executions>
-          <execution>
-            <id>analyze-compile</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 
   <profiles>
     <profile>
