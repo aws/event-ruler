@@ -28,12 +28,7 @@
     <version>1.0</version>
     <packaging>jar</packaging>
 
-    <name>JMH benchmark sample: Java</name>
-
-    <!--
-       This is the demo/sample template build script for building Java benchmarks with JMH.
-       Edit as needed.
-    -->
+    <name>Event Ruler JMH Benchmarks</name>
 
     <dependencies>
         <dependency>
@@ -64,8 +59,9 @@
 
         <!--
             Java source/target to use for compilation.
-          -->
+
         <javac.target>1.8</javac.target>
+         -->
 
         <!--
             Name of the benchmark Uber-JAR to generate.
@@ -98,7 +94,6 @@
                 <version>${checkstyle.plugin.version}</version>
                 <configuration>
                     <configLocation>${basedir}/../config/checkstyle/checkstyle.xml</configLocation>
-                    <encoding>${project.build.sourceEncoding}</encoding>
                     <consoleOutput>true</consoleOutput>
                     <failsOnError>false</failsOnError>
                     <linkXRef>false</linkXRef>
@@ -117,17 +112,17 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.0</version>
+                <version>${compiler.plugin.version}</version>
                 <configuration>
-                    <compilerVersion>${javac.target}</compilerVersion>
-                    <source>${javac.target}</source>
-                    <target>${javac.target}</target>
+                    <compilerVersion>${jdk.version}</compilerVersion>
+                    <source>${jdk.version}</source>
+                    <target>${jdk.version}</target>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.1</version>
+                <version>${shade.plugin.version}</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -165,39 +160,39 @@
             <plugins>
                 <plugin>
                     <artifactId>maven-clean-plugin</artifactId>
-                    <version>2.5</version>
+                    <version>${clean.plugin.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-deploy-plugin</artifactId>
-                    <version>2.8.1</version>
+                    <version>${deploy.plugin.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-install-plugin</artifactId>
-                    <version>2.5.1</version>
+                    <version>${install.plugin.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>2.4</version>
+                    <version>${jar.plugin.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>2.9.1</version>
+                    <version>${javadoc.plugin.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-resources-plugin</artifactId>
-                    <version>2.6</version>
+                    <version>${resources.plugin.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-site-plugin</artifactId>
-                    <version>3.3</version>
+                    <version>${site.plugin.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-source-plugin</artifactId>
-                    <version>2.2.1</version>
+                    <version>${source.plugin.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.17</version>
+                    <version>${surefire.plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
