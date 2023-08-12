@@ -36,10 +36,19 @@
     <junit.version>4.13.2</junit.version>
     <compiler.plugin.version>3.11.0</compiler.plugin.version>
     <javadoc.plugin.version>3.5.0</javadoc.plugin.version>
+    <shade.plugin.version>3.2.1</shade.plugin.version>
     <source.plugin.version>3.3.0</source.plugin.version>
     <gpg.plugin.version>3.1.0</gpg.plugin.version>
     <staging.plugin.version>1.6.13</staging.plugin.version>
     <checkstyle.plugin.version>3.3.0</checkstyle.plugin.version>
+    <clean.plugin.version>2.5</clean.plugin.version>
+    <deploy.plugin.version>2.8.1</deploy.plugin.version>
+    <install.plugin.version>2.5.1</install.plugin.version>
+    <jar.plugin.version>2.4</jar.plugin.version>
+    <resources.plugin.version>2.6</resources.plugin.version>
+    <site.plugin.version>3.3</site.plugin.version>
+    <source.plugin.version>2.2.1</source.plugin.version>
+    <surefire.plugin.version>2.17</surefire.plugin.version>
     <spotbugs.plugin.version>4.7.3.5</spotbugs.plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
