@@ -186,7 +186,6 @@ public class CityLots2Benchmark {
                 }
                 cl2Reader.close();
                 System.out.println("Read " + citylots2.size() + " events");
-                // Collections.shuffle(citylots2);
 
             } catch (Exception e) {
                 System.out.println("Can't find, current directory " + System.getProperty("user.dir"));
