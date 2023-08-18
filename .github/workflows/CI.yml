@@ -30,4 +30,4 @@ jobs:
       - name: Verify with Maven
         run: mvn --batch-mode --errors --update-snapshots verify
       - name: Run benchmarks
-        run: cd benchmark && java -jar target/benchmarks.jar
+        run: cd benchmark && java -jar target/benchmarks.jar -wi 1 -w 5 -i 3 -r 5 -f 3
