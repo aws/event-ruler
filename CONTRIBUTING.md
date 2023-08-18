@@ -36,7 +36,8 @@ To send us a pull request, please:
    3. Where possible stay consistent with the current code-style, patterns, and documentation language.
    4. Any changes (however minor, major, or ground-breaking) are welcomed, though reviewing them in isolation of any other changes helps us review them faster.
 3. Ensure local tests pass. Add new tests for any functionality you add / changed.
-4. Ensure there are no performance regressions by running [Benchmark Tests](https://github.com/aws/event-ruler/blob/main/src/test/software/amazon/event/ruler/Benchmarks.java).
+4. Ensure there are no performance regressions by running the JMH Benchmark Tests: in the `benchmark` directory, build the submodule and 
+run the benchmarks with `java -jar target/benchmarks.java`.
 5. Commit to your fork using clear commit messages. [PULL_REQUEST_TEMPLATE.md](https://github.com/aws/event-ruler/blob/main/.github/PULL_REQUEST_TEMPLATE.md) shows the template we follow.
 6. Send us a pull request, answering any default questions in the pull request interface.
 7. Pay attention to any automated CI failures reported in the pull request, and stay involved in the conversation.
