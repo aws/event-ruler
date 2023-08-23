@@ -2387,4 +2387,15 @@ public class MachineTest {
         assertEquals(87, machine.approximateObjectCount());
     }
 
+    /**
+     * Test that tests a custom 'html' matcher.
+     * @throws Exception
+     */
+    @Test
+    public void testCustomHtmlMatching() throws Exception{
+        Machine machine = new Machine();
+        String rule1 = "{ \"source\" : [ { \"html\": \"<head>value</head>\" } ] }";
+        machine.addRule("R1", rule1);
+    }
+
 }

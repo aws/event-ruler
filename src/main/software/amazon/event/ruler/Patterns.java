@@ -106,6 +106,10 @@ public class Patterns implements Cloneable  {
         return new ValuePatterns(MatchType.WILDCARD, value);
     }
 
+    public static ValuePatterns htmlMatch(final String value){
+        return new ValuePatterns(MatchType.HTML, value);
+    }
+
     @Override
     public Object clone() {
         try {

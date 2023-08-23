@@ -19,6 +19,7 @@ final class Constants {
   final static String WILDCARD = "wildcard";
   final static String NUMERIC = "numeric";
   final static String CIDR = "cidr";
+  final static String HTML = "html";
 
   // This is Ruler reserved words to represent the $or relationship among the fields.
   final static String OR_RELATIONSHIP_KEYWORD = "$or";
@@ -51,6 +52,7 @@ final class Constants {
       WILDCARD,
       NUMERIC,
       CIDR,
+          HTML,
       // Numeric comparisons
       EQ, LT, LE, GT, GE,
       // reserve below keywords for future extension

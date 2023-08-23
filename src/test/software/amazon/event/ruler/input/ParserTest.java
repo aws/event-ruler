@@ -47,7 +47,14 @@ public class ParserTest {
                     parserInvokedCount[2] += 1;
                     return null;
                 }
-            }
+            },
+                new HtmlParser(){
+                @Override
+                    public InputCharacter[] parse(String value) {
+                    parserInvokedCount[3] +=1;
+                    return null;
+                }
+                }
         );
 
         assertNull(parser.parse(MatchType.WILDCARD, "abc"));

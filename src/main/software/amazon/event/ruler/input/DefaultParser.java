@@ -4,11 +4,7 @@ import software.amazon.event.ruler.MatchType;
 
 import java.nio.charset.StandardCharsets;
 
-import static software.amazon.event.ruler.MatchType.ANYTHING_BUT_SUFFIX;
-import static software.amazon.event.ruler.MatchType.EQUALS_IGNORE_CASE;
-import static software.amazon.event.ruler.MatchType.ANYTHING_BUT_IGNORE_CASE;
-import static software.amazon.event.ruler.MatchType.SUFFIX;
-import static software.amazon.event.ruler.MatchType.WILDCARD;
+import static software.amazon.event.ruler.MatchType.*;
 
 /**
  * Parses the value for a rule into InputCharacters that are used to add the rule to the Machine. Most characters from a
@@ -39,15 +35,18 @@ public class DefaultParser implements MatchTypeParser, ByteParser {
     private final WildcardParser wildcardParser;
     private final EqualsIgnoreCaseParser equalsIgnoreCaseParser;
     private final SuffixParser suffixParser;
+    private final HtmlParser htmlParser;
 
     DefaultParser() {
-        this(new WildcardParser(), new EqualsIgnoreCaseParser(), new SuffixParser());
+        this(new WildcardParser(), new EqualsIgnoreCaseParser(), new SuffixParser(), new HtmlParser());
     }
 
-    DefaultParser(WildcardParser wildcardParser, EqualsIgnoreCaseParser equalsIgnoreCaseParser, SuffixParser suffixParser) {
+    DefaultParser(WildcardParser wildcardParser, EqualsIgnoreCaseParser equalsIgnoreCaseParser, SuffixParser suffixParser, HtmlParser htmlParser) {
         this.wildcardParser = wildcardParser;
         this.equalsIgnoreCaseParser = equalsIgnoreCaseParser;
         this.suffixParser = suffixParser;
+        this.htmlParser = htmlParser;
+
     }
 
     public static DefaultParser getParser() {
@@ -62,6 +61,8 @@ public class DefaultParser implements MatchTypeParser, ByteParser {
             return equalsIgnoreCaseParser.parse(value);
         } else if (type == SUFFIX || type == ANYTHING_BUT_SUFFIX) {
             return suffixParser.parse(value);
+        } else if (type == HTML){
+            return htmlParser.parse(value);
         }
 
         final byte[] utf8bytes = value.getBytes(StandardCharsets.UTF_8);

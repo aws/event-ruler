@@ -398,7 +398,28 @@ public final class RuleCompiler {
                 barf(parser, "Only one key allowed in match expression");
             }
             return pattern;
-        } else {
+        }
+
+
+        /**
+         * Condition that gets triggered if the matcher type of the passed in rule is 'html'
+         */
+        else if (Constants.HTML.equals(matchTypeName)){
+            final JsonToken htmlToken = parser.nextToken();
+            if(htmlToken != JsonToken.VALUE_STRING){
+                barf(parser, "html match must be a string");
+            }
+
+            final String parserText = parser.getText();
+            final Patterns pattern = Patterns.htmlMatch('"' + parserText + '"');
+
+            if(parser.nextToken() != JsonToken.END_OBJECT){
+                barf(parser, "Only one key allowed in match expression");
+            }
+
+            return pattern;
+        }
+        else {
             barf(parser, "Unrecognized match type " + matchTypeName);
             return null; // unreachable statement, but java can't see that?
         }

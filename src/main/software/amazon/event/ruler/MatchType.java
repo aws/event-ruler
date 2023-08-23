@@ -17,4 +17,5 @@ public enum MatchType {
     ANYTHING_BUT_SUFFIX, // anything that doesn't end with this
     EQUALS_IGNORE_CASE,  // case-insensitive string match
     WILDCARD,             // string match using one or more non-consecutive '*' wildcard characters
+    HTML, // html code in syntax <tag>value</tag>
 }

@@ -680,6 +680,7 @@ class ByteMachine {
             case SUFFIX:
             case EQUALS_IGNORE_CASE:
             case WILDCARD:
+            case HTML:
                 assert pattern instanceof ValuePatterns;
                 return addMatchPattern((ValuePatterns) pattern, nameState);
 
@@ -1585,6 +1586,7 @@ class ByteMachine {
         case PREFIX:
         case EXISTS:
         case EQUALS_IGNORE_CASE:
+        case HTML:
         case WILDCARD:
             break;
         case SUFFIX:
