@@ -31,6 +31,8 @@ public class DefaultParser implements MatchTypeParser, ByteParser {
     static final byte LEFT_CURLY_BRACKET_BYTE = 0x7B;
     static final byte VERTICAL_LINE_BYTE = 0x7C;
     static final byte RIGHT_CURLY_BRACKET_BYTE = 0x7D;
+    static final byte OPEN_HTML_BRACKET_BYTE = 0x3c;
+    static final byte CLOSE_HTML_BRACKET_BYTE = 0x3e;
     private static final DefaultParser SINGLETON = new DefaultParser();
     private final WildcardParser wildcardParser;
     private final EqualsIgnoreCaseParser equalsIgnoreCaseParser;

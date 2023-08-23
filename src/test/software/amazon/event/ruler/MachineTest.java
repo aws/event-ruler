@@ -2394,7 +2394,7 @@ public class MachineTest {
     @Test
     public void testCustomHtmlMatching() throws Exception{
         Machine machine = new Machine();
-        String rule1 = "{ \"source\" : [ { \"html\": \"<head>value</head>\" } ] }";
+        String rule1 = "{ \"source\" : [ { \"html\": \"<head>\" } ] }";
         machine.addRule("R1", rule1);
     }
 
