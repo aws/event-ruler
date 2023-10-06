@@ -193,7 +193,7 @@ Anything-but-ignore-case list (strings):
 
 ```
 
-###Numeric matching
+### Numeric matching
 ```javascript
 {
   "detail": {
