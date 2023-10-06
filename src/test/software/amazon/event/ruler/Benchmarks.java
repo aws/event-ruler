@@ -426,14 +426,14 @@ public class Benchmarks {
 
         System.gc();
         long memBefore = Runtime.getRuntime().freeMemory();
-        int sizeBefore = mm.approximateObjectCount();
+        int sizeBefore = mm.approximateObjectCount(Integer.MAX_VALUE);
         System.out.printf("Before: %.1f (%d)\n", 1.0 * memBefore / 1000000, sizeBefore);
         for (int i = 0; i < rules.size(); i++) {
             mm.addRule("mm" + i, rules.get(i));
         }
         System.gc();
         long memAfter = Runtime.getRuntime().freeMemory();
-        int sizeAfter = mm.approximateObjectCount();
+        int sizeAfter = mm.approximateObjectCount(Integer.MAX_VALUE);
         System.out.printf("After: %.1f (%d)\n", 1.0 * memAfter / 1000000, sizeAfter);
         int perRuleMem = (int) ((1.0 * (memAfter - memBefore)) / rules.size());
         int perRuleSize = (int) ((1.0 * (sizeAfter - sizeBefore)) / rules.size());
@@ -444,7 +444,7 @@ public class Benchmarks {
     // This needs to be run with -Xms2g -Xmx2g
     // Only use exact match to verify exact match memory optimization change.
     @Test
-    public void exactRuleMemoryBemchmark() throws Exception {
+    public void exactRuleMemoryBenchmark() throws Exception {
 
         // 10 random field names
         String[] fieldNames = new String[NUMBER_OF_FIELD_NAMES];

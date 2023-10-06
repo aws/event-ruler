@@ -652,11 +652,23 @@ public class GenericMachine<T> {
      * 2. It will also give you different results based on the order in which you add or remove rules as in
      * some-cases Ruler takes short-cuts for exact matches (see ShortcutTransition for more details).
      * 3. This method isn't thread safe, and so is prefixed with approximate.
+     *
+     * @param maxObjectCount Caps evaluation of object at this threshold.
+     */
+    public int approximateObjectCount(int maxObjectCount) {
+        final HashSet<Object> objectSet = new HashSet<>();
+        startState.gatherObjects(objectSet, maxObjectCount);
+        return Math.min(objectSet.size(), maxObjectCount);
+    }
+
+    @Deprecated
+    /**
+     * Use `approximateObjectCount(int maxObjectCount)` instead.
+     *
+     * Due to unbounded nature of this method, counting can be painfully long.
      */
     public int approximateObjectCount() {
-        final HashSet<Object> objectSet = new HashSet<>();
-        startState.gatherObjects(objectSet);
-        return objectSet.size();
+        return approximateObjectCount(Integer.MAX_VALUE);
     }
 
     @Override

@@ -106,15 +106,15 @@ abstract class ByteTransition implements Cloneable {
         return false;
     }
 
-    public void gatherObjects(Set<Object> objectSet) {
-        if (!objectSet.contains(this)) { // stops looping
+    public void gatherObjects(Set<Object> objectSet, int maxObjectCount) {
+        if (!objectSet.contains(this) && objectSet.size() < maxObjectCount) { // stops looping
             objectSet.add(this);
-            for (ByteTransition byteMachine : getTransitions()) {
-                byteMachine.gatherObjects(objectSet);
+            for (ByteMatch match : getMatches()) {
+                match.gatherObjects(objectSet, maxObjectCount);
             }
             final ByteState nextByteState = getNextByteState();
             if (nextByteState != null) {
-                nextByteState.gatherObjects(objectSet);
+                nextByteState.gatherObjects(objectSet, maxObjectCount);
             }
         }
     }

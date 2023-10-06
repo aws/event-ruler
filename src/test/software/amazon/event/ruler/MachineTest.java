@@ -4,6 +4,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -2171,16 +2173,16 @@ public class MachineTest {
         String rule3 = "{ \"c\" : [ 3 ] }";
 
         Machine machine = new Machine();
-        assertEquals(1, machine.approximateObjectCount());
+        assertEquals(1, machine.approximateObjectCount(10000));
 
         machine.addRule("r1", rule1);
-        assertEquals(22, machine.approximateObjectCount());
+        assertEquals(23, machine.approximateObjectCount(10000));
 
         machine.addRule("r2", rule2);
-        assertEquals(43, machine.approximateObjectCount());
+        assertEquals(44, machine.approximateObjectCount(10000));
 
         machine.addRule("r3", rule3);
-        assertEquals(64, machine.approximateObjectCount());
+        assertEquals(65, machine.approximateObjectCount(10000));
     }
 
     @Test
@@ -2189,13 +2191,13 @@ public class MachineTest {
 
         Machine machine = new Machine();
         machine.addRule("r1", rule1);
-        assertEquals(79, machine.approximateObjectCount());
+        assertEquals(80, machine.approximateObjectCount(10000));
 
         // Adding the same rule multiple times should not increase object count
         for (int i = 0; i < 100; i++) {
             machine.addRule("r1", rule1);
         }
-        assertEquals(79, machine.approximateObjectCount());
+        assertEquals(80, machine.approximateObjectCount(10000));
     }
 
     @Test
@@ -2205,11 +2207,11 @@ public class MachineTest {
 
         Machine machine = new Machine();
         machine.addRule("r1", rule1a);
-        assertEquals(79, machine.approximateObjectCount());
+        assertEquals(80, machine.approximateObjectCount(10000));
 
         // Adding rule with terminal key having subset of values will be treated as same rule and thus increase size
         machine.addRule("r1", rule1b);
-        assertEquals(79, machine.approximateObjectCount());
+        assertEquals(80, machine.approximateObjectCount(10000));
     }
 
     @Test
@@ -2219,11 +2221,11 @@ public class MachineTest {
 
         Machine machine = new Machine();
         machine.addRule("r1", rule1a);
-        assertEquals(79, machine.approximateObjectCount());
+        assertEquals(80, machine.approximateObjectCount(10000));
 
         // Adding rule with non-terminal key having subset of values will be treated as same rule and not affect count
         machine.addRule("r1", rule1b);
-        assertEquals(79, machine.approximateObjectCount());
+        assertEquals(80, machine.approximateObjectCount(10000));
     }
 
     @Test
@@ -2233,11 +2235,11 @@ public class MachineTest {
 
         Machine machine = new Machine();
         machine.addRule("r1", rule1a);
-        assertEquals(79, machine.approximateObjectCount());
+        assertEquals(80, machine.approximateObjectCount(10000));
 
         // Adding rule with terminal key having superset of values will be treated as new rule and increase count
         machine.addRule("r1", rule1b);
-        assertEquals(89, machine.approximateObjectCount());
+        assertEquals(90, machine.approximateObjectCount(10000));
     }
 
     @Test
@@ -2247,11 +2249,11 @@ public class MachineTest {
 
         Machine machine = new Machine();
         machine.addRule("r1", rule1a);
-        assertEquals(79, machine.approximateObjectCount());
+        assertEquals(80, machine.approximateObjectCount(10000));
 
         // Adding rule with non-terminal key having superset of values will be treated as new rule and increase count
         machine.addRule("r1", rule1b);
-        assertEquals(89, machine.approximateObjectCount());
+        assertEquals(90, machine.approximateObjectCount(10000));
     }
 
     @Test
@@ -2283,45 +2285,78 @@ public class MachineTest {
                         "    \"c\": [{ \"numeric\": [\">\", 50] }]\n" +
                         "}");
 
-        assertEquals(517, machine.approximateObjectCount());
+        assertEquals(517, machine.approximateObjectCount(10000));
     }
 
     @Test
     public void testApproximateSizeForDifferentBasicRules() throws Exception {
         Machine machine = new Machine();
-        assertEquals(1, machine.approximateObjectCount());
+        assertEquals(1, machine.approximateObjectCount(10000));
 
 
         machine.addRule("single-rule", "{ \"key\" :  [ \"value\" ] }");
-        assertEquals(8, machine.approximateObjectCount());
+        assertEquals(8, machine.approximateObjectCount(10000));
 
         // every new rule also is considered as part of the end-state
         machine = new Machine();
         for(int i = 0 ; i < 1000; i ++) {
             machine.addRule("lots-rule-" + i, "{ \"key\" :  [ \"value\" ] }");
         }
-        assertEquals(1007, machine.approximateObjectCount());
+        assertEquals(1007, machine.approximateObjectCount(10000));
 
         // new unique rules create new states
         machine = new Machine();
         for(int i = 0 ; i < 1000; i ++) {
             machine.addRule("lots-key-values-" + i, "{ \"many-kv-" + i + "\" :  [ \"value" + i + "\" ] }");
         }
-        assertEquals(7001, machine.approximateObjectCount());
+        assertEquals(7001, machine.approximateObjectCount(10000));
 
         // new unique rule keys create same states as unique rules
         machine = new Machine();
         for(int i = 0 ; i < 1000; i ++) {
             machine.addRule("lots-keys-" + i, "{ \"many-key-" + i + "\" :  [ \"value\" ] }");
         }
-        assertEquals(6002, machine.approximateObjectCount());
+        assertEquals(6002, machine.approximateObjectCount(10000));
 
         // new unique rule with many values are smaller
         machine = new Machine();
         for(int i = 0 ; i < 1000; i ++) {
             machine.addRule("lots-values-" + i, "{ \"many-values-key\" :  [ \"value" + i + " \" ] }");
         }
-        assertEquals(5108, machine.approximateObjectCount());
+        assertEquals(5108, machine.approximateObjectCount(10000));
+    }
+
+    @Test
+    public void testApproximateSizeWhenCapped() throws Exception {
+        Machine machine = new Machine();
+        assertEquals(0, machine.approximateObjectCount(0));
+        assertEquals(1, machine.approximateObjectCount(1));
+        assertEquals(1, machine.approximateObjectCount(10));
+
+        machine.addRule("single-rule", "{ \"key\" :  [ \"value\" ] }");
+        assertEquals(1, machine.approximateObjectCount(1));
+        assertEquals(8, machine.approximateObjectCount(10));
+
+        for(int i = 0 ; i < 100000; i ++) {
+            machine.addRule("lots-rule-" + i, "{ \"key\" :  [ \"value\" ] }");
+        }
+        for(int i = 0 ; i < 100000; i ++) {
+            machine.addRule("lots-key-values-" + i, "{ \"many-kv-" + i + "\" :  [ \"value" + i + "\" ] }");
+        }
+        for(int i = 0 ; i < 100000; i ++) {
+            machine.addRule("lots-keys-" + i, "{ \"many-key-" + i + "\" :  [ \"value\" ] }");
+        }
+        for(int i = 0 ; i < 100000; i ++) {
+            machine.addRule("lots-values-" + i, "{ \"many-values-key\" :  [ \"value" + i + " \" ] }");
+        }
+        assertApproximateCountWithTime(machine, 1000, 1000, 150);
+        assertApproximateCountWithTime(machine, Integer.MAX_VALUE, 1910015, 5000);
+    }
+
+    private void assertApproximateCountWithTime(Machine machine, int maxThreshold, int expectedValue, int maxExpectedDurationMillis) {
+        final Instant start = Instant.now();
+        assertEquals(expectedValue, machine.approximateObjectCount(maxThreshold));
+        assertTrue(maxExpectedDurationMillis > Duration.between(start, Instant.now()).toMillis());
     }
 
     @Test
@@ -2334,7 +2369,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name1\",\"Name2\",\"Name3\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(25, machine.approximateObjectCount());
+        assertEquals(25, machine.approximateObjectCount(10000));
 
         machine.addRule("rule-with-six-elements",
                 "{\n" +
@@ -2343,7 +2378,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name1\",\"Name2\",\"Name3\",\"Name4\",\"Name5\",\"Name6\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(35, machine.approximateObjectCount());
+        assertEquals(35, machine.approximateObjectCount(10000));
 
 
         machine.addRule("rule-with-six-more-elements",
@@ -2353,7 +2388,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name7\",\"Name8\",\"Name9\",\"Name10\",\"Name11\",\"Name12\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(60, machine.approximateObjectCount());
+        assertEquals(60, machine.approximateObjectCount(10000));
     }
 
     @Test
@@ -2366,7 +2401,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name1\",\"Name2\",\"Name3\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(35, machine.approximateObjectCount());
+        assertEquals(35, machine.approximateObjectCount(10000));
 
         machine.addRule("rule-with-two-more-source-and-eventNames",
                 "{\n" +
@@ -2375,7 +2410,7 @@ public class MachineTest {
                         "        \"eventName\": [\"Name1\",\"Name2\",\"Name3\",\"Name4\",\"Name5\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(48, machine.approximateObjectCount());
+        assertEquals(48, machine.approximateObjectCount(10000));
 
         machine.addRule("rule-with-more-unique-source-and-eventNames",
                 "{\n" +
@@ -2384,7 +2419,723 @@ public class MachineTest {
                         "        \"eventName\": [\"Name6\",\"Name7\",\"Name8\",\"Name9\",\"Name10\"]\n" +
                         "    }\n" +
                         "}");
-        assertEquals(87, machine.approximateObjectCount());
+        assertEquals(87, machine.approximateObjectCount(10000));
     }
 
+    @Test
+    public void testLargeArrayRulesVsOR() throws Exception {
+        Machine machine = new Machine();
+        machine.addRule("rule1",
+                "{\n" +
+                        "  \"detail-type\":\n" +
+                        "  [\n" +
+                        "    \"AWS API Call via CloudTrail\",\n" +
+                        "    \"AWS Console Action via CloudTrail\"\n" +
+                        "  ],\n" +
+                        "  \"source\":\n" +
+                        "  [\n" +
+                        "    \"aws111.sqs\",\n" +
+                        "    \"aws111.kms\",\n" +
+                        "    \"aws111.sns\",\n" +
+                        "    \"aws111.config\",\n" +
+                        "    \"aws111.logs\",\n" +
+                        "    \"aws111.guardduty\",\n" +
+                        "    \"aws111.route53\",\n" +
+                        "    \"aws111.route53domains\",\n" +
+                        "    \"aws111.route53resolver\",\n" +
+                        "    \"aws111.kinesis\",\n" +
+                        "    \"aws111.firehose\",\n" +
+                        "    \"aws111.fsx\"\n" +
+                        "  ],\n" +
+                        "  \"detail\":\n" +
+                        "  {\n" +
+                        "    \"eventSource\":\n" +
+                        "    [\n" +
+                        "      \"sqs.amazonaws111.com\",\n" +
+                        "      \"kms.amazonaws111.com\",\n" +
+                        "      \"sns.amazonaws111.com\",\n" +
+                        "      \"config.amazonaws111.com\",\n" +
+                        "      \"logs.amazonaws111.com\",\n" +
+                        "      \"guardduty.amazonaws111.com\",\n" +
+                        "      \"route53.amazonaws111.com\",\n" +
+                        "      \"route53domains.amazonaws111.com\",\n" +
+                        "      \"route53resolver.amazonaws111.com\",\n" +
+                        "      \"kinesis.amazonaws111.com\",\n" +
+                        "      \"firehose.amazonaws111.com\",\n" +
+                        "      \"fsx.amazonaws111.com\"\n" +
+                        "    ],\n" +
+                        "    \"eventName\":\n" +
+                        "    [\n" +
+                        "      \"Create111Queue\",\n" +
+                        "      \"Set111QueueAttributes\",\n" +
+                        "      \"Create111Key\",\n" +
+                        "      \"Disable111KeyRotation\",\n" +
+                        "      \"Delete111Topic\",\n" +
+                        "      \"Unsubscribe111\",\n" +
+                        "      \"Put111Evaluations\",\n" +
+                        "      \"Delete111SubscriptionFilter\",\n" +
+                        "      \"Create111LogGroup\",\n" +
+                        "      \"Delete111LogGroup\",\n" +
+                        "      \"Delete111Detector\",\n" +
+                        "      \"Create111Detector\",\n" +
+                        "      \"Update111Detector\",\n" +
+                        "      \"Create111PublishingDestination\",\n" +
+                        "      \"Delete111PublishingDestination\",\n" +
+                        "      \"Update111PublishingDestination\",\n" +
+                        "      \"Register111Domain\",\n" +
+                        "      \"Update111TagsForDomain\",\n" +
+                        "      \"Delete111TagsForDomain\",\n" +
+                        "      \"DisassociateResolverQueryLogConfig\",\n" +
+                        "      \"Create111ResolverQueryLogConfig\",\n" +
+                        "      \"AssociateResolverQueryLogConfig\",\n" +
+                        "      \"Delete111ResolverQueryLogConfig\",\n" +
+                        "      \"Create111Stream\",\n" +
+                        "      \"Add111TagsToStream\",\n" +
+                        "      \"Remove111TagsFromStream\",\n" +
+                        "      \"Stop111StreamEncryption\",\n" +
+                        "      \"Update111Destination\",\n" +
+                        "      \"Delete111DeliveryStream\",\n" +
+                        "      \"Create111DeliveryStream\",\n" +
+                        "      \"Create111FileSystem\",\n" +
+                        "      \"Update111FileSystem\"\n" +
+                        "    ]\n" +
+                        "  }\n" +
+                        "}");
+        machine.addRule("rule2",
+                "{\n" +
+                        "  \"detail-type\":\n" +
+                        "  [\n" +
+                        "    \"AWS API Call via CloudTrail\",\n" +
+                        "    \"AWS Console Action via CloudTrail\"\n" +
+                        "  ],\n" +
+                        "  \"source\":\n" +
+                        "  [\n" +
+                        "    \"aws222.sqs\",\n" +
+                        "    \"aws222.kms\",\n" +
+                        "    \"aws222.sns\",\n" +
+                        "    \"aws222.config\",\n" +
+                        "    \"aws222.logs\",\n" +
+                        "    \"aws222.guardduty\",\n" +
+                        "    \"aws222.route53\",\n" +
+                        "    \"aws222.route53domains\",\n" +
+                        "    \"aws222.route53resolver\",\n" +
+                        "    \"aws222.kinesis\",\n" +
+                        "    \"aws222.firehose\",\n" +
+                        "    \"aws222.fsx\"\n" +
+                        "  ],\n" +
+                        "  \"detail\":\n" +
+                        "  {\n" +
+                        "    \"eventSource\":\n" +
+                        "    [\n" +
+                        "      \"sqs.amazonaws222.com\",\n" +
+                        "      \"kms.amazonaws222.com\",\n" +
+                        "      \"sns.amazonaws222.com\",\n" +
+                        "      \"config.amazonaws222.com\",\n" +
+                        "      \"logs.amazonaws222.com\",\n" +
+                        "      \"guardduty.amazonaws222.com\",\n" +
+                        "      \"route53.amazonaws222.com\",\n" +
+                        "      \"route53domains.amazonaws222.com\",\n" +
+                        "      \"route53resolver.amazonaws222.com\",\n" +
+                        "      \"kinesis.amazonaws222.com\",\n" +
+                        "      \"firehose.amazonaws222.com\",\n" +
+                        "      \"fsx.amazonaws222.com\"\n" +
+                        "    ],\n" +
+                        "    \"eventName\":\n" +
+                        "    [\n" +
+                        "      \"Create222Queue\",\n" +
+                        "      \"Set222QueueAttributes\",\n" +
+                        "      \"Create222Key\",\n" +
+                        "      \"Disable222KeyRotation\",\n" +
+                        "      \"Delete222Topic\",\n" +
+                        "      \"Unsubscribe222\",\n" +
+                        "      \"Put222Evaluations\",\n" +
+                        "      \"Delete222SubscriptionFilter\",\n" +
+                        "      \"Create222LogGroup\",\n" +
+                        "      \"Delete222LogGroup\",\n" +
+                        "      \"Delete222Detector\",\n" +
+                        "      \"Create222Detector\",\n" +
+                        "      \"Update222Detector\",\n" +
+                        "      \"Create222PublishingDestination\",\n" +
+                        "      \"Delete222PublishingDestination\",\n" +
+                        "      \"Update222PublishingDestination\",\n" +
+                        "      \"Register222Domain\",\n" +
+                        "      \"Update222TagsForDomain\",\n" +
+                        "      \"Delete222TagsForDomain\",\n" +
+                        "      \"DisassociateResolverQueryLogConfig\",\n" +
+                        "      \"Create222ResolverQueryLogConfig\",\n" +
+                        "      \"AssociateResolverQueryLogConfig\",\n" +
+                        "      \"Delete222ResolverQueryLogConfig\",\n" +
+                        "      \"Create222Stream\",\n" +
+                        "      \"Add222TagsToStream\",\n" +
+                        "      \"Remove222TagsFromStream\",\n" +
+                        "      \"Stop222StreamEncryption\",\n" +
+                        "      \"Update222Destination\",\n" +
+                        "      \"Delete222DeliveryStream\",\n" +
+                        "      \"Create222DeliveryStream\",\n" +
+                        "      \"Create222FileSystem\",\n" +
+                        "      \"Update222FileSystem\"\n" +
+                        "    ]\n" +
+                        "  }\n" +
+                        "}");
+        machine.addRule("rule3",
+                "{\n" +
+                        "  \"detail-type\":\n" +
+                        "  [\n" +
+                        "    \"AWS API Call via CloudTrail\",\n" +
+                        "    \"AWS Console Action via CloudTrail\"\n" +
+                        "  ],\n" +
+                        "  \"source\":\n" +
+                        "  [\n" +
+                        "    \"aws333.sqs\",\n" +
+                        "    \"aws333.kms\",\n" +
+                        "    \"aws333.sns\",\n" +
+                        "    \"aws333.config\",\n" +
+                        "    \"aws333.logs\",\n" +
+                        "    \"aws333.guardduty\",\n" +
+                        "    \"aws333.route53\",\n" +
+                        "    \"aws333.route53domains\",\n" +
+                        "    \"aws333.route53resolver\",\n" +
+                        "    \"aws333.kinesis\",\n" +
+                        "    \"aws333.firehose\",\n" +
+                        "    \"aws333.fsx\"\n" +
+                        "  ],\n" +
+                        "  \"detail\":\n" +
+                        "  {\n" +
+                        "    \"eventSource\":\n" +
+                        "    [\n" +
+                        "      \"sqs.amazonaws333.com\",\n" +
+                        "      \"kms.amazonaws333.com\",\n" +
+                        "      \"sns.amazonaws333.com\",\n" +
+                        "      \"config.amazonaws333.com\",\n" +
+                        "      \"logs.amazonaws333.com\",\n" +
+                        "      \"guardduty.amazonaws333.com\",\n" +
+                        "      \"route53.amazonaws333.com\",\n" +
+                        "      \"route53domains.amazonaws333.com\",\n" +
+                        "      \"route53resolver.amazonaws333.com\",\n" +
+                        "      \"kinesis.amazonaws333.com\",\n" +
+                        "      \"firehose.amazonaws333.com\",\n" +
+                        "      \"fsx.amazonaws333.com\"\n" +
+                        "    ],\n" +
+                        "    \"eventName\":\n" +
+                        "    [\n" +
+                        "      \"Create333Queue\",\n" +
+                        "      \"Set333QueueAttributes\",\n" +
+                        "      \"Create333Key\",\n" +
+                        "      \"Disable333KeyRotation\",\n" +
+                        "      \"Delete333Topic\",\n" +
+                        "      \"Unsubscribe333\",\n" +
+                        "      \"Put333Evaluations\",\n" +
+                        "      \"Delete333SubscriptionFilter\",\n" +
+                        "      \"Create333LogGroup\",\n" +
+                        "      \"Delete333LogGroup\",\n" +
+                        "      \"Delete333Detector\",\n" +
+                        "      \"Create333Detector\",\n" +
+                        "      \"Update333Detector\",\n" +
+                        "      \"Create333PublishingDestination\",\n" +
+                        "      \"Delete333PublishingDestination\",\n" +
+                        "      \"Update333PublishingDestination\",\n" +
+                        "      \"Register333Domain\",\n" +
+                        "      \"Update333TagsForDomain\",\n" +
+                        "      \"Delete333TagsForDomain\",\n" +
+                        "      \"DisassociateResolverQueryLogConfig\",\n" +
+                        "      \"Create333ResolverQueryLogConfig\",\n" +
+                        "      \"AssociateResolverQueryLogConfig\",\n" +
+                        "      \"Delete333ResolverQueryLogConfig\",\n" +
+                        "      \"Create333Stream\",\n" +
+                        "      \"Add333TagsToStream\",\n" +
+                        "      \"Remove333TagsFromStream\",\n" +
+                        "      \"Stop333StreamEncryption\",\n" +
+                        "      \"Update333Destination\",\n" +
+                        "      \"Delete333DeliveryStream\",\n" +
+                        "      \"Create333DeliveryStream\",\n" +
+                        "      \"Create333FileSystem\",\n" +
+                        "      \"Update333FileSystem\"\n" +
+                        "    ]\n" +
+                        "  }\n" +
+                        "}");
+        assertEquals(1037, machine.approximateObjectCount(150000));
+
+        machine = new Machine();
+        machine.addRule("rule1",
+                "{\n" +
+                        "  \"$or\":\n" +
+                        "  [\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws111.sqs\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Create111Queue\",\n" +
+                        "          \"Set111QueueAttributes\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws111.kms\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Create111Key\",\n" +
+                        "          \"Disable111KeyRotation\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws111.sns\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Delete111Topic\",\n" +
+                        "          \"Unsubscribe\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws111.config\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"PutEvaluations\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws111.logs\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Delete111SubscriptionFilter\",\n" +
+                        "          \"Create111LogGroup\",\n" +
+                        "          \"Delete111LogGroup\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws111.guardduty\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Delete111Detector\",\n" +
+                        "          \"Create111Detector\",\n" +
+                        "          \"Update111Detector\",\n" +
+                        "          \"Create111PublishingDestination\",\n" +
+                        "          \"Delete111PublishingDestination\",\n" +
+                        "          \"Update111PublishingDestination\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws111.route53\",\n" +
+                        "        \"aws111.route53domains\",\n" +
+                        "        \"aws111.route53resolver\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Register111Domain\",\n" +
+                        "          \"Update111TagsForDomain\",\n" +
+                        "          \"Delete111TagsForDomain\",\n" +
+                        "          \"DisassociateResolverQueryLogConfig\",\n" +
+                        "          \"Create111ResolverQueryLogConfig\",\n" +
+                        "          \"AssociateResolverQueryLogConfig\",\n" +
+                        "          \"Delete111ResolverQueryLogConfig\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"kinesis.amazonaws111.com\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Create111Stream\",\n" +
+                        "          \"Add111TagsToStream\",\n" +
+                        "          \"Remove111TagsFromStream\",\n" +
+                        "          \"Stop111StreamEncryption\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws111.firehose\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Update111Destination\",\n" +
+                        "          \"Delete111DeliveryStream\",\n" +
+                        "          \"Create111DeliveryStream\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws111.fsx\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Create111FileSystem\",\n" +
+                        "          \"Update111FileSystem\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    }\n" +
+                        "  ]\n" +
+                        "}");
+        machine.addRule("rule2",
+                "{\n" +
+                        "  \"$or\":\n" +
+                        "  [\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws222.sqs\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Create222Queue\",\n" +
+                        "          \"Set222QueueAttributes\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws222.kms\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Create222Key\",\n" +
+                        "          \"Disable222KeyRotation\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws222.sns\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Delete222Topic\",\n" +
+                        "          \"Unsubscribe\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws222.config\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"PutEvaluations\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws222.logs\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Delete222SubscriptionFilter\",\n" +
+                        "          \"Create222LogGroup\",\n" +
+                        "          \"Delete222LogGroup\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws222.guardduty\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Delete222Detector\",\n" +
+                        "          \"Create222Detector\",\n" +
+                        "          \"Update222Detector\",\n" +
+                        "          \"Create222PublishingDestination\",\n" +
+                        "          \"Delete222PublishingDestination\",\n" +
+                        "          \"Update222PublishingDestination\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws222.route53\",\n" +
+                        "        \"aws222.route53domains\",\n" +
+                        "        \"aws222.route53resolver\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Register222Domain\",\n" +
+                        "          \"Update222TagsForDomain\",\n" +
+                        "          \"Delete222TagsForDomain\",\n" +
+                        "          \"DisassociateResolverQueryLogConfig\",\n" +
+                        "          \"Create222ResolverQueryLogConfig\",\n" +
+                        "          \"AssociateResolverQueryLogConfig\",\n" +
+                        "          \"Delete222ResolverQueryLogConfig\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"kinesis.amazonaws222.com\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Create222Stream\",\n" +
+                        "          \"Add222TagsToStream\",\n" +
+                        "          \"Remove222TagsFromStream\",\n" +
+                        "          \"Stop222StreamEncryption\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws222.firehose\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Update222Destination\",\n" +
+                        "          \"Delete222DeliveryStream\",\n" +
+                        "          \"Create222DeliveryStream\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws222.fsx\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Create222FileSystem\",\n" +
+                        "          \"Update222FileSystem\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    }\n" +
+                        "  ]\n" +
+                        "}");
+        machine.addRule("rule3",
+                "{\n" +
+                        "  \"$or\":\n" +
+                        "  [\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws333.sqs\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Create333Queue\",\n" +
+                        "          \"Set333QueueAttributes\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws333.kms\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Create333Key\",\n" +
+                        "          \"Disable333KeyRotation\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws333.sns\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Delete333Topic\",\n" +
+                        "          \"Unsubscribe\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws333.config\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"PutEvaluations\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws333.logs\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Delete333SubscriptionFilter\",\n" +
+                        "          \"Create333LogGroup\",\n" +
+                        "          \"Delete333LogGroup\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws333.guardduty\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Delete333Detector\",\n" +
+                        "          \"Create333Detector\",\n" +
+                        "          \"Update333Detector\",\n" +
+                        "          \"Create333PublishingDestination\",\n" +
+                        "          \"Delete333PublishingDestination\",\n" +
+                        "          \"Update333PublishingDestination\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws333.route53\",\n" +
+                        "        \"aws333.route53domains\",\n" +
+                        "        \"aws333.route53resolver\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Register333Domain\",\n" +
+                        "          \"Update333TagsForDomain\",\n" +
+                        "          \"Delete333TagsForDomain\",\n" +
+                        "          \"DisassociateResolverQueryLogConfig\",\n" +
+                        "          \"Create333ResolverQueryLogConfig\",\n" +
+                        "          \"AssociateResolverQueryLogConfig\",\n" +
+                        "          \"Delete333ResolverQueryLogConfig\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"kinesis.amazonaws333.com\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Create333Stream\",\n" +
+                        "          \"Add333TagsToStream\",\n" +
+                        "          \"Remove333TagsFromStream\",\n" +
+                        "          \"Stop333StreamEncryption\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws333.firehose\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Update333Destination\",\n" +
+                        "          \"Delete333DeliveryStream\",\n" +
+                        "          \"Create333DeliveryStream\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    },\n" +
+                        "    {\n" +
+                        "      \"source\":\n" +
+                        "      [\n" +
+                        "        \"aws333.fsx\"\n" +
+                        "      ],\n" +
+                        "      \"detail\":\n" +
+                        "      {\n" +
+                        "        \"eventName\":\n" +
+                        "        [\n" +
+                        "          \"Create333FileSystem\",\n" +
+                        "          \"Update333FileSystem\"\n" +
+                        "        ]\n" +
+                        "      }\n" +
+                        "    }\n" +
+                        "  ]\n" +
+                        "}");
+        assertEquals(703, machine.approximateObjectCount(10000));
+    }
 }
