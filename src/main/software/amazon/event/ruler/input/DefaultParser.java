@@ -2,6 +2,7 @@ package software.amazon.event.ruler.input;
 
 import software.amazon.event.ruler.MatchType;
 
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 
 import static software.amazon.event.ruler.MatchType.ANYTHING_BUT_SUFFIX;
@@ -65,6 +66,24 @@ public class DefaultParser implements MatchTypeParser, ByteParser {
         }
 
         final byte[] utf8bytes = value.getBytes(StandardCharsets.UTF_8);
+        final InputCharacter[] result = new InputCharacter[utf8bytes.length];
+        for (int i = 0; i < utf8bytes.length; i++) {
+            byte utf8byte = utf8bytes[i];
+            result[i] = new InputByte(utf8byte);
+        }
+        return result;
+    }
+
+    public InputCharacter[] parse(final MatchType type, final Long value) {
+//        if (type == WILDCARD) {
+//            return wildcardParser.parse(value);
+//        } else if (type == EQUALS_IGNORE_CASE || type == ANYTHING_BUT_IGNORE_CASE) {
+//            return equalsIgnoreCaseParser.parse(value);
+//        } else if (type == SUFFIX || type == ANYTHING_BUT_SUFFIX) {
+//            return suffixParser.parse(value);
+//        }
+
+        final byte[] utf8bytes = BigInteger.valueOf(value).toByteArray();
         final InputCharacter[] result = new InputCharacter[utf8bytes.length];
         for (int i = 0; i < utf8bytes.length; i++) {
             byte utf8byte = utf8bytes[i];

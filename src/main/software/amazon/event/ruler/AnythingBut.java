@@ -13,21 +13,28 @@ public class AnythingBut extends Patterns {
 
     private final Set<String> values;
 
+    private final Set<Long> numbers;
+
     // isNumeric: true means all the value in the Set are numbers; false means all the value are string.
     private final boolean isNumeric;
 
-    AnythingBut(final Set<String> values, final boolean isNumeric) {
+    AnythingBut(final Set<String> values, final Set<Long> numbers, final boolean isNumeric) {
         super(MatchType.ANYTHING_BUT);
         this.values = Collections.unmodifiableSet(values);
-        this.isNumeric = isNumeric;
+        this.numbers = Collections.unmodifiableSet(numbers);
+        this.isNumeric = isNumeric; // FIXME remove
     }
 
-    static AnythingBut anythingButMatch(final Set<String> values, final boolean isNumber) {
-        return new AnythingBut(values, isNumber);
+    static AnythingBut anythingButMatch(final Set<String> values, final Set<Long> numbers, final boolean isNumber) {
+        return new AnythingBut(values, numbers, isNumber);
     }
 
-    public Set<String> getValues() {
+    public Set<String> getStrings() {
         return values;
+    }
+
+    public Set<Long> getNumbers() {
+        return numbers;
     }
 
     boolean isNumeric() {
@@ -48,19 +55,21 @@ public class AnythingBut extends Patterns {
 
         AnythingBut that = (AnythingBut) o;
 
-        return isNumeric == that.isNumeric && (Objects.equals(values, that.values));
+        return isNumeric == that.isNumeric && (Objects.equals(values, that.values))
+                && (Objects.equals(numbers, that.numbers));
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + (values != null ? values.hashCode() : 0);
+        result = 31 * result + (numbers != null ? numbers.hashCode() : 0);
         result = 31 * result + (isNumeric ? 1 : 0);
         return result;
     }
 
     @Override
     public String toString() {
-        return "AB:"+ values + ", isNum=" + isNumeric + " (" + super.toString() + ")";
+        return "AB:"+ values + ", nums: " + numbers + ", isNum=" + isNumeric + " (" + super.toString() + ")";
     }
 }

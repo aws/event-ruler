@@ -50,15 +50,15 @@ public class Patterns implements Cloneable  {
     }
 
     public static AnythingBut anythingButMatch(final String anythingBut) {
-        return new AnythingBut(Collections.singleton(anythingBut), false);
+        return new AnythingBut(Collections.singleton(anythingBut), Collections.emptySet(), false);
     }
 
     public static AnythingBut anythingButMatch(final double anythingBut) {
-        return new AnythingBut(Collections.singleton(ComparableNumber.generate(anythingBut)), true);
+        return new AnythingBut(Collections.emptySet(), Collections.singleton(ComparableNumber.generateNumber(anythingBut)), true);
     }
 
     public static AnythingBut anythingButMatch(final Set<String> anythingButs) {
-        return new AnythingBut(anythingButs, false);
+        return new AnythingBut(anythingButs, Collections.emptySet(), false);
     }
 
     public static AnythingButEqualsIgnoreCase anythingButIgnoreCaseMatch(final String anythingBut) {
@@ -70,11 +70,11 @@ public class Patterns implements Cloneable  {
     }
 
     public static AnythingBut anythingButNumberMatch(final Set<Double> anythingButs) {
-        Set<String> normalizedNumbers = new HashSet<>(anythingButs.size());
+        Set<Long> normalizedNumbers = new HashSet<>(anythingButs.size());
         for (Double d : anythingButs) {
-            normalizedNumbers.add(ComparableNumber.generate(d));
+            normalizedNumbers.add(ComparableNumber.generateNumber(d));
         }
-        return new AnythingBut(normalizedNumbers, true);
+        return new AnythingBut(Collections.emptySet(), normalizedNumbers, true);
     }
 
     public static ValuePatterns anythingButPrefix(final String prefix) {

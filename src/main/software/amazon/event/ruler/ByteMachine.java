@@ -164,8 +164,10 @@ class ByteMachine {
     }
 
     private void deleteAnythingButPattern(AnythingBut pattern) {
-        pattern.getValues().forEach(value ->
+        pattern.getStrings().forEach(value ->
             deleteMatchStep(startState, 0, pattern, getParser().parse(pattern.type(), value)));
+        pattern.getNumbers().forEach(value ->
+                deleteMatchStep(startState, 0, pattern, getParser().parse(pattern.type(), value)));
     }
 
     private void deleteAnythingButEqualsIgnoreCasePattern(AnythingButEqualsIgnoreCase pattern) {
@@ -698,7 +700,17 @@ class ByteMachine {
 
         NameState nameStateToBeReturned = nameState;
         NameState nameStateChecker = null;
-        for(String value : pattern.getValues()) {
+        for(String value : pattern.getStrings()) {
+            nameStateToBeReturned = addMatchValue(pattern, value, nameStateToBeReturned);
+            if (nameStateChecker == null) {
+                nameStateChecker = nameStateToBeReturned;
+            }
+            // all the values in the list must point to the same NameState because they are sharing the same pattern
+            // object.
+            assert nameStateChecker == null || nameStateChecker == nameStateToBeReturned : " nameStateChecker == nameStateToBeReturned";
+        }
+
+        for(Long value : pattern.getNumbers()) {
             nameStateToBeReturned = addMatchValue(pattern, value, nameStateToBeReturned);
             if (nameStateChecker == null) {
                 nameStateChecker = nameStateToBeReturned;
@@ -729,6 +741,36 @@ class ByteMachine {
     }
 
     private NameState addMatchValue(Patterns pattern, String value, NameState nameStateToBeReturned) {
+
+        final InputCharacter[] characters = getParser().parse(pattern.type(), value);
+        ByteState byteState = startState;
+        ByteState prevByteState = null;
+        int i = 0;
+        for (; i < characters.length - 1; i++) {
+            ByteTransition trans = getTransition(byteState, characters[i]);
+            if (trans.isEmpty()) {
+                break;
+            }
+            ByteState stateToReuse = null;
+            for (SingleByteTransition single : trans.expand()) {
+                ByteState nextByteState = single.getNextByteState();
+                if (canReuseNextByteState(byteState, nextByteState, characters, i)) {
+                    stateToReuse = nextByteState;
+                    break;
+                }
+            }
+
+            if (stateToReuse == null) {
+                break;
+            }
+            prevByteState = byteState;
+            byteState = stateToReuse;
+        }
+        // we found our way through the machine with all characters except the last having matches or shortcut.
+        return addEndOfMatch(byteState, prevByteState, characters, i, pattern, nameStateToBeReturned);
+    }
+
+    private NameState addMatchValue(Patterns pattern, Long value, NameState nameStateToBeReturned) {
 
         final InputCharacter[] characters = getParser().parse(pattern.type(), value);
         ByteState byteState = startState;
@@ -889,16 +931,31 @@ class ByteMachine {
 
     private NameState findAnythingButPattern(AnythingBut pattern) {
 
-        Set<NameState> nextNameStates = new HashSet<>(pattern.getValues().size());
-        for (String value : pattern.getValues()) {
-            NameState matchPattern = findMatchPattern(getParser().parse(pattern.type(), value), pattern);
-            if (matchPattern != null) {
-                nextNameStates.add(matchPattern);
+        {
+            Set<NameState> nextNameStates = new HashSet<>(pattern.getStrings().size());
+            for (String value : pattern.getStrings()) {
+                NameState matchPattern = findMatchPattern(getParser().parse(pattern.type(), value), pattern);
+                if (matchPattern != null) {
+                    nextNameStates.add(matchPattern);
+                }
+            }
+            if (!nextNameStates.isEmpty()) {
+                assert nextNameStates.size() == 1 : "nextNameStates.size() == 1";
+                return nextNameStates.iterator().next();
             }
         }
-        if (!nextNameStates.isEmpty()) {
-            assert nextNameStates.size() == 1 : "nextNameStates.size() == 1";
-            return nextNameStates.iterator().next();
+        {
+            Set<NameState> nextNameStates = new HashSet<>(pattern.getNumbers().size());
+            for (Long value : pattern.getNumbers()) {
+                NameState matchPattern = findMatchPattern(getParser().parse(pattern.type(), value), pattern);
+                if (matchPattern != null) {
+                    nextNameStates.add(matchPattern);
+                }
+            }
+            if (!nextNameStates.isEmpty()) {
+                assert nextNameStates.size() == 1 : "nextNameStates.size() == 1";
+                return nextNameStates.iterator().next();
+            }
         }
         return null;
     }

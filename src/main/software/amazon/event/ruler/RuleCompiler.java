@@ -407,6 +407,7 @@ public final class RuleCompiler {
     private static Patterns processAnythingButListMatchExpression(JsonParser parser) throws JsonParseException {
         JsonToken token;
         Set<String> values = new HashSet<>();
+        Set<Long> numbers = new HashSet<>();
         boolean hasNumber = false;
         boolean hasString = false;
         try {
@@ -418,7 +419,7 @@ public final class RuleCompiler {
                         break;
                     case VALUE_NUMBER_FLOAT:
                     case VALUE_NUMBER_INT:
-                        values.add(ComparableNumber.generate(parser.getDoubleValue()));
+                        numbers.add(ComparableNumber.generateNumber(parser.getDoubleValue()));
                         hasNumber = true;
                         break;
                     default:
@@ -433,7 +434,7 @@ public final class RuleCompiler {
             barf(parser, "Inside anything but list, either all values are number or string, " +
                     "mixed type is not supported");
         }
-        return AnythingBut.anythingButMatch(values, hasNumber);
+        return AnythingBut.anythingButMatch(values, numbers, hasNumber);
     }
 
     private static Patterns processAnythingButEqualsIgnoreCaseListMatchExpression(JsonParser parser) throws JsonParseException {
@@ -461,6 +462,7 @@ public final class RuleCompiler {
     private static Patterns processAnythingButMatchExpression(JsonParser parser,
                                                               JsonToken anythingButExpressionToken) throws IOException {
         Set<String> values = new HashSet<>();
+        Set<Long> numbers = new HashSet<>();
         boolean hasNumber = false;
         switch (anythingButExpressionToken) {
             case VALUE_STRING:
@@ -468,13 +470,13 @@ public final class RuleCompiler {
                 break;
             case VALUE_NUMBER_FLOAT:
             case VALUE_NUMBER_INT:
-                values.add(ComparableNumber.generate(parser.getDoubleValue()));
+                numbers.add(ComparableNumber.generateNumber(parser.getDoubleValue()));
                 hasNumber = true;
                 break;
             default:
                 barf(parser, "Inside anything-but list, start|null|boolean is not supported.");
         }
-        return AnythingBut.anythingButMatch(values, hasNumber);
+        return AnythingBut.anythingButMatch(values, numbers, hasNumber);
     }
 
     private static Patterns processAnythingButEqualsIgnoreCaseMatchExpression(JsonParser parser,

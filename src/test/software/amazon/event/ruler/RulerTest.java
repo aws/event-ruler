@@ -217,7 +217,7 @@ public class RulerTest {
     }
 
     @Test
-    public void WHEN_CompareIsPassedComparableNumbers_THEN_ItOrdersThemCorrectly() {
+    public void WHEN_CompareIsPassedComparableNumberStrings_THEN_ItOrdersThemCorrectly() {
         double[] data = {
                 -Constants.FIVE_BILLION, -999999999.99999, -999999999.99, -10000, -0.000002,
                 0, 0.000001, 3.8, 3.9, 11, 12, 2.5e4, 999999999.999998, 999999999.999999, Constants.FIVE_BILLION
@@ -233,6 +233,28 @@ public class RulerTest {
                     assertEquals(0, Ruler.compare(s0, s1));
                 } else {
                     assertTrue(Ruler.compare(s0, s1) > 0);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void WHEN_CompareIsPassedComparableNumbers_THEN_ItOrdersThemCorrectly() {
+        double[] data = {
+                -Constants.FIVE_BILLION, -999999999.99999, -999999999.99, -10000, -0.000002,
+                0, 0.000001, 3.8, 3.9, 11, 12, 2.5e4, 999999999.999998, 999999999.999999, Constants.FIVE_BILLION
+        };
+        for (double d1 : data) {
+            for (double d2 : data) {
+
+                Long s0 = ComparableNumber.generateNumber(d1);
+                Long s1 = ComparableNumber.generateNumber(d2);
+                if (d1 < d2) {
+                    assertTrue(Long.compare(s0, s1) < 0);
+                } else if (d1 == d2) {
+                    assertEquals(0, Long.compare(s0, s1));
+                } else {
+                    assertTrue(Long.compare(s0, s1) > 0);
                 }
             }
         }

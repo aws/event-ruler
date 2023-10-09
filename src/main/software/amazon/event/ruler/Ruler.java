@@ -114,10 +114,10 @@ public class Ruler {
                 assert (pattern instanceof AnythingBut);
                 AnythingBut anythingButPattern = (AnythingBut) pattern;
                 if (val.isTextual()) {
-                    return anythingButPattern.getValues().stream().noneMatch(v -> v.equals('"' + val.asText() + '"'));
+                    return anythingButPattern.getStrings().stream().noneMatch(v -> v.equals('"' + val.asText() + '"'));
                 } else if (val.isNumber()) {
-                    return anythingButPattern.getValues().stream()
-                            .noneMatch(v -> v.equals(ComparableNumber.generate(val.asDouble())));
+                    return anythingButPattern.getNumbers().stream()
+                            .noneMatch(v -> v.equals(ComparableNumber.generateNumber(val.asDouble())));
                 }
                 return false;
             case ANYTHING_BUT_IGNORE_CASE:

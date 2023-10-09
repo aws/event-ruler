@@ -46,6 +46,22 @@ public class ComparableNumberTest {
     }
 
     @Test
+    public void WHEN_WildlyVaryingNumberFormsAreProvided_THEN_TheGeneratedNumbersAreSortable() {
+        double[] data = {
+                -Constants.FIVE_BILLION, -4_999_999_999.99999, -4_999_999_999.99998, -4_999_999_999.99997,
+                -999999999.99999, -999999999.99, -10000, -122.413496524705309, -0.000002,
+                0, 0.000001, 3.8, 3.9, 11, 12, 122.415028278886751, 2.5e4, 999999999.999998, 999999999.999999,
+                4_999_999_999.99997, 4_999_999_999.99998, 4_999_999_999.99999, Constants.FIVE_BILLION
+        };
+        for (int i = 1; i < data.length; i++) { // -122.415028278886751
+            Long s0 = ComparableNumber.generateNumber(data[i-1]);
+            Long s1 = ComparableNumber.generateNumber(data[i]);
+            System.out.println("i=" + i + " s0:"+s0+" s1:"+s1 );
+            assertTrue(s0.compareTo(s1) < 0);
+        }
+    }
+
+    @Test
     public void tinyNumberTest() throws Exception {
         // ComparableNumber for 1.0e-6 is 1000000000000001
         // ComparableNumber for 4.0e-6 is 1000000000000004

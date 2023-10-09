@@ -52,6 +52,14 @@ class ComparableNumber {
         return toHexStringSkippingFirstByte((long) (TEN_E_SIX * (Constants.FIVE_BILLION + f)));
     }
 
+    static Long generateNumber(final double f) {
+        if (f < -Constants.FIVE_BILLION || f > Constants.FIVE_BILLION) {
+            throw new IllegalArgumentException("Value must be between " + -Constants.FIVE_BILLION +
+                    " and " + Constants.FIVE_BILLION + ", inclusive");
+        }
+        return (long) (TEN_E_SIX * (Constants.FIVE_BILLION + f));
+    }
+
     /**
      * converts a single byte to its two hexadecimal character representation
      * @param value the byte we want to convert to hex string
