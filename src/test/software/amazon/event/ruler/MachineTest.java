@@ -1,5 +1,7 @@
 package software.amazon.event.ruler;
 
+import org.junit.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringReader;
@@ -17,7 +19,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import org.junit.Test;
+
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -2427,715 +2429,196 @@ public class MachineTest {
         Machine machine = new Machine();
         machine.addRule("rule1",
                 "{\n" +
-                        "  \"detail-type\":\n" +
-                        "  [\n" +
-                        "    \"AWS API Call via CloudTrail\",\n" +
-                        "    \"AWS Console Action via CloudTrail\"\n" +
-                        "  ],\n" +
-                        "  \"source\":\n" +
-                        "  [\n" +
-                        "    \"aws111.sqs\",\n" +
-                        "    \"aws111.kms\",\n" +
-                        "    \"aws111.sns\",\n" +
-                        "    \"aws111.config\",\n" +
-                        "    \"aws111.logs\",\n" +
-                        "    \"aws111.guardduty\",\n" +
-                        "    \"aws111.route53\",\n" +
-                        "    \"aws111.route53domains\",\n" +
-                        "    \"aws111.route53resolver\",\n" +
-                        "    \"aws111.kinesis\",\n" +
-                        "    \"aws111.firehose\",\n" +
-                        "    \"aws111.fsx\"\n" +
-                        "  ],\n" +
-                        "  \"detail\":\n" +
-                        "  {\n" +
-                        "    \"eventSource\":\n" +
-                        "    [\n" +
-                        "      \"sqs.amazonaws111.com\",\n" +
-                        "      \"kms.amazonaws111.com\",\n" +
-                        "      \"sns.amazonaws111.com\",\n" +
-                        "      \"config.amazonaws111.com\",\n" +
-                        "      \"logs.amazonaws111.com\",\n" +
-                        "      \"guardduty.amazonaws111.com\",\n" +
-                        "      \"route53.amazonaws111.com\",\n" +
-                        "      \"route53domains.amazonaws111.com\",\n" +
-                        "      \"route53resolver.amazonaws111.com\",\n" +
-                        "      \"kinesis.amazonaws111.com\",\n" +
-                        "      \"firehose.amazonaws111.com\",\n" +
-                        "      \"fsx.amazonaws111.com\"\n" +
-                        "    ],\n" +
-                        "    \"eventName\":\n" +
-                        "    [\n" +
-                        "      \"Create111Queue\",\n" +
-                        "      \"Set111QueueAttributes\",\n" +
-                        "      \"Create111Key\",\n" +
-                        "      \"Disable111KeyRotation\",\n" +
-                        "      \"Delete111Topic\",\n" +
-                        "      \"Unsubscribe111\",\n" +
-                        "      \"Put111Evaluations\",\n" +
-                        "      \"Delete111SubscriptionFilter\",\n" +
-                        "      \"Create111LogGroup\",\n" +
-                        "      \"Delete111LogGroup\",\n" +
-                        "      \"Delete111Detector\",\n" +
-                        "      \"Create111Detector\",\n" +
-                        "      \"Update111Detector\",\n" +
-                        "      \"Create111PublishingDestination\",\n" +
-                        "      \"Delete111PublishingDestination\",\n" +
-                        "      \"Update111PublishingDestination\",\n" +
-                        "      \"Register111Domain\",\n" +
-                        "      \"Update111TagsForDomain\",\n" +
-                        "      \"Delete111TagsForDomain\",\n" +
-                        "      \"DisassociateResolverQueryLogConfig\",\n" +
-                        "      \"Create111ResolverQueryLogConfig\",\n" +
-                        "      \"AssociateResolverQueryLogConfig\",\n" +
-                        "      \"Delete111ResolverQueryLogConfig\",\n" +
-                        "      \"Create111Stream\",\n" +
-                        "      \"Add111TagsToStream\",\n" +
-                        "      \"Remove111TagsFromStream\",\n" +
-                        "      \"Stop111StreamEncryption\",\n" +
-                        "      \"Update111Destination\",\n" +
-                        "      \"Delete111DeliveryStream\",\n" +
-                        "      \"Create111DeliveryStream\",\n" +
-                        "      \"Create111FileSystem\",\n" +
-                        "      \"Update111FileSystem\"\n" +
-                        "    ]\n" +
+                        "  \"detail-type\" : [ \"jV4 Tij ny6H K9Z 6pALqePKFR\", \"jV4 RbfEU04 dSyRZH K9Z 6pALqePKFR\" ],\n" +
+                        "  \"source\" : [ \"e9C1c0.qRk\", \"e9C1c0.3FD\", \"e9C1c0.auf\", \"e9C1c0.L6kj0T\", \"e9C1c0.sTEi\", \"e9C1c0.ATnVwRJH4\", \"e9C1c0.gOTbM9V\", \"e9C1c0.6Foy06YCE03DGH\", \"e9C1c0.UD7QBnjzEQNRODz\", \"e9C1c0.DVTtb8c\", \"e9C1c0.hmXIsf6p\", \"e9C1c0.ANK\" ],\n" +
+                        "  \"detail\" : {\n" +
+                        "    \"eventSource\" : [ \"qRk.BeMfKctgml0y.s1x\", \"3FD.BeMfKctgml0y.s1x\", \"auf.BeMfKctgml0y.s1x\", \"L6kj0T.BeMfKctgml0y.s1x\", \"sTEi.BeMfKctgml0y.s1x\", \"ATnVwRJH4.BeMfKctgml0y.s1x\", \"gOTbM9V.BeMfKctgml0y.s1x\", \"6Foy06YCE03DGH.BeMfKctgml0y.s1x\", \"UD7QBnjzEQNRODz.BeMfKctgml0y.s1x\", \"DVTtb8c.BeMfKctgml0y.s1x\", \"hmXIsf6p.BeMfKctgml0y.s1x\", \"ANK.BeMfKctgml0y.s1x\" ],\n" +
+                        "    \"eventName\" : [ \"QK66sO0I4REUYb\", \"62HIWfGqrGTXpFotMy9xA\", \"7ucBUowmZxyA\", \"uo3piGS6CMHlcHDIzyNSr\", \"KCflDTVvp6krjt\", \"a9QrxONB6ZuU6m\", \"n8ASzCtTR8gjtkUtb\", \"bGZ94i5383n7hOOFF3XEkG3aUUY\", \"Dcw7pR9ikAMdOsAO6\", \"ccIkzb5umk6ffsWxT\", \"CrigfFIQshKoTi27S\", \"Tzi0k780pMtBV5FJV\", \"YS5tzAqzICdIajJcv\", \"ziLYvUKGSf1aqRZxU3ySvIYJ1HAQeF\", \"OgDBotcyXlPBJiGkzgEvx62KgIZ5Fc\", \"4tng21yDnIL8LJhaOptRG4d0yFm6WN\", \"aKnV3yMDVj2lq2Vfb\", \"HUhCGNVADyoDmWD9aCyzZe\", \"QHoYhQ1SDFMUNST7eHp4at\", \"QqCH8sS0zyQyPCVRitbCLHD0FEStOFXEQK\", \"YAzYOUP5qAqRiXLvKi2FGHXwOzLRTqF\", \"cyE74DukyW8Jx89B0mYfuuSwAhMV2XA\", \"5TGldWFzELapQ1gAaWbmzdozlLDy2PI\", \"9iXtpCTGB97r9QA\", \"oSZp5vZ52aD9wBcwIi\", \"OuP0M08FAxvonc5Pj2WTUEi\", \"LoQpJl4NmLXpzYou8FKT32s\", \"NUIhlIsVoqwXmXJKYYIo\", \"ZO0QKPO7T3Ic0WFaZzx5LkX\", \"ryuyOUuRIxS6fhIOtepxTgj\", \"l4x1SJQRJTAl0p3aQOc\", \"5wIJAxf3zR89u5WiKwQ\" ]\n" +
                         "  }\n" +
                         "}");
         machine.addRule("rule2",
                 "{\n" +
-                        "  \"detail-type\":\n" +
-                        "  [\n" +
-                        "    \"AWS API Call via CloudTrail\",\n" +
-                        "    \"AWS Console Action via CloudTrail\"\n" +
-                        "  ],\n" +
-                        "  \"source\":\n" +
-                        "  [\n" +
-                        "    \"aws222.sqs\",\n" +
-                        "    \"aws222.kms\",\n" +
-                        "    \"aws222.sns\",\n" +
-                        "    \"aws222.config\",\n" +
-                        "    \"aws222.logs\",\n" +
-                        "    \"aws222.guardduty\",\n" +
-                        "    \"aws222.route53\",\n" +
-                        "    \"aws222.route53domains\",\n" +
-                        "    \"aws222.route53resolver\",\n" +
-                        "    \"aws222.kinesis\",\n" +
-                        "    \"aws222.firehose\",\n" +
-                        "    \"aws222.fsx\"\n" +
-                        "  ],\n" +
-                        "  \"detail\":\n" +
-                        "  {\n" +
-                        "    \"eventSource\":\n" +
-                        "    [\n" +
-                        "      \"sqs.amazonaws222.com\",\n" +
-                        "      \"kms.amazonaws222.com\",\n" +
-                        "      \"sns.amazonaws222.com\",\n" +
-                        "      \"config.amazonaws222.com\",\n" +
-                        "      \"logs.amazonaws222.com\",\n" +
-                        "      \"guardduty.amazonaws222.com\",\n" +
-                        "      \"route53.amazonaws222.com\",\n" +
-                        "      \"route53domains.amazonaws222.com\",\n" +
-                        "      \"route53resolver.amazonaws222.com\",\n" +
-                        "      \"kinesis.amazonaws222.com\",\n" +
-                        "      \"firehose.amazonaws222.com\",\n" +
-                        "      \"fsx.amazonaws222.com\"\n" +
-                        "    ],\n" +
-                        "    \"eventName\":\n" +
-                        "    [\n" +
-                        "      \"Create222Queue\",\n" +
-                        "      \"Set222QueueAttributes\",\n" +
-                        "      \"Create222Key\",\n" +
-                        "      \"Disable222KeyRotation\",\n" +
-                        "      \"Delete222Topic\",\n" +
-                        "      \"Unsubscribe222\",\n" +
-                        "      \"Put222Evaluations\",\n" +
-                        "      \"Delete222SubscriptionFilter\",\n" +
-                        "      \"Create222LogGroup\",\n" +
-                        "      \"Delete222LogGroup\",\n" +
-                        "      \"Delete222Detector\",\n" +
-                        "      \"Create222Detector\",\n" +
-                        "      \"Update222Detector\",\n" +
-                        "      \"Create222PublishingDestination\",\n" +
-                        "      \"Delete222PublishingDestination\",\n" +
-                        "      \"Update222PublishingDestination\",\n" +
-                        "      \"Register222Domain\",\n" +
-                        "      \"Update222TagsForDomain\",\n" +
-                        "      \"Delete222TagsForDomain\",\n" +
-                        "      \"DisassociateResolverQueryLogConfig\",\n" +
-                        "      \"Create222ResolverQueryLogConfig\",\n" +
-                        "      \"AssociateResolverQueryLogConfig\",\n" +
-                        "      \"Delete222ResolverQueryLogConfig\",\n" +
-                        "      \"Create222Stream\",\n" +
-                        "      \"Add222TagsToStream\",\n" +
-                        "      \"Remove222TagsFromStream\",\n" +
-                        "      \"Stop222StreamEncryption\",\n" +
-                        "      \"Update222Destination\",\n" +
-                        "      \"Delete222DeliveryStream\",\n" +
-                        "      \"Create222DeliveryStream\",\n" +
-                        "      \"Create222FileSystem\",\n" +
-                        "      \"Update222FileSystem\"\n" +
-                        "    ]\n" +
+                        "  \"detail-type\" : [ \"jV4 Tij ny6H K9Z 6pALqePKFR\", \"jV4 RbfEU04 dSyRZH K9Z 6pALqePKFR\" ],\n" +
+                        "  \"source\" : [ \"0K9kV5.qRk\", \"0K9kV5.3FD\", \"0K9kV5.auf\", \"0K9kV5.L6kj0T\", \"0K9kV5.sTEi\", \"0K9kV5.ATnVwRJH4\", \"0K9kV5.gOTbM9V\", \"0K9kV5.6Foy06YCE03DGH\", \"0K9kV5.UD7QBnjzEQNRODz\", \"0K9kV5.DVTtb8c\", \"0K9kV5.hmXIsf6p\", \"0K9kV5.ANK\" ],\n" +
+                        "  \"detail\" : {\n" +
+                        "    \"eventSource\" : [ \"qRk.A2Ptm07Ncrg2.s1x\", \"3FD.A2Ptm07Ncrg2.s1x\", \"auf.A2Ptm07Ncrg2.s1x\", \"L6kj0T.A2Ptm07Ncrg2.s1x\", \"sTEi.A2Ptm07Ncrg2.s1x\", \"ATnVwRJH4.A2Ptm07Ncrg2.s1x\", \"gOTbM9V.A2Ptm07Ncrg2.s1x\", \"6Foy06YCE03DGH.A2Ptm07Ncrg2.s1x\", \"UD7QBnjzEQNRODz.A2Ptm07Ncrg2.s1x\", \"DVTtb8c.A2Ptm07Ncrg2.s1x\", \"hmXIsf6p.A2Ptm07Ncrg2.s1x\", \"ANK.A2Ptm07Ncrg2.s1x\" ],\n" +
+                        "    \"eventName\" : [ \"eqzMRqwMielUtv\", \"bIdx6KYCn3lpviFOEFWda\", \"oM0D40U9s6En\", \"pRqp3WZkboetrmWci51p6\", \"Sc0UwrhEureEzQ\", \"b0V8ou0Lp6PrEu\", \"VIC8D82ll1FIstePk\", \"qOBBxX2kntyHDwCSGBcOd8yloVo\", \"YXPayoGQlGoFk6nkR\", \"zGMY1DfzOQvwMNmK4\", \"xLUKKGRNglfr7RzbW\", \"wbPkaR8SjIKOWOFKU\", \"U2LAfXHBUgQ9BK6OE\", \"UsXW3IKWtjUun81O5A2RvYipYYiWPf\", \"1WMPVZQFB44o4hS4qsdtv1DrHOg6le\", \"NAZAKdRXGpyYF8aVNTvsQYB4mcevPP\", \"ZKbsTPS4xbrnbP3xG\", \"w52EAqErWZ49EcaFQBN3h7\", \"OI6eIIiVmrxJOVhiq7IENU\", \"QqCH8sS0zyQyPCVRitbCLHD0FEStOFXEQK\", \"EX8qET0anoJJMvoEcGLYMZJvkzSLch4\", \"cyE74DukyW8Jx89B0mYfuuSwAhMV2XA\", \"G2hyHJGzf41Q0hDdKVZ3oeLy4ZJl32S\", \"C6kqFl3fleB3zIF\", \"4fx5kxFt2KucxvrG0s\", \"1MewNMgaPjslx4l5ISCRWhn\", \"VI7aNjEq4a1J6QYF0wQ2pV6\", \"ns4SneqAxCuWNVoepM2Q\", \"1OdzCqyk4cQtQrVOd2Zf60v\", \"0MjQEBo5tW89oNlWktVbRfH\", \"soKlU8SKloI9YCAcssn\", \"3IqglcGMMVfJAin4tBg\" ]\n" +
                         "  }\n" +
                         "}");
         machine.addRule("rule3",
                 "{\n" +
-                        "  \"detail-type\":\n" +
-                        "  [\n" +
-                        "    \"AWS API Call via CloudTrail\",\n" +
-                        "    \"AWS Console Action via CloudTrail\"\n" +
-                        "  ],\n" +
-                        "  \"source\":\n" +
-                        "  [\n" +
-                        "    \"aws333.sqs\",\n" +
-                        "    \"aws333.kms\",\n" +
-                        "    \"aws333.sns\",\n" +
-                        "    \"aws333.config\",\n" +
-                        "    \"aws333.logs\",\n" +
-                        "    \"aws333.guardduty\",\n" +
-                        "    \"aws333.route53\",\n" +
-                        "    \"aws333.route53domains\",\n" +
-                        "    \"aws333.route53resolver\",\n" +
-                        "    \"aws333.kinesis\",\n" +
-                        "    \"aws333.firehose\",\n" +
-                        "    \"aws333.fsx\"\n" +
-                        "  ],\n" +
-                        "  \"detail\":\n" +
-                        "  {\n" +
-                        "    \"eventSource\":\n" +
-                        "    [\n" +
-                        "      \"sqs.amazonaws333.com\",\n" +
-                        "      \"kms.amazonaws333.com\",\n" +
-                        "      \"sns.amazonaws333.com\",\n" +
-                        "      \"config.amazonaws333.com\",\n" +
-                        "      \"logs.amazonaws333.com\",\n" +
-                        "      \"guardduty.amazonaws333.com\",\n" +
-                        "      \"route53.amazonaws333.com\",\n" +
-                        "      \"route53domains.amazonaws333.com\",\n" +
-                        "      \"route53resolver.amazonaws333.com\",\n" +
-                        "      \"kinesis.amazonaws333.com\",\n" +
-                        "      \"firehose.amazonaws333.com\",\n" +
-                        "      \"fsx.amazonaws333.com\"\n" +
-                        "    ],\n" +
-                        "    \"eventName\":\n" +
-                        "    [\n" +
-                        "      \"Create333Queue\",\n" +
-                        "      \"Set333QueueAttributes\",\n" +
-                        "      \"Create333Key\",\n" +
-                        "      \"Disable333KeyRotation\",\n" +
-                        "      \"Delete333Topic\",\n" +
-                        "      \"Unsubscribe333\",\n" +
-                        "      \"Put333Evaluations\",\n" +
-                        "      \"Delete333SubscriptionFilter\",\n" +
-                        "      \"Create333LogGroup\",\n" +
-                        "      \"Delete333LogGroup\",\n" +
-                        "      \"Delete333Detector\",\n" +
-                        "      \"Create333Detector\",\n" +
-                        "      \"Update333Detector\",\n" +
-                        "      \"Create333PublishingDestination\",\n" +
-                        "      \"Delete333PublishingDestination\",\n" +
-                        "      \"Update333PublishingDestination\",\n" +
-                        "      \"Register333Domain\",\n" +
-                        "      \"Update333TagsForDomain\",\n" +
-                        "      \"Delete333TagsForDomain\",\n" +
-                        "      \"DisassociateResolverQueryLogConfig\",\n" +
-                        "      \"Create333ResolverQueryLogConfig\",\n" +
-                        "      \"AssociateResolverQueryLogConfig\",\n" +
-                        "      \"Delete333ResolverQueryLogConfig\",\n" +
-                        "      \"Create333Stream\",\n" +
-                        "      \"Add333TagsToStream\",\n" +
-                        "      \"Remove333TagsFromStream\",\n" +
-                        "      \"Stop333StreamEncryption\",\n" +
-                        "      \"Update333Destination\",\n" +
-                        "      \"Delete333DeliveryStream\",\n" +
-                        "      \"Create333DeliveryStream\",\n" +
-                        "      \"Create333FileSystem\",\n" +
-                        "      \"Update333FileSystem\"\n" +
-                        "    ]\n" +
+                        "  \"detail-type\" : [ \"jV4 Tij ny6H K9Z 6pALqePKFR\", \"jV4 RbfEU04 dSyRZH K9Z 6pALqePKFR\" ],\n" +
+                        "  \"source\" : [ \"oeoNrI.qRk\", \"oeoNrI.3FD\", \"oeoNrI.auf\", \"oeoNrI.L6kj0T\", \"oeoNrI.sTEi\", \"oeoNrI.ATnVwRJH4\", \"oeoNrI.gOTbM9V\", \"oeoNrI.6Foy06YCE03DGH\", \"oeoNrI.UD7QBnjzEQNRODz\", \"oeoNrI.DVTtb8c\", \"oeoNrI.hmXIsf6p\", \"oeoNrI.ANK\" ],\n" +
+                        "  \"detail\" : {\n" +
+                        "    \"eventSource\" : [ \"qRk.6SOVnnlY9Y2B.s1x\", \"3FD.6SOVnnlY9Y2B.s1x\", \"auf.6SOVnnlY9Y2B.s1x\", \"L6kj0T.6SOVnnlY9Y2B.s1x\", \"sTEi.6SOVnnlY9Y2B.s1x\", \"ATnVwRJH4.6SOVnnlY9Y2B.s1x\", \"gOTbM9V.6SOVnnlY9Y2B.s1x\", \"6Foy06YCE03DGH.6SOVnnlY9Y2B.s1x\", \"UD7QBnjzEQNRODz.6SOVnnlY9Y2B.s1x\", \"DVTtb8c.6SOVnnlY9Y2B.s1x\", \"hmXIsf6p.6SOVnnlY9Y2B.s1x\", \"ANK.6SOVnnlY9Y2B.s1x\" ],\n" +
+                        "    \"eventName\" : [ \"wSjB92xeOBe2jf\", \"8owQcNCzpfsEjvv0zslQc\", \"XHSVWCs93l4m\", \"80jswkMW46QOp9ZasRC9i\", \"XoZakwvaiEbgvF\", \"A4oqVIUG1rS9G7\", \"9mU5hzwkFxHKDpo4A\", \"hI7uk7VTJB6gjcsRUoUIxuBPJaF\", \"UUFHA8cBHOvHk3lfO\", \"3cKTrqLEH5IMlsMDv\", \"TFaY7vCJG9EsxsjVd\", \"ZawowkBcOxdUsfgEs\", \"yOFNW7sxv0TNoMO6m\", \"Hp0AcGKGUlvM8lCgZqpiwOemCb2HSs\", \"SLDqS9ycYaKhJlzAdFC2bS92zrTpOO\", \"nAs966ixa5JQ9u2UlQOWh73PNMWehY\", \"tznZRlX80kDVIC8gH\", \"icLnBAt7pdp9aNDvOnqmMN\", \"NQHtpcQPybOVV0ZU4HInha\", \"QqCH8sS0zyQyPCVRitbCLHD0FEStOFXEQK\", \"6PXEaDOnRk7nmP6EhA9t2OE9g75eMmI\", \"cyE74DukyW8Jx89B0mYfuuSwAhMV2XA\", \"6n4FMCgGV1D09pLFanLGObbRBc1MXSH\", \"gk3lANJe2ZNiCdu\", \"5bL8gLCE5CE8pS0kRR\", \"hHZciQGDRCFKqf5S206HnMM\", \"HT14rl37Pa0ADgY5diV4cUa\", \"VcNAACSECOywtvlq42KR\", \"UhmN71rqtx6x0PagQr9Y4oU\", \"KX6z6AN1ApQq0HsSXbsyXgE\", \"RIo0rQN1PwKHiGnHcHP\", \"lhavqRt32TNqxjnfT2P\" ]\n" +
                         "  }\n" +
                         "}");
-        assertEquals(1037, machine.approximateObjectCount(150000));
+        assertEquals(811, machine.approximateObjectCount(150000));
 
         machine = new Machine();
         machine.addRule("rule1",
                 "{\n" +
-                        "  \"$or\":\n" +
-                        "  [\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws111.sqs\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Create111Queue\",\n" +
-                        "          \"Set111QueueAttributes\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws111.kms\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Create111Key\",\n" +
-                        "          \"Disable111KeyRotation\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws111.sns\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Delete111Topic\",\n" +
-                        "          \"Unsubscribe\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws111.config\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"PutEvaluations\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws111.logs\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Delete111SubscriptionFilter\",\n" +
-                        "          \"Create111LogGroup\",\n" +
-                        "          \"Delete111LogGroup\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws111.guardduty\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Delete111Detector\",\n" +
-                        "          \"Create111Detector\",\n" +
-                        "          \"Update111Detector\",\n" +
-                        "          \"Create111PublishingDestination\",\n" +
-                        "          \"Delete111PublishingDestination\",\n" +
-                        "          \"Update111PublishingDestination\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws111.route53\",\n" +
-                        "        \"aws111.route53domains\",\n" +
-                        "        \"aws111.route53resolver\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Register111Domain\",\n" +
-                        "          \"Update111TagsForDomain\",\n" +
-                        "          \"Delete111TagsForDomain\",\n" +
-                        "          \"DisassociateResolverQueryLogConfig\",\n" +
-                        "          \"Create111ResolverQueryLogConfig\",\n" +
-                        "          \"AssociateResolverQueryLogConfig\",\n" +
-                        "          \"Delete111ResolverQueryLogConfig\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"kinesis.amazonaws111.com\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Create111Stream\",\n" +
-                        "          \"Add111TagsToStream\",\n" +
-                        "          \"Remove111TagsFromStream\",\n" +
-                        "          \"Stop111StreamEncryption\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws111.firehose\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Update111Destination\",\n" +
-                        "          \"Delete111DeliveryStream\",\n" +
-                        "          \"Create111DeliveryStream\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws111.fsx\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Create111FileSystem\",\n" +
-                        "          \"Update111FileSystem\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
+                        "  \"$or\" : [ {\n" +
+                        "    \"source\" : [ \"e9C1c0.qRk\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"QK66sO0I4REUYb\", \"62HIWfGqrGTXpFotMy9xA\" ]\n" +
                         "    }\n" +
-                        "  ]\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"e9C1c0.3FD\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"7ucBUowmZxyA\", \"uo3piGS6CMHlcHDIzyNSr\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"e9C1c0.auf\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"KCflDTVvp6krjt\", \"ixHBhtn3T99\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"e9C1c0.L6kj0T\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"Yuq5PWrpi8h2Hi\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"e9C1c0.sTEi\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"bGZ94i5383n7hOOFF3XEkG3aUUY\", \"Dcw7pR9ikAMdOsAO6\", \"ccIkzb5umk6ffsWxT\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"e9C1c0.ATnVwRJH4\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"CrigfFIQshKoTi27S\", \"Tzi0k780pMtBV5FJV\", \"YS5tzAqzICdIajJcv\", \"ziLYvUKGSf1aqRZxU3ySvIYJ1HAQeF\", \"OgDBotcyXlPBJiGkzgEvx62KgIZ5Fc\", \"4tng21yDnIL8LJhaOptRG4d0yFm6WN\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"e9C1c0.gOTbM9V\", \"e9C1c0.6Foy06YCE03DGH\", \"e9C1c0.UD7QBnjzEQNRODz\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"aKnV3yMDVj2lq2Vfb\", \"HUhCGNVADyoDmWD9aCyzZe\", \"QHoYhQ1SDFMUNST7eHp4at\", \"QqCH8sS0zyQyPCVRitbCLHD0FEStOFXEQK\", \"YAzYOUP5qAqRiXLvKi2FGHXwOzLRTqF\", \"cyE74DukyW8Jx89B0mYfuuSwAhMV2XA\", \"5TGldWFzELapQ1gAaWbmzdozlLDy2PI\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"DVTtb8c.BeMfKctgml0y.s1x\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"9iXtpCTGB97r9QA\", \"oSZp5vZ52aD9wBcwIi\", \"OuP0M08FAxvonc5Pj2WTUEi\", \"LoQpJl4NmLXpzYou8FKT32s\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"e9C1c0.hmXIsf6p\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"NUIhlIsVoqwXmXJKYYIo\", \"ZO0QKPO7T3Ic0WFaZzx5LkX\", \"ryuyOUuRIxS6fhIOtepxTgj\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"e9C1c0.ANK\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"l4x1SJQRJTAl0p3aQOc\", \"5wIJAxf3zR89u5WiKwQ\" ]\n" +
+                        "    }\n" +
+                        "  } ]\n" +
                         "}");
         machine.addRule("rule2",
                 "{\n" +
-                        "  \"$or\":\n" +
-                        "  [\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws222.sqs\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Create222Queue\",\n" +
-                        "          \"Set222QueueAttributes\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws222.kms\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Create222Key\",\n" +
-                        "          \"Disable222KeyRotation\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws222.sns\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Delete222Topic\",\n" +
-                        "          \"Unsubscribe\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws222.config\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"PutEvaluations\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws222.logs\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Delete222SubscriptionFilter\",\n" +
-                        "          \"Create222LogGroup\",\n" +
-                        "          \"Delete222LogGroup\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws222.guardduty\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Delete222Detector\",\n" +
-                        "          \"Create222Detector\",\n" +
-                        "          \"Update222Detector\",\n" +
-                        "          \"Create222PublishingDestination\",\n" +
-                        "          \"Delete222PublishingDestination\",\n" +
-                        "          \"Update222PublishingDestination\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws222.route53\",\n" +
-                        "        \"aws222.route53domains\",\n" +
-                        "        \"aws222.route53resolver\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Register222Domain\",\n" +
-                        "          \"Update222TagsForDomain\",\n" +
-                        "          \"Delete222TagsForDomain\",\n" +
-                        "          \"DisassociateResolverQueryLogConfig\",\n" +
-                        "          \"Create222ResolverQueryLogConfig\",\n" +
-                        "          \"AssociateResolverQueryLogConfig\",\n" +
-                        "          \"Delete222ResolverQueryLogConfig\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"kinesis.amazonaws222.com\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Create222Stream\",\n" +
-                        "          \"Add222TagsToStream\",\n" +
-                        "          \"Remove222TagsFromStream\",\n" +
-                        "          \"Stop222StreamEncryption\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws222.firehose\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Update222Destination\",\n" +
-                        "          \"Delete222DeliveryStream\",\n" +
-                        "          \"Create222DeliveryStream\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws222.fsx\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Create222FileSystem\",\n" +
-                        "          \"Update222FileSystem\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
+                        "  \"$or\" : [ {\n" +
+                        "    \"source\" : [ \"0K9kV5.qRk\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"eqzMRqwMielUtv\", \"bIdx6KYCn3lpviFOEFWda\" ]\n" +
                         "    }\n" +
-                        "  ]\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"0K9kV5.3FD\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"oM0D40U9s6En\", \"pRqp3WZkboetrmWci51p6\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"0K9kV5.auf\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"Sc0UwrhEureEzQ\", \"ixHBhtn3T99\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"0K9kV5.L6kj0T\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"Yuq5PWrpi8h2Hi\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"0K9kV5.sTEi\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"qOBBxX2kntyHDwCSGBcOd8yloVo\", \"YXPayoGQlGoFk6nkR\", \"zGMY1DfzOQvwMNmK4\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"0K9kV5.ATnVwRJH4\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"xLUKKGRNglfr7RzbW\", \"wbPkaR8SjIKOWOFKU\", \"U2LAfXHBUgQ9BK6OE\", \"UsXW3IKWtjUun81O5A2RvYipYYiWPf\", \"1WMPVZQFB44o4hS4qsdtv1DrHOg6le\", \"NAZAKdRXGpyYF8aVNTvsQYB4mcevPP\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"0K9kV5.gOTbM9V\", \"0K9kV5.6Foy06YCE03DGH\", \"0K9kV5.UD7QBnjzEQNRODz\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"ZKbsTPS4xbrnbP3xG\", \"w52EAqErWZ49EcaFQBN3h7\", \"OI6eIIiVmrxJOVhiq7IENU\", \"QqCH8sS0zyQyPCVRitbCLHD0FEStOFXEQK\", \"EX8qET0anoJJMvoEcGLYMZJvkzSLch4\", \"cyE74DukyW8Jx89B0mYfuuSwAhMV2XA\", \"G2hyHJGzf41Q0hDdKVZ3oeLy4ZJl32S\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"DVTtb8c.A2Ptm07Ncrg2.s1x\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"C6kqFl3fleB3zIF\", \"4fx5kxFt2KucxvrG0s\", \"1MewNMgaPjslx4l5ISCRWhn\", \"VI7aNjEq4a1J6QYF0wQ2pV6\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"0K9kV5.hmXIsf6p\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"ns4SneqAxCuWNVoepM2Q\", \"1OdzCqyk4cQtQrVOd2Zf60v\", \"0MjQEBo5tW89oNlWktVbRfH\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"0K9kV5.ANK\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"soKlU8SKloI9YCAcssn\", \"3IqglcGMMVfJAin4tBg\" ]\n" +
+                        "    }\n" +
+                        "  } ]\n" +
                         "}");
         machine.addRule("rule3",
                 "{\n" +
-                        "  \"$or\":\n" +
-                        "  [\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws333.sqs\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Create333Queue\",\n" +
-                        "          \"Set333QueueAttributes\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws333.kms\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Create333Key\",\n" +
-                        "          \"Disable333KeyRotation\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws333.sns\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Delete333Topic\",\n" +
-                        "          \"Unsubscribe\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws333.config\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"PutEvaluations\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws333.logs\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Delete333SubscriptionFilter\",\n" +
-                        "          \"Create333LogGroup\",\n" +
-                        "          \"Delete333LogGroup\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws333.guardduty\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Delete333Detector\",\n" +
-                        "          \"Create333Detector\",\n" +
-                        "          \"Update333Detector\",\n" +
-                        "          \"Create333PublishingDestination\",\n" +
-                        "          \"Delete333PublishingDestination\",\n" +
-                        "          \"Update333PublishingDestination\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws333.route53\",\n" +
-                        "        \"aws333.route53domains\",\n" +
-                        "        \"aws333.route53resolver\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Register333Domain\",\n" +
-                        "          \"Update333TagsForDomain\",\n" +
-                        "          \"Delete333TagsForDomain\",\n" +
-                        "          \"DisassociateResolverQueryLogConfig\",\n" +
-                        "          \"Create333ResolverQueryLogConfig\",\n" +
-                        "          \"AssociateResolverQueryLogConfig\",\n" +
-                        "          \"Delete333ResolverQueryLogConfig\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"kinesis.amazonaws333.com\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Create333Stream\",\n" +
-                        "          \"Add333TagsToStream\",\n" +
-                        "          \"Remove333TagsFromStream\",\n" +
-                        "          \"Stop333StreamEncryption\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws333.firehose\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Update333Destination\",\n" +
-                        "          \"Delete333DeliveryStream\",\n" +
-                        "          \"Create333DeliveryStream\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
-                        "    },\n" +
-                        "    {\n" +
-                        "      \"source\":\n" +
-                        "      [\n" +
-                        "        \"aws333.fsx\"\n" +
-                        "      ],\n" +
-                        "      \"detail\":\n" +
-                        "      {\n" +
-                        "        \"eventName\":\n" +
-                        "        [\n" +
-                        "          \"Create333FileSystem\",\n" +
-                        "          \"Update333FileSystem\"\n" +
-                        "        ]\n" +
-                        "      }\n" +
+                        "  \"$or\" : [ {\n" +
+                        "    \"source\" : [ \"oeoNrI.qRk\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"wSjB92xeOBe2jf\", \"8owQcNCzpfsEjvv0zslQc\" ]\n" +
                         "    }\n" +
-                        "  ]\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"oeoNrI.3FD\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"XHSVWCs93l4m\", \"80jswkMW46QOp9ZasRC9i\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"oeoNrI.auf\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"XoZakwvaiEbgvF\", \"ixHBhtn3T99\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"oeoNrI.L6kj0T\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"Yuq5PWrpi8h2Hi\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"oeoNrI.sTEi\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"hI7uk7VTJB6gjcsRUoUIxuBPJaF\", \"UUFHA8cBHOvHk3lfO\", \"3cKTrqLEH5IMlsMDv\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"oeoNrI.ATnVwRJH4\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"TFaY7vCJG9EsxsjVd\", \"ZawowkBcOxdUsfgEs\", \"yOFNW7sxv0TNoMO6m\", \"Hp0AcGKGUlvM8lCgZqpiwOemCb2HSs\", \"SLDqS9ycYaKhJlzAdFC2bS92zrTpOO\", \"nAs966ixa5JQ9u2UlQOWh73PNMWehY\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"oeoNrI.gOTbM9V\", \"oeoNrI.6Foy06YCE03DGH\", \"oeoNrI.UD7QBnjzEQNRODz\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"tznZRlX80kDVIC8gH\", \"icLnBAt7pdp9aNDvOnqmMN\", \"NQHtpcQPybOVV0ZU4HInha\", \"QqCH8sS0zyQyPCVRitbCLHD0FEStOFXEQK\", \"6PXEaDOnRk7nmP6EhA9t2OE9g75eMmI\", \"cyE74DukyW8Jx89B0mYfuuSwAhMV2XA\", \"6n4FMCgGV1D09pLFanLGObbRBc1MXSH\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"DVTtb8c.6SOVnnlY9Y2B.s1x\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"gk3lANJe2ZNiCdu\", \"5bL8gLCE5CE8pS0kRR\", \"hHZciQGDRCFKqf5S206HnMM\", \"HT14rl37Pa0ADgY5diV4cUa\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"oeoNrI.hmXIsf6p\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"VcNAACSECOywtvlq42KR\", \"UhmN71rqtx6x0PagQr9Y4oU\", \"KX6z6AN1ApQq0HsSXbsyXgE\" ]\n" +
+                        "    }\n" +
+                        "  }, {\n" +
+                        "    \"source\" : [ \"oeoNrI.ANK\" ],\n" +
+                        "    \"detail\" : {\n" +
+                        "      \"eventName\" : [ \"RIo0rQN1PwKHiGnHcHP\", \"lhavqRt32TNqxjnfT2P\" ]\n" +
+                        "    }\n" +
+                        "  } ]\n" +
                         "}");
-        assertEquals(703, machine.approximateObjectCount(10000));
+        assertEquals(608, machine.approximateObjectCount(10000));
     }
 }
