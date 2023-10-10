@@ -1951,12 +1951,12 @@ class ByteMachine {
         return (startStateMatch != null ? 1 : 0) + evaluator.evaluate(startState);
     }
 
-    public void gatherObjects(Set<Object> objectSet) {
-        if (!objectSet.contains(this)) { // stops looping
+    public void gatherObjects(Set<Object> objectSet, int maxObjectCount) {
+        if (!objectSet.contains(this) && objectSet.size() < maxObjectCount) { // stops looping
             objectSet.add(this);
-            startState.gatherObjects(objectSet);
+            startState.gatherObjects(objectSet, maxObjectCount);
             for (NameState states : anythingButs.keySet()) {
-                states.gatherObjects(objectSet);
+                states.gatherObjects(objectSet, maxObjectCount);
             }
         }
     }
@@ -2006,8 +2006,10 @@ class ByteMachine {
         }
 
         @Override
-        public void gatherObjects(Set<Object> objectSet) {
-            objectSet.add(this);
+        public void gatherObjects(Set<Object> objectSet, int maxObjectCount) {
+            if(objectSet.size() < maxObjectCount) {
+                objectSet.add(this);
+            }
         }
     }
 

@@ -296,14 +296,14 @@ class NameState {
         return complexity;
     }
 
-    public void gatherObjects(Set<Object> objectSet) {
-        if (!objectSet.contains(this)) { // stops looping
+    public void gatherObjects(Set<Object> objectSet, int maxObjectCount) {
+        if (!objectSet.contains(this) && objectSet.size() < maxObjectCount) { // stops looping
             objectSet.add(this);
             for (ByteMachine byteMachine : valueTransitions.values()) {
-                byteMachine.gatherObjects(objectSet);
+                byteMachine.gatherObjects(objectSet, maxObjectCount);
             }
             for (Map.Entry<String, NameMatcher<NameState>> mustNotExistEntry : mustNotExistMatchers.entrySet()) {
-                mustNotExistEntry.getValue().getNextState().gatherObjects(objectSet);
+                mustNotExistEntry.getValue().getNextState().gatherObjects(objectSet, maxObjectCount);
             }
             for (Map.Entry<Patterns, Set<Double>> entry : patternToTerminalSubRuleIds.entrySet()) {
                 objectSet.add(entry.getKey());

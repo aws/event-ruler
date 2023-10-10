@@ -310,7 +310,7 @@ The "$or" primitive to allow the customer directly describe the "Or" relationshi
 Ruler recognizes "Or" relationship **only** when the rule has met **all** below conditions:
 * There is "$or" on field attribute in the rule followed with an array – e.g. "$or": []
 * There are 2+ objects in the "$or" array at least : "$or": [{}, {}]
-* There has no filed name using Ruler keywords in Object of "$or" array, refer to RESERVED_FIELD_NAMES_IN_OR_RELATIONSHIP in `/src/main/software/amazon/event/ruler/Constants.java#L38`
+* There is no filed name using Ruler keywords in Object of "$or" array, refer to RESERVED_FIELD_NAMES_IN_OR_RELATIONSHIP in `/src/main/software/amazon/event/ruler/Constants.java#L38`
   for example, below rule will be not parsed as "Or" relationship because "numeric" and "prefix" are Ruler reserved keywords.
   ```
   { 
@@ -382,7 +382,7 @@ Nested "Or" and "And"
 }
 ```
 
-#### The backward compatibility of using "$or" as filed name in the rule
+#### The backward compatibility of using "$or" as field name in the rule
 "$or" is possibly already used as a normal key in some applications (though its likely rare). For these cases, 
 Ruler tries its best to maintain the backward compatibility. Only when the 3 conditions mentioned above, will 
 ruler change behaviour because it assumes your rule really wanted an OR and was mis-configured until today. For example, 
@@ -424,7 +424,7 @@ both arguments are provided as JSON strings.
 
 NOTE: There is another deprecated method called `Ruler.matches(event, rule)`which 
 should not be used as its results are inconsistent with `rulesForJSONEvent()` and 
-`rulesForEvent()`
+`rulesForEvent()`. See the documentation on `Ruler.matches(event, rule)` for details.
 
 ## Matching with a Machine
 
@@ -529,18 +529,6 @@ names* section, you would have to call `deleteRule()` the same number of times,
 with the same associated patterns, to remove all references to that rule name
 from the machine.
 
-### approximateObjectCount()
-
-This method roughly the number of objects within the machine. It's value only varies as rule are added or
-removed. This is useful to identify large machines that potentially require loads of memory.
-As this method is dependent on number of internal objects, this counts may change when ruler library internals
-are changed. The method performs all of its calculation at runtime to avoid taking up memory and making the
-impact of large rule-machines worse. Its computation is intentionally NOT thread-safe to avoid blocking rule
-evaluations and machine changes. It means that if a parallel process is adding or removing from the machine,
-you may get a different results compared to when such parallel processes are complete. Also, as the library
-makes optimizations to its internals for some patterns (see `ShortcutTransition.java` for more details), you
-may also get different results depending on the order in which rules were added or removed.
-
 ### rulesForEvent() / rulesForJSONEvent()
 
 This method returns a `List<String>` for Machine (and `List<T>` for GenericMachine) which contains
@@ -569,6 +557,18 @@ with `addRule()`.  `rulesForJSONEvent()` is generally faster because of the opti
 event processing. If you do your own event processing and call `rulesForEvent()`
 with a pre-sorted list of name and values, that is faster still; but you may not
 be able to do the field-list preparation as fast as `rulesForJSONEvent()` does.
+
+### approximateObjectCount()
+
+This method roughly the number of objects within the machine. It's value only varies as rule are added or
+removed. This is useful to identify large machines that potentially require loads of memory.
+As this method is dependent on number of internal objects, this counts may change when ruler library internals
+are changed. The method performs all of its calculation at runtime to avoid taking up memory and making the
+impact of large rule-machines worse. Its computation is intentionally NOT thread-safe to avoid blocking rule
+evaluations and machine changes. It means that if a parallel process is adding or removing from the machine,
+you may get a different results compared to when such parallel processes are complete. Also, as the library
+makes optimizations to its internals for some patterns (see `ShortcutTransition.java` for more details), you
+may also get different results depending on the order in which rules were added or removed.
 
 ### The Patterns API
 

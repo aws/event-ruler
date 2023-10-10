@@ -66,11 +66,10 @@ final class ByteMatch extends SingleByteTransition  {
         return true;
     }
 
-    @Override
-    public void gatherObjects(Set<Object> objectSet) {
-        if (!objectSet.contains(this)) { // stops looping
+    public void gatherObjects(Set<Object> objectSet, int maxObjectCount) {
+        if (!objectSet.contains(this) && objectSet.size() < maxObjectCount) { // stops looping
             objectSet.add(this);
-            nextNameState.gatherObjects(objectSet);
+            nextNameState.gatherObjects(objectSet, maxObjectCount);
         }
     }
 

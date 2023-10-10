@@ -82,20 +82,19 @@ abstract class SingleByteTransition extends ByteTransition implements Iterable {
         return getNextByteState();
     }
 
-    @Override
-    public void gatherObjects(Set<Object> objectSet) {
-        if (!objectSet.contains(this)) { // stops looping
+    public void gatherObjects(Set<Object> objectSet, int maxObjectCount) {
+        if (!objectSet.contains(this) && objectSet.size() < maxObjectCount) { // stops looping
             objectSet.add(this);
             final ByteMatch match = getMatch();
             if (match != null) {
-                match.gatherObjects(objectSet);
+                match.gatherObjects(objectSet, maxObjectCount);
             }
             for (ByteTransition transition : getTransitions()) {
-                transition.gatherObjects(objectSet);
+                transition.gatherObjects(objectSet, maxObjectCount);
             }
             final ByteTransition nextByteStates = getTransitionForNextByteStates();
             if (nextByteStates != null) {
-                nextByteStates.gatherObjects(objectSet);
+                nextByteStates.gatherObjects(objectSet, maxObjectCount);
             }
         }
     }
