@@ -3,6 +3,7 @@ package software.amazon.event.ruler;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
@@ -14,6 +15,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class JsonRuleCompilerTest {
 
@@ -535,4 +537,27 @@ public class JsonRuleCompilerTest {
         assertTrue(machine.isEmpty());
     }
 
+    @Test
+    public void testWildcardConsecutiveWildcards() throws IOException {
+        try {
+            JsonRuleCompiler.compile("{\"key\": [{\"wildcard\": \"abc**def\"}]}");
+            fail("Expected JSONParseException");
+        } catch (JsonParseException e) {
+            assertEquals("Consecutive wildcard characters at pos 4\n" +
+                            " at [Source: (String)\"{\"key\": [{\"wildcard\": \"abc**def\"}]}\"; line: 1, column: 33]",
+                    e.getMessage());
+        }
+    }
+
+    @Test
+    public void testWildcardInvalidEscapeCharacter() throws IOException {
+        try {
+            JsonRuleCompiler.compile("{\"key\": [{\"wildcard\": \"a*c\\def\"}]}");
+            fail("Expected JSONParseException");
+        } catch (JsonParseException e) {
+            assertEquals("Unrecognized character escape 'd' (code 100)\n" +
+                            " at [Source: (String)\"{\"key\": [{\"wildcard\": \"a*c\\def\"}]}\"; line: 1, column: 29]",
+                    e.getMessage());
+        }
+    }
 }
