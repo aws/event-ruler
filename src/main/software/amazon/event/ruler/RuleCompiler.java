@@ -16,6 +16,9 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
+import software.amazon.event.ruler.input.ParseException;
+
+import static software.amazon.event.ruler.input.DefaultParser.getParser;
 
 /**
  * Compiles Rules, expressed in JSON, for use in Ruler.
@@ -393,7 +396,13 @@ public final class RuleCompiler {
                 barf(parser, "wildcard match pattern must be a string");
             }
             final String parserText = parser.getText();
-            final Patterns pattern = Patterns.wildcardMatch('"' + parserText + '"');
+            String value = '"' + parserText + '"';
+            try {
+                getParser().parse(MatchType.WILDCARD, value);
+            } catch (ParseException e) {
+                barf(parser, e.getLocalizedMessage());
+            }
+            final Patterns pattern = Patterns.wildcardMatch(value);
             if (parser.nextToken() != JsonToken.END_OBJECT) {
                 barf(parser, "Only one key allowed in match expression");
             }

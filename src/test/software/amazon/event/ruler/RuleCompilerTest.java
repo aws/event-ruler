@@ -1,6 +1,8 @@
 package software.amazon.event.ruler;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
@@ -532,6 +534,30 @@ public class RuleCompilerTest {
 
         multiThreadedTestHelper(rules, events, 1);
 
+    }
+
+    @Test
+    public void testWildcardConsecutiveWildcards() throws IOException {
+        try {
+            RuleCompiler.compile("{\"key\": [{\"wildcard\": \"abc**def\"}]}");
+            fail("Expected JSONParseException");
+        } catch (JsonParseException e) {
+            assertEquals("Consecutive wildcard characters at pos 4\n" +
+                    " at [Source: (String)\"{\"key\": [{\"wildcard\": \"abc**def\"}]}\"; line: 1, column: 33]",
+                    e.getMessage());
+        }
+    }
+
+    @Test
+    public void testWildcardInvalidEscapeCharacter() throws IOException {
+        try {
+            RuleCompiler.compile("{\"key\": [{\"wildcard\": \"a*c\\def\"}]}");
+            fail("Expected JSONParseException");
+        } catch (JsonParseException e) {
+            assertEquals("Unrecognized character escape 'd' (code 100)\n" +
+                    " at [Source: (String)\"{\"key\": [{\"wildcard\": \"a*c\\def\"}]}\"; line: 1, column: 29]",
+                    e.getMessage());
+        }
     }
 
     private void multiThreadedTestHelper(List<String> rules,
