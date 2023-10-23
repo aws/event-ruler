@@ -31,6 +31,18 @@ public class JsonRuleCompilerTest {
     }
 
     @Test
+    public void testPrefixEqualsIgnoreCaseCompile() {
+        String json = "{\"a\": [ { \"prefix\": { \"equals-ignore-case\": \"child\" } } ] }";
+        assertNull("Good prefix equals-ignore-case should parse", JsonRuleCompiler.check(json));
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseCompile() {
+        String json = "{\"a\": [ { \"suffix\": { \"equals-ignore-case\": \"child\" } } ] }";
+        assertNull("Good suffix equals-ignore-case should parse", JsonRuleCompiler.check(json));
+    }
+
+    @Test
     public void testVariantForms() throws Exception {
         Machine m = new Machine();
         String r1 = "{\n" +
@@ -172,6 +184,18 @@ public class JsonRuleCompilerTest {
                 "{\"a\": [ { \"anything-but\": {\"equals-ignore-case\": [1, 2, 3] } } ] }", // no numbers
                 "{\"a\": [ { \"equals-ignore-case\": 5 } ] }",
                 "{\"a\": [ { \"equals-ignore-case\": [ \"abc\" ] } ] }",
+                "{\"a\": [ { \"prefix\": { \"invalid-expression\": [ \"abc\" ] } } ] }",
+                "{\"a\": [ { \"prefix\": { \"equals-ignore-case\": 5 } } ] }",
+                "{\"a\": [ { \"prefix\": { \"equals-ignore-case\": [ \"abc\" ] } } ] }",
+                "{\"a\": [ { \"prefix\": { \"equals-ignore-case\": \"abc\", \"test\": \"def\" } } ] }",
+                "{\"a\": [ { \"prefix\": { \"equals-ignore-case\": \"abc\" }, \"test\": \"def\" } ] }",
+                "{\"a\": [ { \"prefix\": { \"equals-ignore-case\": [ 1, 2 3 ] } } ] }",
+                "{\"a\": [ { \"suffix\": { \"invalid-expression\": [ \"abc\" ] } } ] }",
+                "{\"a\": [ { \"suffix\": { \"equals-ignore-case\": 5 } } ] }",
+                "{\"a\": [ { \"suffix\": { \"equals-ignore-case\": [ \"abc\" ] } } ] }",
+                "{\"a\": [ { \"suffix\": { \"equals-ignore-case\": \"abc\", \"test\": \"def\" } } ] }",
+                "{\"a\": [ { \"suffix\": { \"equals-ignore-case\": \"abc\" }, \"test\": \"def\" } ] }",
+                "{\"a\": [ { \"suffix\": { \"equals-ignore-case\": [ 1, 2 3 ] } } ] }",
                 "{\"a\": [ { \"wildcard\": 5 } ] }",
                 "{\"a\": [ { \"wildcard\": [ \"abc\" ] } ] }"
         };

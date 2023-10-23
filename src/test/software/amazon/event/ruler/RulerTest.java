@@ -112,6 +112,21 @@ public class RulerTest {
                         "}",
                 "{\n" +
                         "  \"detail\": {\n" +
+                        "    \"state\": [ { \"prefix\": { \"equals-ignore-case\": \"RuNn\" } } ]\n" +
+                        "  }\n" +
+                        "}",
+                "{\n" +
+                        "  \"detail\": {\n" +
+                        "    \"state\": [ { \"suffix\": \"ning\" } ]\n" +
+                        "  }\n" +
+                        "}",
+                "{\n" +
+                        "  \"detail\": {\n" +
+                        "    \"state\": [ { \"suffix\": { \"equals-ignore-case\": \"nInG\" } } ]\n" +
+                        "  }\n" +
+                        "}",
+                "{\n" +
+                        "  \"detail\": {\n" +
                         "    \"source-ip\": [ { \"cidr\": \"10.0.0.0/24\" } ]\n" +
                         "  }\n" +
                         "}",
@@ -149,6 +164,21 @@ public class RulerTest {
                         "      \"Thumbnail\": {\n" +
                         "        \"Url\": [ { \"prefix\": \"http\" } ]\n" +
                         "      }\n" +
+                        "    }\n" +
+                        "  }",
+                "  {\n" +
+                        "    \"Image\": {\n" +
+                        "      \"Title\": [ { \"prefix\": { \"equals-ignore-case\": \"VIeW\" } } ]\n" +
+                        "    }\n" +
+                        "  }",
+                "  {\n" +
+                        "    \"Image\": {\n" +
+                        "      \"Title\": [ { \"suffix\": { \"equals-ignore-case\": \"LoOr\" } } ]\n" +
+                        "    }\n" +
+                        "  }",
+                "  {\n" +
+                        "    \"Image\": {\n" +
+                        "      \"Title\": [ { \"suffix\": \"loor\" } ]\n" +
                         "    }\n" +
                         "  }",
                 "  {\n" +

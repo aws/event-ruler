@@ -7,7 +7,9 @@ import java.nio.charset.StandardCharsets;
 import static software.amazon.event.ruler.MatchType.ANYTHING_BUT_SUFFIX;
 import static software.amazon.event.ruler.MatchType.EQUALS_IGNORE_CASE;
 import static software.amazon.event.ruler.MatchType.ANYTHING_BUT_IGNORE_CASE;
+import static software.amazon.event.ruler.MatchType.PREFIX_EQUALS_IGNORE_CASE;
 import static software.amazon.event.ruler.MatchType.SUFFIX;
+import static software.amazon.event.ruler.MatchType.SUFFIX_EQUALS_IGNORE_CASE;
 import static software.amazon.event.ruler.MatchType.WILDCARD;
 
 /**
@@ -39,15 +41,18 @@ public class DefaultParser implements MatchTypeParser, ByteParser {
     private final WildcardParser wildcardParser;
     private final EqualsIgnoreCaseParser equalsIgnoreCaseParser;
     private final SuffixParser suffixParser;
+    private final SuffixEqualsIgnoreCaseParser suffixEqualsIgnoreCaseParser;
 
     DefaultParser() {
-        this(new WildcardParser(), new EqualsIgnoreCaseParser(), new SuffixParser());
+        this(new WildcardParser(), new EqualsIgnoreCaseParser(), new SuffixParser(), new SuffixEqualsIgnoreCaseParser());
     }
 
-    DefaultParser(WildcardParser wildcardParser, EqualsIgnoreCaseParser equalsIgnoreCaseParser, SuffixParser suffixParser) {
+    DefaultParser(WildcardParser wildcardParser, EqualsIgnoreCaseParser equalsIgnoreCaseParser, SuffixParser suffixParser,
+                  SuffixEqualsIgnoreCaseParser suffixEqualsIgnoreCaseParser) {
         this.wildcardParser = wildcardParser;
         this.equalsIgnoreCaseParser = equalsIgnoreCaseParser;
         this.suffixParser = suffixParser;
+        this.suffixEqualsIgnoreCaseParser = suffixEqualsIgnoreCaseParser;
     }
 
     public static DefaultParser getParser() {
@@ -58,10 +63,12 @@ public class DefaultParser implements MatchTypeParser, ByteParser {
     public InputCharacter[] parse(final MatchType type, final String value) {
         if (type == WILDCARD) {
             return wildcardParser.parse(value);
-        } else if (type == EQUALS_IGNORE_CASE || type == ANYTHING_BUT_IGNORE_CASE) {
+        } else if (type == EQUALS_IGNORE_CASE || type == ANYTHING_BUT_IGNORE_CASE || type == PREFIX_EQUALS_IGNORE_CASE) {
             return equalsIgnoreCaseParser.parse(value);
         } else if (type == SUFFIX || type == ANYTHING_BUT_SUFFIX) {
             return suffixParser.parse(value);
+        } else if (type == SUFFIX_EQUALS_IGNORE_CASE) {
+            return suffixEqualsIgnoreCaseParser.parse(value);
         }
 
         final byte[] utf8bytes = value.getBytes(StandardCharsets.UTF_8);

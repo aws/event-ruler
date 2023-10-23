@@ -45,8 +45,16 @@ public class Patterns implements Cloneable  {
         return new ValuePatterns(MatchType.PREFIX, prefix);
     }
 
+    public static ValuePatterns prefixEqualsIgnoreCaseMatch(final String prefix) {
+        return new ValuePatterns(MatchType.PREFIX_EQUALS_IGNORE_CASE, prefix);
+    }
+
     public static ValuePatterns suffixMatch(final String suffix) {
         return new ValuePatterns(MatchType.SUFFIX, new StringBuilder(suffix).reverse().toString());
+    }
+
+    public static ValuePatterns suffixEqualsIgnoreCaseMatch(final String suffix) {
+        return new ValuePatterns(MatchType.SUFFIX_EQUALS_IGNORE_CASE, new StringBuilder(suffix).reverse().toString());
     }
 
     public static AnythingBut anythingButMatch(final String anythingBut) {

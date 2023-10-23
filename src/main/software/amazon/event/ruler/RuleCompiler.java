@@ -263,6 +263,10 @@ public final class RuleCompiler {
             return pattern;
         } else if (Constants.PREFIX_MATCH.equals(matchTypeName)) {
             final JsonToken prefixToken = parser.nextToken();
+            if (prefixToken == JsonToken.START_OBJECT) {
+                return processPrefixEqualsIgnoreCaseExpression(parser);
+            }
+
             if (prefixToken != JsonToken.VALUE_STRING) {
                 barf(parser, "prefix match pattern must be a string");
             }
@@ -273,6 +277,10 @@ public final class RuleCompiler {
             return pattern;
         } else if (Constants.SUFFIX_MATCH.equals(matchTypeName)) {
             final JsonToken suffixToken = parser.nextToken();
+            if (suffixToken == JsonToken.START_OBJECT) {
+                return processSuffixEqualsIgnoreCaseExpression(parser);
+            }
+
             if (suffixToken != JsonToken.VALUE_STRING) {
                 barf(parser, "suffix match pattern must be a string");
             }
@@ -411,6 +419,56 @@ public final class RuleCompiler {
             barf(parser, "Unrecognized match type " + matchTypeName);
             return null; // unreachable statement, but java can't see that?
         }
+    }
+
+    private static Patterns processPrefixEqualsIgnoreCaseExpression(final JsonParser parser) throws IOException {
+        final JsonToken prefixObject = parser.nextToken();
+        if (prefixObject != JsonToken.FIELD_NAME) {
+            barf(parser, "Prefix expression name not found");
+        }
+
+        final String prefixObjectOp = parser.getCurrentName();
+        if (!Constants.EQUALS_IGNORE_CASE.equals(prefixObjectOp)) {
+            barf(parser, "Unsupported prefix pattern: " + prefixObjectOp);
+        }
+
+        final JsonToken prefixEqualsIgnoreCase = parser.nextToken();
+        if (prefixEqualsIgnoreCase != JsonToken.VALUE_STRING) {
+            barf(parser, "equals-ignore-case match pattern must be a string");
+        }
+        final Patterns pattern = Patterns.prefixEqualsIgnoreCaseMatch('"' + parser.getText());
+        if (parser.nextToken() != JsonToken.END_OBJECT) {
+            barf(parser, "Only one key allowed in match expression");
+        }
+        if (parser.nextToken() != JsonToken.END_OBJECT) {
+            barf(parser, "Only one key allowed in match expression");
+        }
+        return pattern;
+    }
+
+    private static Patterns processSuffixEqualsIgnoreCaseExpression(final JsonParser parser) throws IOException {
+        final JsonToken suffixObject = parser.nextToken();
+        if (suffixObject != JsonToken.FIELD_NAME) {
+            barf(parser, "Suffix expression name not found");
+        }
+
+        final String suffixObjectOp = parser.getCurrentName();
+        if (!Constants.EQUALS_IGNORE_CASE.equals(suffixObjectOp)) {
+            barf(parser, "Unsupported suffix pattern: " + suffixObjectOp);
+        }
+
+        final JsonToken suffixEqualsIgnoreCase = parser.nextToken();
+        if (suffixEqualsIgnoreCase != JsonToken.VALUE_STRING) {
+            barf(parser, "equals-ignore-case match pattern must be a string");
+        }
+        final Patterns pattern = Patterns.suffixEqualsIgnoreCaseMatch(parser.getText() + '"');
+        if (parser.nextToken() != JsonToken.END_OBJECT) {
+            barf(parser, "Only one key allowed in match expression");
+        }
+        if (parser.nextToken() != JsonToken.END_OBJECT) {
+            barf(parser, "Only one key allowed in match expression");
+        }
+        return pattern;
     }
 
     private static Patterns processAnythingButListMatchExpression(JsonParser parser) throws JsonParseException {

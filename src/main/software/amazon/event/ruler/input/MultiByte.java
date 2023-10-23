@@ -15,6 +15,12 @@ public class MultiByte {
     public static final byte MAX_FIRST_BYTE_FOR_ONE_BYTE_CHAR = (byte) 0x7F;
     public static final byte MIN_FIRST_BYTE_FOR_TWO_BYTE_CHAR = (byte) 0xC2;
     public static final byte MAX_FIRST_BYTE_FOR_TWO_BYTE_CHAR = (byte) 0xDF;
+
+    /**
+     * A continuation byte is a byte that is not the first UTF-8 byte in a multibyte character.
+     */
+    public static final byte MIN_CONTINUATION_BYTE = (byte) 0x80;
+    public static final byte MAX_CONTINUATION_BYTE = (byte) 0xBF;
     public static final byte MAX_NON_FIRST_BYTE = (byte) 0xBF;
 
     private final byte[] bytes;

@@ -128,6 +128,35 @@ public class Benchmarks {
     };
     private final int[] PREFIX_MATCHES = { 24, 442, 38, 2387, 328 };
 
+    private final String[] PREFIX_EQUALS_IGNORE_CASE_RULES = {
+            "{\n" +
+                    "  \"properties\": {\n" +
+                    "    \"STREET\": [ { \"prefix\": { \"equals-ignore-case\": \"Ac\" } } ]\n" +
+                    "  }\n" +
+                    "}",
+            "{\n" +
+                    "  \"properties\": {\n" +
+                    "    \"STREET\": [ { \"prefix\": { \"equals-ignore-case\": \"bL\" } } ]\n" +
+                    "  }\n" +
+                    "}",
+            "{\n" +
+                    "  \"properties\": {\n" +
+                    "    \"STREET\": [ { \"prefix\": { \"equals-ignore-case\": \"dR\" } } ]\n" +
+                    "  }\n" +
+                    "}",
+            "{\n" +
+                    "  \"properties\": {\n" +
+                    "    \"STREET\": [ { \"prefix\": { \"equals-ignore-case\": \"Fu\" } } ]\n" +
+                    "  }\n" +
+                    "}",
+            "{\n" +
+                    "  \"properties\": {\n" +
+                    "    \"STREET\": [ { \"prefix\": { \"equals-ignore-case\": \"rH\" } } ]\n" +
+                    "  }\n" +
+                    "}"
+    };
+    private final int[] PREFIX_EQUALS_IGNORE_CASE_MATCHES = { 24, 442, 38, 2387, 328 };
+
     private final String[] SUFFIX_RULES = {
             "{\n" +
                     "  \"properties\": {\n" +
@@ -156,6 +185,35 @@ public class Benchmarks {
                     "}"
     };
     private final int[] SUFFIX_MATCHES = { 17921, 871, 13, 1963, 682 };
+
+    private final String[] SUFFIX_EQUALS_IGNORE_CASE_RULES = {
+            "{\n" +
+                    "  \"properties\": {\n" +
+                    "    \"STREET\": [ { \"suffix\": { \"equals-ignore-case\": \"oN\" } } ]\n" +
+                    "  }\n" +
+                    "}",
+            "{\n" +
+                    "  \"properties\": {\n" +
+                    "    \"STREET\": [ { \"suffix\": { \"equals-ignore-case\": \"Ke\" } } ]\n" +
+                    "  }\n" +
+                    "}",
+            "{\n" +
+                    "  \"properties\": {\n" +
+                    "    \"STREET\": [ { \"suffix\": { \"equals-ignore-case\": \"mM\" } } ]\n" +
+                    "  }\n" +
+                    "}",
+            "{\n" +
+                    "  \"properties\": {\n" +
+                    "    \"STREET\": [ { \"suffix\": { \"equals-ignore-case\": \"InG\" } } ]\n" +
+                    "  }\n" +
+                    "}",
+            "{\n" +
+                    "  \"properties\": {\n" +
+                    "    \"STREET\": [ { \"suffix\": { \"equals-ignore-case\": \"gO\" } } ]\n" +
+                    "  }\n" +
+                    "}"
+    };
+    private final int[] SUFFIX_EQUALS_IGNORE_CASE_MATCHES = { 17921, 871, 13, 1963, 682 };
 
     private final String[] EQUALS_IGNORE_CASE_RULES = {
             "{\n" +
@@ -302,10 +360,10 @@ public class Benchmarks {
               "  \"properties\": {\n" +
               "    \"STREET\": [ { \"anything-but\": {\"equals-ignore-case\": [ \"Fulton\" ] } } ]\n" +
               "  }\n" +
-              "}", 
+              "}",
       "{\n" +
               "  \"properties\": {\n" +
-              "    \"STREET\": [ { \"anything-but\": {\"equals-ignore-case\": [ \"Mason\" ] } } ]\n" + 
+              "    \"STREET\": [ { \"anything-but\": {\"equals-ignore-case\": [ \"Mason\" ] } } ]\n" +
               "  }\n" +
               "}",
       "{\n" +
@@ -321,9 +379,9 @@ public class Benchmarks {
       "{\n" +
               "  \"properties\": {\n" +
               "    \"FROM_ST\": [ { \"anything-but\": {\"equals-ignore-case\": [ \"441\" ] } } ]\n" +
-              "  }\n" +  
-              "}"   
-    };              
+              "  }\n" +
+              "}"
+    };
     private final int[] ANYTHING_BUT_IGNORE_CASE_MATCHES = { 211158, 210411, 96682, 120, 210615 };
 
 
@@ -588,9 +646,21 @@ public class Benchmarks {
 
         bm = new Benchmarker();
 
+        bm.addRules(PREFIX_EQUALS_IGNORE_CASE_RULES, PREFIX_EQUALS_IGNORE_CASE_MATCHES);
+        bm.run(citylots2);
+        System.out.println("PREFIX_EQUALS_IGNORE_CASE_RULES events/sec: " + String.format("%.1f", bm.getEPS()));
+
+        bm = new Benchmarker();
+
         bm.addRules(SUFFIX_RULES, SUFFIX_MATCHES);
         bm.run(citylots2);
         System.out.println("SUFFIX events/sec: " + String.format("%.1f", bm.getEPS()));
+
+        bm = new Benchmarker();
+
+        bm.addRules(SUFFIX_EQUALS_IGNORE_CASE_RULES, SUFFIX_EQUALS_IGNORE_CASE_MATCHES);
+        bm.run(citylots2);
+        System.out.println("SUFFIX_EQUALS_IGNORE_CASE_RULES events/sec: " + String.format("%.1f", bm.getEPS()));
 
         bm = new Benchmarker();
 

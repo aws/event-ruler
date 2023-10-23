@@ -3,6 +3,7 @@ package software.amazon.event.ruler;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.annotation.concurrent.Immutable;
@@ -109,6 +110,22 @@ public class Ruler {
             case PREFIX:
                 valuePattern = (ValuePatterns) pattern;
                 return val.isTextual() && ('"' + val.asText()).startsWith(valuePattern.pattern());
+
+            case PREFIX_EQUALS_IGNORE_CASE:
+                valuePattern = (ValuePatterns) pattern;
+                return val.isTextual() && ('"' + val.asText().toLowerCase(Locale.ROOT))
+                        .startsWith(valuePattern.pattern().toLowerCase(Locale.ROOT));
+            case SUFFIX:
+                valuePattern = (ValuePatterns) pattern;
+                // Undoes the reverse on the pattern value to match against the provided value
+                return val.isTextual() && (val.asText() + '"')
+                        .endsWith(new StringBuilder(valuePattern.pattern()).reverse().toString());
+
+            case SUFFIX_EQUALS_IGNORE_CASE:
+                valuePattern = (ValuePatterns) pattern;
+                // Undoes the reverse on the pattern value to match against the provided value
+                return val.isTextual() && (val.asText().toLowerCase(Locale.ROOT) + '"')
+                        .endsWith(new StringBuilder(valuePattern.pattern().toLowerCase(Locale.ROOT)).reverse().toString());
 
             case ANYTHING_BUT:
                 assert (pattern instanceof AnythingBut);
