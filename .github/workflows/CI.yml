@@ -30,4 +30,4 @@ jobs:
       - name: Verify with Maven
         run: mvn --batch-mode --errors --update-snapshots verify
       - name: Run benchmarks
-        run: mvn test -Dtest=Benchmarks
+        run: mvn test '-Dtest=Benchmarks#CL2*'
