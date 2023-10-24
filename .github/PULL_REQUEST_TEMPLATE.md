@@ -7,7 +7,9 @@
 #### Benchmark / Performance (for source code changes):
 
 ```
-<replace this with output from /src/test/software/amazon/event/ruler/Bechmarks.java here>
+<replace this with output from /src/test/software/amazon/event/ruler/Bechmarks.java here.
+
+The benchmark results can be fetched from "Pull request checks -> Java build -> build (ubuntu-X.Y, 8) -> Run benchmarks".>
 ```
 
 ---
