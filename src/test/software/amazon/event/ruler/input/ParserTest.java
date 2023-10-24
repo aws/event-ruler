@@ -25,14 +25,14 @@ public class ParserTest {
 
     @Test
     public void testOtherMatchTypes() {
-        final int[] parserInvokedCount = { 0, 0, 0 };
+        final int[] parserInvokedCount = { 0, 0, 0, 0 };
         DefaultParser parser = new DefaultParser(
             new WildcardParser() {
-               @Override
-               public InputCharacter[] parse(String value) {
-                   parserInvokedCount[0] +=1;
-                   return null;
-               }
+                @Override
+                public InputCharacter[] parse(String value) {
+                    parserInvokedCount[0] +=1;
+                    return null;
+                }
             },
             new EqualsIgnoreCaseParser() {
                 @Override
@@ -47,6 +47,13 @@ public class ParserTest {
                     parserInvokedCount[2] += 1;
                     return null;
                 }
+            },
+            new SuffixEqualsIgnoreCaseParser() {
+                @Override
+                public InputCharacter[] parse(String value) {
+                    parserInvokedCount[3] += 1;
+                    return null;
+                }
             }
         );
 
@@ -54,15 +61,24 @@ public class ParserTest {
         assertEquals(parserInvokedCount[0], 1);
         assertEquals(parserInvokedCount[1], 0);
         assertEquals(parserInvokedCount[2], 0);
+        assertEquals(parserInvokedCount[3], 0);
 
         assertNull(parser.parse(MatchType.EQUALS_IGNORE_CASE, "abc"));
         assertEquals(parserInvokedCount[0], 1);
         assertEquals(parserInvokedCount[1], 1);
         assertEquals(parserInvokedCount[2], 0);
+        assertEquals(parserInvokedCount[3], 0);
 
         assertNull(parser.parse(MatchType.SUFFIX, "abc"));
         assertEquals(parserInvokedCount[0], 1);
         assertEquals(parserInvokedCount[1], 1);
         assertEquals(parserInvokedCount[2], 1);
+        assertEquals(parserInvokedCount[3], 0);
+
+        assertNull(parser.parse(MatchType.SUFFIX_EQUALS_IGNORE_CASE, "abc"));
+        assertEquals(parserInvokedCount[0], 1);
+        assertEquals(parserInvokedCount[1], 1);
+        assertEquals(parserInvokedCount[2], 1);
+        assertEquals(parserInvokedCount[3], 1);
     }
 }

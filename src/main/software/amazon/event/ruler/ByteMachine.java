@@ -23,14 +23,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.concurrent.ThreadSafe;
 
 import static software.amazon.event.ruler.CompoundByteTransition.coalesce;
+import static software.amazon.event.ruler.MatchType.EQUALS_IGNORE_CASE;
 import static software.amazon.event.ruler.MatchType.EXACT;
 import static software.amazon.event.ruler.MatchType.EXISTS;
 import static software.amazon.event.ruler.MatchType.SUFFIX;
 import static software.amazon.event.ruler.MatchType.ANYTHING_BUT_SUFFIX;
+import static software.amazon.event.ruler.MatchType.SUFFIX_EQUALS_IGNORE_CASE;
 
+import static software.amazon.event.ruler.input.MultiByte.MAX_CONTINUATION_BYTE;
 import static software.amazon.event.ruler.input.MultiByte.MAX_FIRST_BYTE_FOR_ONE_BYTE_CHAR;
 import static software.amazon.event.ruler.input.MultiByte.MAX_FIRST_BYTE_FOR_TWO_BYTE_CHAR;
 import static software.amazon.event.ruler.input.MultiByte.MAX_NON_FIRST_BYTE;
+import static software.amazon.event.ruler.input.MultiByte.MIN_CONTINUATION_BYTE;
 import static software.amazon.event.ruler.input.MultiByte.MIN_FIRST_BYTE_FOR_ONE_BYTE_CHAR;
 import static software.amazon.event.ruler.input.MultiByte.MIN_FIRST_BYTE_FOR_TWO_BYTE_CHAR;
 import static software.amazon.event.ruler.input.DefaultParser.getParser;
@@ -142,7 +146,9 @@ class ByteMachine {
             case EXACT:
             case NUMERIC_EQ:
             case PREFIX:
+            case PREFIX_EQUALS_IGNORE_CASE:
             case SUFFIX:
+            case SUFFIX_EQUALS_IGNORE_CASE:
             case ANYTHING_BUT_PREFIX:
             case ANYTHING_BUT_SUFFIX:
             case EQUALS_IGNORE_CASE:
@@ -490,10 +496,12 @@ class ByteMachine {
                             break;
 
                         case PREFIX:
+                        case PREFIX_EQUALS_IGNORE_CASE:
                             transitionTo.add(new NameStateWithPattern(match.getNextNameState(), match.getPattern()));
                             break;
                         case ANYTHING_BUT_SUFFIX:
                         case SUFFIX:
+                        case SUFFIX_EQUALS_IGNORE_CASE:
                         case EXISTS:
                             // we already harvested these matches via separate functions due to special matching
                             // requirements, so just ignore them here.
@@ -604,7 +612,7 @@ class ByteMachine {
                     // given we are traversing in reverse order (from right to left), only suffix matches are eligible
                     // to be collected.
                     MatchType patternType = match.getPattern().type();
-                    if (patternType == SUFFIX) {
+                    if (patternType == SUFFIX || patternType == SUFFIX_EQUALS_IGNORE_CASE) {
                         transitionTo.add(new NameStateWithPattern(match.getNextNameState(), match.getPattern()));
                     } else if (patternType == ANYTHING_BUT_SUFFIX) {
                         addToAnythingButsMap(failedAnythingButs, match.getNextNameState(), match.getPattern());
@@ -677,7 +685,9 @@ class ByteMachine {
             case EXACT:
             case NUMERIC_EQ:
             case PREFIX:
+            case PREFIX_EQUALS_IGNORE_CASE:
             case SUFFIX:
+            case SUFFIX_EQUALS_IGNORE_CASE:
             case EQUALS_IGNORE_CASE:
             case WILDCARD:
                 assert pattern instanceof ValuePatterns;
@@ -818,7 +828,8 @@ class ByteMachine {
             return false;
         }
 
-        if (!isNextCharacterFirstByteOfMultiByte(characters, i)) {
+        boolean isNextCharacterForSuffixMatch = isNextCharacterFirstContinuationByteForSuffixMatch(characters, i);
+        if (!isNextCharacterFirstByteOfMultiByte(characters, i) && !isNextCharacterForSuffixMatch) {
             // If we are in the midst of a multi-byte sequence, we know that we are dealing with single transitions.
             return false;
         }
@@ -834,7 +845,8 @@ class ByteMachine {
         // Parse the next Java character into lower and upper case representations. Check if there are multiple
         // multibytes (paths) and that there exists a transition that both lead to.
         String value = extractNextJavaCharacterFromInputCharacters(characters, i);
-        InputCharacter[] inputCharacters = getParser().parse(MatchType.EQUALS_IGNORE_CASE, value);
+        MatchType matchType = isNextCharacterForSuffixMatch ? SUFFIX_EQUALS_IGNORE_CASE : EQUALS_IGNORE_CASE;
+        InputCharacter[] inputCharacters = getParser().parse(matchType, value);
         ByteTransition transition = getTransition(byteState, inputCharacters[0]);
         return inputCharacters[0] instanceof InputMultiByteSet && transition != null;
     }
@@ -846,7 +858,54 @@ class ByteMachine {
         return firstByte > MAX_NON_FIRST_BYTE;
     }
 
+    private boolean isNextCharacterFirstContinuationByteForSuffixMatch(InputCharacter[] characters, int i) {
+        if (hasSuffix.get() <= 0) {
+            return false;
+        }
+        // If the previous byte is a continuation byte, this means that we're in the middle of a multi-byte sequence.
+        return isContinuationByte(characters, i) && !isContinuationByte(characters, i - 1);
+    }
+
+    private boolean isContinuationByte(InputCharacter[] characters, int i) {
+        if (i < 0) {
+            return false;
+        }
+        byte continuationByte = InputByte.cast(characters[i]).getByte();
+        // Continuation bytes have bit 7 set, and bit 6 should be unset
+        return continuationByte >= MIN_CONTINUATION_BYTE && continuationByte <= MAX_CONTINUATION_BYTE;
+    }
+
     private String extractNextJavaCharacterFromInputCharacters(InputCharacter[] characters, int i) {
+        if (isNextCharacterFirstByteOfMultiByte(characters, i)) {
+            return extractNextJavaCharacterFromInputCharactersForForwardArrays(characters, i);
+        } else {
+            return extractNextJavaCharacterFromInputCharactersForBackwardsArrays(characters, i);
+        }
+    }
+
+    private String extractNextJavaCharacterFromInputCharactersForBackwardsArrays(InputCharacter[] characters, int i) {
+        List<Byte> bytesList = new ArrayList<>();
+        for (int multiByteIndex = i; multiByteIndex < characters.length; multiByteIndex++) {
+            if (!isContinuationByte(characters, multiByteIndex)) {
+                // This is the last byte of the suffix char
+                bytesList.add(InputByte.cast(characters[multiByteIndex]).getByte());
+                break;
+            }
+            bytesList.add(InputByte.cast(characters[multiByteIndex]).getByte());
+        }
+        // Undoing the reverse on the byte array to get the valid char
+        return new String(reverseBytesList(bytesList), StandardCharsets.UTF_8);
+    }
+
+    private byte[] reverseBytesList(List<Byte> bytesList) {
+        byte[] byteArray = new byte[bytesList.size()];
+        for (int i = 0; i < bytesList.size(); i++) {
+            byteArray[bytesList.size() - i - 1] = bytesList.get(i);
+        }
+        return byteArray;
+    }
+
+    private static String extractNextJavaCharacterFromInputCharactersForForwardArrays(InputCharacter[] characters, int i) {
         byte firstByte = InputByte.cast(characters[i]).getByte();
         if (firstByte >= MIN_FIRST_BYTE_FOR_ONE_BYTE_CHAR && firstByte <= MAX_FIRST_BYTE_FOR_ONE_BYTE_CHAR) {
             return new String(new byte[] { firstByte } , StandardCharsets.UTF_8);
@@ -873,7 +932,9 @@ class ByteMachine {
         case EXACT:
         case NUMERIC_EQ:
         case PREFIX:
+        case PREFIX_EQUALS_IGNORE_CASE:
         case SUFFIX:
+        case SUFFIX_EQUALS_IGNORE_CASE:
         case ANYTHING_BUT_SUFFIX:
         case ANYTHING_BUT_PREFIX:
         case EQUALS_IGNORE_CASE:
@@ -1583,11 +1644,13 @@ class ByteMachine {
         switch (pattern.type()) {
         case EXACT:
         case PREFIX:
+        case PREFIX_EQUALS_IGNORE_CASE:
         case EXISTS:
         case EQUALS_IGNORE_CASE:
         case WILDCARD:
             break;
         case SUFFIX:
+        case SUFFIX_EQUALS_IGNORE_CASE:
             hasSuffix.incrementAndGet();
             break;
         case NUMERIC_EQ:
@@ -1685,11 +1748,13 @@ class ByteMachine {
         switch (pattern.type()) {
         case EXACT:
         case PREFIX:
+        case PREFIX_EQUALS_IGNORE_CASE:
         case EXISTS:
         case EQUALS_IGNORE_CASE:
         case WILDCARD:
             break;
         case SUFFIX:
+        case SUFFIX_EQUALS_IGNORE_CASE:
             hasSuffix.decrementAndGet();
             break;
         case NUMERIC_EQ:

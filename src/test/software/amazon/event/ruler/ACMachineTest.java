@@ -351,6 +351,94 @@ public class ACMachineTest {
     }
 
     @Test
+    public void testPrefixEqualsIgnoreCase() throws Exception {
+        String rule1 = "{ \"a\" : [ { \"prefix\": { \"equals-ignore-case\" : \"zoo\" } } ] }";
+        String rule2 = "{ \"b\" : [ { \"prefix\": { \"equals-ignore-case\" : \"child\" } } ] }";
+        Machine machine = new Machine();
+        machine.addRule("r1", rule1);
+        machine.addRule("r2", rule2);
+        String[] events = {
+                "{\"a\": \"zOokeeper\"}",
+                "{\"a\": \"Zoo\"}",
+                "{\"b\": \"cHildlike\"}",
+                "{\"b\": \"chIldish\"}",
+                "{\"b\": \"childhood\"}"
+        };
+        for (String event : events) {
+            List<String> rules = machine.rulesForJSONEvent(event);
+            assertEquals(1, rules.size());
+            if (event.contains("\"a\"")) {
+                assertEquals("r1", rules.get(0));
+            } else {
+                assertEquals("r2", rules.get(0));
+            }
+        }
+
+        machine = new Machine();
+        String rule3 = "{ \"a\" : [ { \"prefix\": { \"equals-ignore-case\" : \"al\" } } ] }";
+        String rule4 = "{ \"a\" : [ \"ALbert\" ] }";
+        machine.addRule("r3", rule3);
+        machine.addRule("r4", rule4);
+        String e2 = "{ \"a\": \"ALbert\"}";
+        List<String> rules = machine.rulesForJSONEvent(e2);
+        assertEquals(2, rules.size());
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCase() throws Exception {
+        String rule1 = "{ \"a\" : [ { \"suffix\": { \"equals-ignore-case\" : \"eper\" } } ] }";
+        String rule2 = "{ \"b\" : [ { \"suffix\": { \"equals-ignore-case\" : \"hood\" } } ] }";
+        Machine machine = new Machine();
+        machine.addRule("r1", rule1);
+        machine.addRule("r2", rule2);
+        String[] events = {
+                "{\"a\": \"zookeePer\"}",
+                "{\"a\": \"Gatekeeper\"}",
+                "{\"b\": \"hOod\"}",
+                "{\"b\": \"parenthOod\"}",
+                "{\"b\": \"brotherhood\"}",
+                "{\"b\": \"childhOoD\"}"
+        };
+        for (String event : events) {
+            List<String> rules = machine.rulesForJSONEvent(event);
+            assertEquals(1, rules.size());
+            if (event.contains("\"a\"")) {
+                assertEquals("r1", rules.get(0));
+            } else {
+                assertEquals("r2", rules.get(0));
+            }
+        }
+
+        machine = new Machine();
+        String rule3 = "{ \"a\" : [ { \"suffix\": { \"equals-ignore-case\" : \"ert\" } } ] }";
+        String rule4 = "{ \"a\" : [ \"AlbeRT\" ] }";
+        machine.addRule("r3", rule3);
+        machine.addRule("r4", rule4);
+        String e2 = "{ \"a\": \"AlbeRT\"}";
+        List<String> rules = machine.rulesForJSONEvent(e2);
+        assertEquals(2, rules.size());
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseChineseMatch() throws Exception {
+        Machine m = new Machine();
+        String rule = "{\n" +
+                "   \"status\": {\n" +
+                "       \"weatherText\": [{\"suffix\": \"统治者\"}]\n" +
+                "    }\n" +
+                "}";
+        String eventStr ="{\n" +
+                "  \"status\": {\n" +
+                "    \"weatherText\": \"事件统治者\",\n" +
+                "    \"pm25\": 23\n" +
+                "  }\n" +
+                "}";
+        m.addRule("r1", rule);
+        List<String> matchRules = m.rulesForJSONEvent(eventStr);
+        assertEquals(1, matchRules.size());
+    }
+
+    @Test
     public void testSuffixChineseMatch() throws Exception {
         Machine m = new Machine();
         String rule = "{\n" +
@@ -1678,6 +1766,70 @@ public class ACMachineTest {
 
         String rule2 = "{\n" +
                 "  \"x\": [ { \"equals-ignore-case\": \"Y\" } ]\n" +
+                "}";
+
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        List<String> found = machine.rulesForJSONEvent(event);
+        assertEquals(2, found.size());
+        assertTrue(found.contains("rule1"));
+        assertTrue(found.contains("rule2"));
+
+        machine.deleteRule("rule1", rule1);
+        found = machine.rulesForJSONEvent(event);
+        assertEquals(1, found.size());
+        machine.deleteRule("rule2", rule2);
+        found = machine.rulesForJSONEvent(event);
+        assertEquals(0, found.size());
+        assertTrue(machine.isEmpty());
+    }
+
+    @Test
+    public void testAddAndDeleteTwoRulesSameCaseInsensitivePatternPrefixEqualsIgnoreCase() throws Exception {
+        final Machine machine = new Machine();
+        String event = "{\n" +
+                "  \"x\": \"yay\"\n" +
+                "}";
+
+        String rule1 = "{\n" +
+                "  \"x\": [ { \"prefix\": { \"equals-ignore-case\": \"y\" } } ]\n" +
+                "}";
+
+        String rule2 = "{\n" +
+                "  \"x\": [ { \"prefix\": { \"equals-ignore-case\": \"Y\" } } ]\n" +
+                "}";
+
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        List<String> found = machine.rulesForJSONEvent(event);
+        assertEquals(2, found.size());
+        assertTrue(found.contains("rule1"));
+        assertTrue(found.contains("rule2"));
+
+        machine.deleteRule("rule1", rule1);
+        found = machine.rulesForJSONEvent(event);
+        assertEquals(1, found.size());
+        machine.deleteRule("rule2", rule2);
+        found = machine.rulesForJSONEvent(event);
+        assertEquals(0, found.size());
+        assertTrue(machine.isEmpty());
+    }
+
+    @Test
+    public void testAddAndDeleteTwoRulesSameCaseInsensitivePatternSuffixEqualsIgnoreCase() throws Exception {
+        final Machine machine = new Machine();
+        String event = "{\n" +
+                "  \"x\": \"yay\"\n" +
+                "}";
+
+        String rule1 = "{\n" +
+                "  \"x\": [ { \"suffix\": { \"equals-ignore-case\": \"y\" } } ]\n" +
+                "}";
+
+        String rule2 = "{\n" +
+                "  \"x\": [ { \"suffix\": { \"equals-ignore-case\": \"Y\" } } ]\n" +
                 "}";
 
         machine.addRule("rule1", rule1);

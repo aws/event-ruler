@@ -1072,6 +1072,504 @@ public class ByteMachineTest {
     }
 
     @Test
+    public void testPrefixEqualsIgnoreCasePattern() {
+        String[] noMatches = new String[] { "", "JAV", "jav", "ava", "AVA", "xJAVA", "xjava", "jAV", "AVa" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("jAVa"),
+                        "java", "JAVA", "Java", "jAvA", "jAVa", "JaVa", "JAVAx", "javax", "JaVaaaaaaa")
+        );
+    }
+
+    @Test
+    public void testPrefixEqualsIgnoreCasePatternWithExactMatchAsPrefix() {
+        String[] noMatches = new String[] { "", "jA", "Ja", "JAV", "jav", "ava", "AVA", "xJAVA", "xjava", "jAV", "AVa" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("jAVa"),
+                        "java", "JAVA", "Java", "jAvA", "jAVa", "JaVa", "JAVAx", "javax", "JaVaaaaaaa"),
+                new PatternMatch(Patterns.exactMatch("ja"),
+                        "ja")
+        );
+    }
+
+    @Test
+    public void testPrefixEqualsIgnoreCasePatternWithExactMatchAsPrefixLengthOneLess() {
+        String[] noMatches = new String[] { "", "JAV" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("jAVa"),
+                        "java", "jAVa", "JavA", "JAVA", "javax"),
+                new PatternMatch(Patterns.exactMatch("jav"),
+                        "jav")
+        );
+    }
+
+    @Test
+    public void testPrefixEqualsIgnoreCasePatternNonLetterCharacters() {
+        String[] noMatches = new String[] { "", "2#$^sS我ŐaBc", "1#%^sS我ŐaBc", "1#$^sS大ŐaBc", "1#$^sS我ŏaBc" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("1#$^sS我ŐaBc"),
+                        "1#$^sS我ŐaBcd", "1#$^Ss我ŐAbCaaaaa", "1#$^Ss我ŐAbC我")
+        );
+    }
+
+    @Test
+    public void testPrefixEqualsIgnoreCaseLowerCaseCharacterWithDifferentByteLengthForUpperCase() {
+        String[] noMatches = new String[] { "", "12a34", "12A34" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("12ⱥ34"),
+                        "12ⱥ34", "12Ⱥ34", "12ⱥ3478", "12Ⱥ34aa", "12Ⱥ34ȺȺ")
+        );
+    }
+
+    @Test
+    public void testPrefixEqualsIgnoreCaseUpperCaseCharacterWithDifferentByteLengthForLowerCase() {
+        String[] noMatches = new String[] { "", "12a34", "12A34" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("12Ⱥ34"),
+                        "12ⱥ34", "12Ⱥ34", "12ⱥ3478", "12Ⱥ34aa", "12Ⱥ34ⱥȺ")
+        );
+    }
+
+    @Test
+    public void testPrefixEqualsIgnoreCaseLowerCaseCharacterWithDifferentByteLengthForUpperCaseAtStartOfString() {
+        String[] noMatches = new String[] { "", "a12", "A12" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("ⱥ12"),
+                        "ⱥ12", "Ⱥ12", "ⱥ1234", "Ⱥ12ab", "ⱥ12ⱥⱥ", "Ⱥ12ⱥⱥ")
+        );
+    }
+
+    @Test
+    public void testPrefixEqualsIgnoreCaseUpperCaseCharacterWithDifferentByteLengthForLowerCaseAtStartOfString() {
+        String[] noMatches = new String[] { "", "a12", "A12" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("Ⱥ12"),
+                        "ⱥ12", "Ⱥ12", "ⱥ1234", "Ⱥ12ab", "ⱥ12ⱥⱥ", "Ⱥ12ⱥⱥ")
+        );
+    }
+
+
+    @Test
+    public void testPrefixEqualsIgnoreCaseLowerCaseCharacterWithDifferentByteLengthForUpperCaseAtEndOfString() {
+        String[] noMatches = new String[] { "", "12a", "12A" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("12ⱥ"),
+                        "12ⱥ", "12Ⱥ", "12ⱥⱥⱥⱥⱥ", "12ȺȺȺȺ", "12ȺⱥⱥȺⱥⱥȺ")
+        );
+    }
+
+    @Test
+    public void testPrefixEqualsIgnoreCaseUpperCaseCharacterWithDifferentByteLengthForLowerCaseAtEndOfString() {
+        String[] noMatches = new String[] { "", "12a", "12A" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("12Ⱥ"),
+                        "12ⱥ", "12Ⱥ", "12ⱥⱥⱥⱥⱥ", "12ȺȺȺȺ", "12ȺⱥⱥȺⱥⱥȺ")
+        );
+    }
+
+    @Test
+    public void testPrefixEqualsIgnoreCaseManyCharactersWithDifferentByteLengthForLowerCaseAndUpperCase() {
+        String[] noMatches = new String[] { "", "Ϋ́ȿⱯΐΫ́Η͂k", "ΰⱾɐΪ́ΰῆK" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("ΰɀɐΐΰῆK"),
+                        "Ϋ́ɀⱯΐΫ́Η͂k", "ΰⱿɐΪ́ΰῆK", "Ϋ́ⱿⱯΪ́Ϋ́ῆk", "ΰɀɐΐΰΗ͂K", "Ϋ́ɀⱯΐΫ́Η͂kÄ́ɀⱯΐΫ́Η͂", "ΰⱿɐΪ́ΰῆKä́ɀⱯΐΫ́Η͂")
+        );
+    }
+
+    @Test
+    public void testPrefixEqualsIgnoreCaseMiddleCharacterWithDifferentByteLengthForLowerCaseAndUpperCaseWithPrefixMatches() {
+        String[] noMatches = new String[] { "", "a", "aa" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("abȺcd"),
+                        "abⱥcd", "abȺcd", "abⱥcdea", "abȺcdCCC"),
+                new PatternMatch(Patterns.prefixMatch("ab"),
+                        "ab", "abⱥ", "abȺ", "abⱥcd", "abȺcd", "abⱥcdea", "abȺcdCCC"),
+                new PatternMatch(Patterns.prefixMatch("abⱥ"),
+                        "abⱥ", "abⱥcd", "abⱥcdea"),
+                new PatternMatch(Patterns.prefixMatch("abȺ"),
+                        "abȺ", "abȺcd", "abȺcdCCC")
+        );
+    }
+
+    @Test
+    public void testPrefixEqualsIgnoreCaseLastCharacterWithDifferentByteLengthForLowerCaseAndUpperCaseWithPrefixMatches() {
+        String[] noMatches = new String[] { "", "ab" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("abcȺ"),
+                        "abcⱥ", "abcȺ", "abcⱥaa", "abcȺbb"),
+                new PatternMatch(Patterns.prefixMatch("abc"),
+                        "abc", "abca", "abcA", "abcⱥ", "abcȺ", "abcⱥaa", "abcȺbb"),
+                new PatternMatch(Patterns.prefixMatch("abca"),
+                        "abca"),
+                new PatternMatch(Patterns.prefixMatch("abcA"),
+                        "abcA")
+        );
+    }
+
+    @Test
+    public void testPrefixEqualsIgnoreCaseFirstCharacterWithDifferentByteLengthForCasesWithLowerCasePrefixMatch() {
+        String[] noMatches = new String[] { "", "ⱥ", "Ⱥ", "c" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("ⱥc"),
+                        "ⱥc", "Ⱥc", "ⱥcd"),
+                new PatternMatch(Patterns.prefixMatch("ⱥc"),
+                        "ⱥc", "ⱥcd")
+        );
+    }
+
+
+    @Test
+    public void testPrefixEqualsIgnoreCaseFirstCharacterWithDifferentByteLengthForCasesWithUpperCasePrefixMatch() {
+        String[] noMatches = new String[] { "", "ⱥ", "Ⱥ", "c" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("Ⱥc"),
+                        "ⱥc", "Ⱥc", "ⱥcdddd", "Ⱥcd"),
+                new PatternMatch(Patterns.prefixMatch("Ⱥc"),
+                        "Ⱥc", "Ⱥcd")
+        );
+    }
+
+    @Test
+    public void testPrefixEqualsIgnoreCaseWhereLowerAndUpperCaseAlreadyExist() {
+        String[] noMatches = new String[] { "", "a", "b" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixMatch("ab"),
+                        "ab", "abc", "abC"),
+                new PatternMatch(Patterns.prefixMatch("AB"),
+                        "AB", "ABC", "ABc"),
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("ab"),
+                        "ab", "AB", "Ab", "aB", "ab", "abc", "abC", "AB", "ABC", "ABc")
+        );
+    }
+
+
+
+    @Test
+    public void testPrefixEqualsIgnoreCasePatternMultipleWithMultipleExactMatch() {
+        String[] noMatches = new String[] { "", "he", "HEL", "hell", "HELL"};
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("hElLo"),
+                        "hello", "hellox", "HeLlOx", "hElLoX", "HELLOX", "HELLO", "HeLlO", "hElLo"),
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("HeLlOX"),
+                        "hellox", "HELLOX", "HeLlOx", "hElLoX"),
+                new PatternMatch(Patterns.exactMatch("hello"),
+                        "hello"),
+                new PatternMatch(Patterns.exactMatch("HELLO"),
+                        "HELLO"),
+                new PatternMatch(Patterns.exactMatch("hel"),
+                        "hel")
+        );
+    }
+
+    @Test
+    public void testPrefixEqualsIgnoreCasePatternMultipleWithMultipleEqualsIgnoreCaseMatch() {
+        String[] noMatches = new String[] { "", "he", "hell", "HELL" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("hElLo"),
+                        "hello", "hellox", "HELLOX", "HeLlOx", "hElLoX", "helloxx"),
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("HeLlOX"),
+                        "hellox", "HELLOX", "HeLlOx", "hElLoX", "helloxx"),
+                new PatternMatch(Patterns.equalsIgnoreCaseMatch("hello"),
+                        "hello"),
+                new PatternMatch(Patterns.equalsIgnoreCaseMatch("hel"),
+                        "hel", "HEL")
+        );
+    }
+
+    @Test
+    public void testPrefixEqualsIgnoreCaseWithExactMatchLeadingCharacterSameLowerAndUpperCase() {
+        String[] noMatches = new String[] { "", "!", "!A", "a", "A", "b", "B" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("!b"),
+                        "!b", "!B", "!bcd", "!BCdE"),
+                new PatternMatch(Patterns.exactMatch("!a"),
+                        "!a")
+        );
+    }
+
+    @Test
+    public void testPrefixEqualsIgnoreCaseWithPrefixMatchLeadingCharacterSameLowerAndUpperCase() {
+        String[] noMatches = new String[] { "", "!", "!A", "a", "A", "b", "B" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("!b"),
+                        "!b", "!B", "!bcd", "!BCdE"),
+                new PatternMatch(Patterns.prefixMatch("!a"),
+                        "!a")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCasePattern() {
+        String[] noMatches = new String[] { "", "JAV", "jav", "ava", "AVA", "JAVAx", "javax", "jAV", "AVa" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("jAVa"),
+                        "java", "JAVA", "Java", "jAvA", "jAVa", "JaVa", "helloJAVA", "hijava", "jjjjjjJaVa")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCasePatternWithReverseExactMatchAsSuffix() {
+        String[] noMatches = new String[] { "", "jA", "Ja", "JAV", "jav", "ava", "AVA", "JAVAx", "javax", "jAV", "AVa" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("jAVa"),
+                        "java", "JAVA", "Java", "jAvA", "jAVa", "JaVa", "xJAVA", "xjava", "jjJJJJaVa"),
+                new PatternMatch(Patterns.exactMatch("av"),
+                        "av")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCasePatternWithReverseExactMatchAsSuffixLengthOneLess() {
+        String[] noMatches = new String[] { "", "JAV" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("jAVa"),
+                        "java", "jAVa", "JavA", "JAVA", "xjava"),
+                new PatternMatch(Patterns.exactMatch("ava"),
+                        "ava")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCasePatternNonLetterCharacters() {
+        String[] noMatches = new String[] { "", "1#$^sS我ŐaBd", "1#%^sS我ŐaBc", "1#$^sS大ŐaBc", "1#$^sS我ŏaBc" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("1#$^sS我ŐaBc"),
+                        "aa1#$^sS我ŐaBc", "1111#$^Ss我ŐAbC", "我我1#$^Ss我ŐAbC")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseLowerCaseCharacterWithDifferentByteLengthForUpperCase() {
+        String[] noMatches = new String[] { "", "12a34", "12A34" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("12ⱥ34"),
+                        "12ⱥ34", "12Ⱥ34", "7812ⱥ34", "aa12Ⱥ34", "ȺȺ12Ⱥ34")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseUpperCaseCharacterWithDifferentByteLengthForLowerCase() {
+        String[] noMatches = new String[] { "", "12a34", "12A34" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("12Ⱥ34"),
+                        "12ⱥ34", "12Ⱥ34", "7812ⱥ34", "aa12Ⱥ34", "ⱥȺ12Ⱥ34")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseLowerCaseCharacterWithDifferentByteLengthForUpperCaseAtStartOfString() {
+        String[] noMatches = new String[] { "", "a12", "A12" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("ⱥ12"),
+                        "ⱥ12", "Ⱥ12", "34ⱥ12", "abȺ12", "ⱥⱥⱥ12", "ⱥⱥȺ12")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseUpperCaseCharacterWithDifferentByteLengthForLowerCaseAtStartOfString() {
+        String[] noMatches = new String[] { "", "a12", "A12" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("Ⱥ12"),
+                        "ⱥ12", "Ⱥ12", "34ⱥ12", "abȺ12", "ⱥⱥⱥ12", "ⱥⱥȺ12")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseLowerCaseCharacterWithDifferentByteLengthForUpperCaseAtEndOfString() {
+        String[] noMatches = new String[] { "", "12a", "12A" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("12ⱥ"),
+                        "12ⱥ", "12Ⱥ", "ⱥⱥⱥⱥ12ⱥ", "ȺȺȺ12Ⱥ", "ⱥⱥȺⱥⱥȺ12Ⱥ")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseUpperCaseCharacterWithDifferentByteLengthForLowerCaseAtEndOfString() {
+        String[] noMatches = new String[] { "", "12a", "12A" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("12Ⱥ"),
+                        "12ⱥ", "12Ⱥ", "ⱥⱥⱥⱥ12ⱥ", "ȺȺȺ12Ⱥ", "ⱥⱥȺⱥⱥȺ12Ⱥ")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseManyCharactersWithDifferentByteLengthForLowerCaseAndUpperCase() {
+        String[] noMatches = new String[] { "", "Ϋ́ȿⱯΐΫ́Η͂k", "ΰⱾɐΪ́ΰῆK" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("ΰɀɐΐΰῆK"),
+                        "Ϋ́ɀⱯΐΫ́Η͂k", "ΰⱿɐΪ́ΰῆK", "Ϋ́ⱿⱯΪ́Ϋ́ῆk", "ΰɀɐΐΰΗ͂K", "Ä́ɀⱯΐΫ́Η͂Ϋ́ɀⱯΐΫ́Η͂k", "ä́ɀⱯΐΫ́Η͂ΰⱿɐΪ́ΰῆK")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseMiddleCharacterWithDifferentByteLengthForLowerCaseAndUpperCaseWithSuffixMatches() {
+        String[] noMatches = new String[] { "", "a", "aa" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("abȺcd"),
+                        "abⱥcd", "abȺcd", "eaabⱥcd", "CCCabȺcd"),
+                new PatternMatch(Patterns.suffixMatch("cd"),
+                        "cd", "ⱥcd", "Ⱥcd", "abⱥcd", "abȺcd", "abⱥcd", "eaabⱥcd", "CCCabȺcd"),
+                new PatternMatch(Patterns.suffixMatch("ⱥcd"),
+                        "ⱥcd", "abⱥcd", "eaabⱥcd"),
+                new PatternMatch(Patterns.suffixMatch("Ⱥcd"),
+                        "Ⱥcd", "abȺcd", "CCCabȺcd")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseLastCharacterWithDifferentByteLengthForLowerCaseAndUpperCaseWithSuffixMatches() {
+        String[] noMatches = new String[] { "", "ab" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("abcȺ"),
+                        "abcⱥ", "abcȺ", "AbcȺ", "aaabcⱥ", "bbabcȺ"),
+                new PatternMatch(Patterns.suffixMatch("bcȺ"),
+                        "bcȺ", "abcȺ", "AbcȺ", "ⱥbcȺ", "bbabcȺ"),
+                new PatternMatch(Patterns.suffixMatch("abca"),
+                        "abca"),
+                new PatternMatch(Patterns.suffixMatch("abcA"),
+                        "abcA")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseFirstCharacterWithDifferentByteLengthForCasesWithLowerCaseSuffixMatch() {
+        String[] noMatches = new String[] { "", "ⱥ", "Ⱥ", "c" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("ⱥc"),
+                        "ⱥc", "Ⱥc", "dⱥc"),
+                new PatternMatch(Patterns.suffixMatch("ⱥc"),
+                        "ⱥc", "dⱥc")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseFirstCharacterWithDifferentByteLengthForCasesWithUpperCaseSuffixMatch() {
+        String[] noMatches = new String[] { "", "ⱥ", "Ⱥ", "c" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("Ⱥc"),
+                        "ⱥc", "Ⱥc", "ddddⱥc", "dȺc"),
+                new PatternMatch(Patterns.suffixMatch("Ⱥc"),
+                        "Ⱥc", "dȺc")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseWhereLowerAndUpperCaseAlreadyExist() {
+        String[] noMatches = new String[] { "", "a", "b" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixMatch("ab"),
+                        "ab", "cab", "Cab"),
+                new PatternMatch(Patterns.suffixMatch("AB"),
+                        "AB", "CAB", "cAB"),
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("ab"),
+                        "ab", "AB", "Ab", "aB", "ab", "cab", "Cab", "AB", "CAB", "cAB")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCasePatternMultipleWithMultipleExactMatch() {
+        String[] noMatches = new String[] { "", "he", "HEL", "hell", "HELL"};
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("hElLo"),
+                        "hello", "xhello", "xHeLlO", "XhElLo", "XHELLO", "HELLO", "HeLlO", "hElLo"),
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("XHeLlO"),
+                        "xhello", "XHELLO", "xHeLlO", "XhElLo"),
+                new PatternMatch(Patterns.exactMatch("hello"),
+                        "hello"),
+                new PatternMatch(Patterns.exactMatch("HELLO"),
+                        "HELLO"),
+                new PatternMatch(Patterns.exactMatch("hel"),
+                        "hel")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCasePatternMultipleWithMultipleEqualsIgnoreCaseMatch() {
+        String[] noMatches = new String[] { "", "he", "hell", "HELL" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("hElLo"),
+                        "hello", "xhello", "XHELLO", "xHeLlO", "XhElLo", "xxhello"),
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("XHeLlO"),
+                        "xhello", "XHELLO", "xHeLlO", "XhElLo", "xxhello"),
+                new PatternMatch(Patterns.equalsIgnoreCaseMatch("hello"),
+                        "hello"),
+                new PatternMatch(Patterns.equalsIgnoreCaseMatch("hel"),
+                        "hel", "HEL")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseWithExactMatchLeadingCharacterSameLowerAndUpperCase() {
+        String[] noMatches = new String[] { "", "!", "!A", "a", "A", "b", "B" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("b!"),
+                        "b!", "B!", "cdb!", "CdEB!"),
+                new PatternMatch(Patterns.exactMatch("!a"),
+                        "!a")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseWithPrefixMatchLeadingCharacterSameLowerAndUpperCase() {
+        String[] noMatches = new String[] { "", "!", "!A", "a", "A", "b", "B" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixMatch("!b"),
+                        "!b"),
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("b!"),
+                        "b!", "B!", "cdb!", "CdEB!"),
+                new PatternMatch(Patterns.prefixMatch("!a"),
+                        "!a")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseWithWildcardMatchBeingAddedLater() {
+        String[] noMatches = new String[] { "", "!", "!A", "a", "A", "b", "B" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("b!"),
+                        "b!", "B!", "cdb!", "CdEB!"),
+                new PatternMatch(Patterns.wildcardMatch("*b"),
+                        "!b", "b")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseWithExistingWildcardMatch() {
+        String[] noMatches = new String[] { "", "!", "!A", "a", "A", "b", "B" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.wildcardMatch("*b"),
+                        "!b", "b"),
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("b!"),
+                        "b!", "B!", "cdb!", "CdEB!")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseWithPrefixEqualsIgnoreCaseMatchBeingAddedLater() {
+        String[] noMatches = new String[] { "", "ab", "bcȺ", "bcⱥ" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("abcȺ"),
+                        "abcⱥ", "abcȺ", "AbcȺ", "aaabcⱥ", "bbabcȺ", "ⱥcbaabcȺ", "ⱥcbaabcⱥ"),
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("Ⱥcba"),
+                        "ⱥcba", "Ⱥcba", "Ⱥcba", "ⱥcbaaa", "Ⱥcbabb", "ⱥcbaabcȺ", "ⱥcbaabcⱥ"),
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("abcȺ"),
+                        "abcⱥ", "abcȺ", "AbcȺ", "abcⱥaa", "abcȺbb")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseWithExistingPrefixEqualsIgnoreCaseMatch() {
+        String[] noMatches = new String[] { "", "ab", "bcȺ", "bcⱥ" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("Ⱥcba"),
+                        "ⱥcba", "Ⱥcba", "Ⱥcba", "ⱥcbaaa", "Ⱥcbabb", "ⱥcbaabcȺ", "ⱥcbaabcⱥ"),
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("abcȺ"),
+                        "abcⱥ", "abcȺ", "AbcȺ", "abcⱥaa", "abcȺbb"),
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("abcȺ"),
+                        "abcⱥ", "abcȺ", "AbcȺ", "aaabcⱥ", "bbabcȺ", "ⱥcbaabcȺ", "ⱥcbaabcⱥ")
+        );
+    }
+
+    @Test
     public void testWildcardSingleWildcardCharacter() {
         testPatternPermutations(
                 new PatternMatch(Patterns.wildcardMatch("*"),
