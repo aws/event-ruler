@@ -597,7 +597,9 @@ static methods are useful.
 ```java
 public static ValuePatterns exactMatch(final String value);
 public static ValuePatterns prefixMatch(final String prefix);
+public static ValuePatterns prefixEqualsIgnoreCaseMatch(final String prefix);
 public static ValuePatterns suffixMatch(final String suffix);
+public static ValuePatterns suffixEqualsIgnoreCaseMatch(final String suffix);
 public static ValuePatterns equalsIgnoreCaseMatch(final String value);
 public static ValuePatterns wildcardMatch(final String value);
 public static AnythingBut anythingButMatch(final String anythingBut);
@@ -743,6 +745,8 @@ counts the matches, yields the following on a 2019 MacBook:
 
 Events are processed at over 220K/second except for:
  - equals-ignore-case matches, which are processed at over 200K/second.
+ - prefix/equals-ignore-case matches, which are processed at over 200K/second.
+ - suffix/equals-ignore-case matches, which are processed at over 200K/second.
  - wildcard matches, which are processed at over 170K/second.
  - anything-but matches, which are processed at over 150K/second.
  - numeric matches, which are processed at over 120K/second.
