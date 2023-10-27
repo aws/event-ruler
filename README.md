@@ -96,7 +96,7 @@ intersection between the event array and rule-array is non-empty.
 ```
 Prefix matches only work on string-valued fields.
 
-###Prefix equals-ignore-case matching
+### Prefix equals-ignore-case matching
 
 ```javascript
 {
@@ -114,7 +114,7 @@ Prefix equals-ignore-case matches only work on string-valued fields.
 ```
 Suffix matches only work on string-valued fields.
 
-###Suffix equals-ignore-case matching
+### Suffix equals-ignore-case matching
 
  ```javascript
  {
