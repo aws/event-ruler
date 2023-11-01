@@ -466,6 +466,72 @@ event). Here are some data points showing a typical decrease in performance for 
 - Complexity = 275, Events per Second = 100 (extrapolated data point)
 - Complexity = 650, Events per Second = 10 (extrapolated data point)
 
+It is important to limit machine complexity to protect your application. There are at least two different strategies for
+limiting machine complexity. Which one makes more sense may depend on your application.
+
+1. Aggregate Complexity. Create a machine using all rules, evaluate the complexity, and reject the rule set (or the
+   current rule being added) if it exceeds the threshold.
+2. Individual Complexity. Create a machine using just an individual rule (not all rules), evaluate the complexity, and
+   reject the rule if it exceeds the threshold. In addition, limit the number of rules that can be created that contain
+   a wildcard pattern.
+
+Strategy #1 is more ideal in that it measures the actual complexity of the machine containing all the rules. When
+possible, this strategy should be used. The downside is, let's say you have a control plane that allows the creation of
+one rule at a time, up to a very large number. Then for each of these control plane operations, you must load all the
+existing rules to perform the validation. This could be very expensive. It is also prone to race conditions.
+Strategy #2 is a compromise. The threshold used by strategy #2 will be lower than strategy #1 since it is a per-rule
+threshold. Let's say you want a machine's complexity, with all rules added, to be no more than 300. Then with
+strategy #2, for example, you could limit each single-rule machine to complexity of 10, and allow for 30 rules containing
+wildcard patterns. In an absolute worst case where complexity is perfectly additive (unlikely), this would lead to a
+machine with complexity of 300. The downside is that it is unlikely that the complexity will be perfectly additive, and
+so the number of wildcard-containing rules will likely be limited unnecessarily.
+
+For strategy #2, depending on how rules are stored, an additional attribute may need to be added to rules to indicate
+which ones are nondeterministic (i.e. contain wildcard patterns) in order to limit the number of wildcard-containing
+rules.
+
+The following is a code snippet illustrating how to limit complexity for a given pattern, like for strategy #2.
+
+```java
+public class Validate {
+    private void validate(String pattern, MachineComplexityEvaluator machineComplexityEvaluator) {
+        // If we cannot compile, then return exception.
+        List<Map<String, List<Patterns>>> compilationResult = Lists.newArrayList();
+        try {
+            compilationResult.addAll(JsonRuleCompiler.compile(pattern));
+        } catch (Exception e) {
+            InvalidPatternException internalException =
+                    EXCEPTION_FACTORY.invalidPatternException(e.getLocalizedMessage());
+            throw ExceptionMapper.mapToModeledException(internalException);
+        }
+
+        // Validate wildcard patterns. Look for wildcard patterns out of all patterns that have been used.
+        Machine machine = new Machine();
+        int i = 0;
+        ruleLoop: for (Map<String, List<Patterns>> rule : compilationResult) {
+            for (List<Patterns> fieldPatterns : rule.values()) {
+                for (Patterns fieldPattern : fieldPatterns) {
+                    if (fieldPattern.type() == WILDCARD) {
+                        // Add rule to machine for complexity evaluation.
+                        machine.addPatternRule(Integer.toString(++i), rule);
+
+                        // Move on to the next rule.
+                        continue ruleLoop;
+                    }
+                }
+            }
+        }
+
+        // Machine has all rules containing wildcard match types. See if the complexity is under the limit.
+        int complexity = machine.evaluateComplexity(machineComplexityEvaluator);
+        if (complexity > MAX_MACHINE_COMPLEXITY) {
+            InvalidPatternException internalException = EXCEPTION_FACTORY.invalidPatternException("Rule is too complex");
+            throw ExceptionMapper.mapToModeledException(internalException);
+        }
+    }
+}
+```
+
 The main class you'll interact with implements state-machine based rule
 matching.  The interesting methods are:
 
