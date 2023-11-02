@@ -28,6 +28,10 @@ class NameState {
     // while add/delete Rule is active in another thread, without any locks.
     private final Map<String, NameMatcher<NameState>> mustNotExistMatchers = new ConcurrentHashMap<>(1);
 
+    // Maps a key to the next NameState accessible via either valueTransitions or mustNotExistMatchers.
+    // Only used when Configuration is set for additionalNameStateReuse.
+    private final Map<String, NameState> keyToNextNameState = new ConcurrentHashMap<>();
+
     // All rules, both terminal and non-terminal, keyed by pattern, that led to this NameState.
     private final Map<Patterns, Set<Object>> patternToRules = new ConcurrentHashMap<>();
 
@@ -153,6 +157,12 @@ class NameState {
         mustNotExistMatchers.remove(name);
     }
 
+    void removeNextNameState(String key, Configuration configuration) {
+        if (configuration.isAdditionalNameStateReuse()) {
+            keyToNextNameState.remove(key);
+        }
+    }
+
     boolean isEmpty() {
         return  valueTransitions.isEmpty() &&
                 mustNotExistMatchers.isEmpty() &&
@@ -213,6 +223,12 @@ class NameState {
 
     void addKeyTransition(final String key, final NameMatcher<NameState> to) {
         mustNotExistMatchers.put(key, to);
+    }
+
+    void addNextNameState(final String key, final NameState nextNameState, final Configuration configuration) {
+        if (configuration.isAdditionalNameStateReuse()) {
+            keyToNextNameState.put(key, nextNameState);
+        }
     }
 
     NameMatcher<NameState> getKeyTransitionOn(final String token) {
@@ -284,6 +300,10 @@ class NameState {
         return nextNameStates;
     }
 
+    public NameState getNextNameState(String key) {
+        return keyToNextNameState.get(key);
+    }
+
     public int evaluateComplexity(MachineComplexityEvaluator evaluator) {
         int maxComplexity = evaluator.getMaxComplexity();
         int complexity = 0;
@@ -321,6 +341,7 @@ class NameState {
         return "NameState{" +
                 "valueTransitions=" + valueTransitions +
                 ", mustNotExistMatchers=" + mustNotExistMatchers +
+                ", keyToNextNameState=" + keyToNextNameState +
                 ", patternToRules=" + patternToRules +
                 ", patternToTerminalSubRuleIds=" + patternToTerminalSubRuleIds +
                 ", patternToNonTerminalSubRuleIds=" + patternToNonTerminalSubRuleIds +

@@ -38,6 +38,11 @@ public class GenericMachine<T> {
     private static final int MAXIMUM_RULE_SIZE = 256;
 
     /**
+     * Configuration for the Machine.
+     */
+    private final Configuration configuration;
+
+    /**
      * The start state of matching and adding rules.
      */
     private final NameState startState = new NameState();
@@ -56,7 +61,13 @@ public class GenericMachine<T> {
      */
     private final SubRuleContext.Generator subRuleContextGenerator = new SubRuleContext.Generator();
 
-    public GenericMachine() {}
+    public GenericMachine() {
+        this(new Configuration.Builder().build());
+    }
+
+    public GenericMachine(Configuration configuration) {
+        this.configuration = configuration;
+    }
 
     /**
      * Return any rules that match the fields in the event in a way that is Array-Consistent (thus trailing "AC" on
@@ -322,6 +333,7 @@ public class GenericMachine<T> {
                             if (!doesNameStateContainPattern(nextNameState, pattern) &&
                                     deletePattern(state, key, pattern)) {
                                 deletedKeys.add(key);
+                                state.removeNextNameState(key, configuration);
                             }
                         }
                     }
@@ -340,6 +352,7 @@ public class GenericMachine<T> {
                     // does not transition to the next NameState.
                     if (!doesNameStateContainPattern(nextNameState, pattern) && deletePattern(state, key, pattern)) {
                         deletedKeys.add(key);
+                        state.removeNextNameState(key, configuration);
                     }
                 }
             }
@@ -545,6 +558,15 @@ public class GenericMachine<T> {
         // for each pattern, we'll provisionally add it to the BMC, which may already have it.  Pass the states
         // list in in case the BMC doesn't already have a next-step for this pattern and needs to make a new one
         NameState lastNextState = null;
+
+        if (configuration.isAdditionalNameStateReuse()) {
+            lastNextState = state.getNextNameState(key);
+            if (lastNextState == null) {
+                lastNextState = new NameState();
+                state.addNextNameState(key, lastNextState, configuration);
+            }
+        }
+
         Set<NameState> nameStates = new HashSet<>();
         if (nameStatesForEachKey[keyIndex] == null) {
             nameStatesForEachKey[keyIndex] = new HashSet<>();
@@ -553,7 +575,6 @@ public class GenericMachine<T> {
             if (isNamePattern(pattern)) {
                 lastNextState = nameMatcher.addPattern(pattern, lastNextState == null ? new NameState() : lastNextState);
             } else {
-                assert byteMachine != null;
                 lastNextState = byteMachine.addPattern(pattern, lastNextState);
             }
             nameStates.add(lastNextState);

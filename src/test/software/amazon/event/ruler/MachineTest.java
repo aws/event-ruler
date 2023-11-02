@@ -2621,4 +2621,46 @@ public class MachineTest {
                         "}");
         assertEquals(608, machine.approximateObjectCount(10000));
     }
+
+    @Test
+    public void testApproximateObjectCountEachKeyHasThreePatternsAddedOneAtATime() throws Exception {
+        Machine machine = new Machine();
+        testApproximateObjectCountEachKeyHasThreePatternsAddedOneAtATime(machine);
+        assertEquals(72216, machine.approximateObjectCount(500000));
+    }
+
+    @Test
+    public void testApproximateObjectCountEachKeyHasThreePatternsAddedOneAtATimeWithAdditionalNameStateReuse() throws Exception {
+        Machine machine = new Machine(new Configuration.Builder().withAdditionalNameStateReuse(true).build());
+        testApproximateObjectCountEachKeyHasThreePatternsAddedOneAtATime(machine);
+        assertEquals(136, machine.approximateObjectCount(500000));
+    }
+
+    private void testApproximateObjectCountEachKeyHasThreePatternsAddedOneAtATime(Machine machine) throws Exception {
+        machine.addRule("0", "{\"key1\": [\"a\"]}");
+        machine.addRule("1", "{\"key1\": [\"b\"]}");
+        machine.addRule("2", "{\"key1\": [\"c\"]}");
+        machine.addRule("3", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"d\"]}");
+        machine.addRule("4", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"e\"]}");
+        machine.addRule("5", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"f\"]}");
+        machine.addRule("6", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"d\", \"e\", \"f\"], \"key3\": [\"g\"]}");
+        machine.addRule("7", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"d\", \"e\", \"f\"], \"key3\": [\"h\"]}");
+        machine.addRule("8", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"d\", \"e\", \"f\"], \"key3\": [\"i\"]}");
+        machine.addRule("9", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"d\", \"e\", \"f\"], \"key3\": [\"g\", \"h\", \"i\"], \"key4\": [\"j\"]}");
+        machine.addRule("10", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"d\", \"e\", \"f\"], \"key3\": [\"g\", \"h\", \"i\"], \"key4\": [\"k\"]}");
+        machine.addRule("11", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"d\", \"e\", \"f\"], \"key3\": [\"g\", \"h\", \"i\"], \"key4\": [\"l\"]}");
+        machine.addRule("12", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"d\", \"e\", \"f\"], \"key3\": [\"g\", \"h\", \"i\"], \"key4\": [\"j\", \"k\", \"l\"], \"key5\": [\"m\"]}");
+        machine.addRule("13", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"d\", \"e\", \"f\"], \"key3\": [\"g\", \"h\", \"i\"], \"key4\": [\"j\", \"k\", \"l\"], \"key5\": [\"n\"]}");
+        machine.addRule("14", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"d\", \"e\", \"f\"], \"key3\": [\"g\", \"h\", \"i\"], \"key4\": [\"j\", \"k\", \"l\"], \"key5\": [\"o\"]}");
+        machine.addRule("15", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"d\", \"e\", \"f\"], \"key3\": [\"g\", \"h\", \"i\"], \"key4\": [\"j\", \"k\", \"l\"], \"key5\": [\"m\", \"n\", \"o\"], \"key6\": [\"p\"]}");
+        machine.addRule("16", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"d\", \"e\", \"f\"], \"key3\": [\"g\", \"h\", \"i\"], \"key4\": [\"j\", \"k\", \"l\"], \"key5\": [\"m\", \"n\", \"o\"], \"key6\": [\"q\"]}");
+        machine.addRule("17", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"d\", \"e\", \"f\"], \"key3\": [\"g\", \"h\", \"i\"], \"key4\": [\"j\", \"k\", \"l\"], \"key5\": [\"m\", \"n\", \"o\"], \"key6\": [\"r\"]}");
+        machine.addRule("18", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"d\", \"e\", \"f\"], \"key3\": [\"g\", \"h\", \"i\"], \"key4\": [\"j\", \"k\", \"l\"], \"key5\": [\"m\", \"n\", \"o\"], \"key6\": [\"p\", \"q\", \"r\"], \"key7\": [\"s\"]}");
+        machine.addRule("19", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"d\", \"e\", \"f\"], \"key3\": [\"g\", \"h\", \"i\"], \"key4\": [\"j\", \"k\", \"l\"], \"key5\": [\"m\", \"n\", \"o\"], \"key6\": [\"p\", \"q\", \"r\"], \"key7\": [\"t\"]}");
+        machine.addRule("20", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"d\", \"e\", \"f\"], \"key3\": [\"g\", \"h\", \"i\"], \"key4\": [\"j\", \"k\", \"l\"], \"key5\": [\"m\", \"n\", \"o\"], \"key6\": [\"p\", \"q\", \"r\"], \"key7\": [\"u\"]}");
+        machine.addRule("21", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"d\", \"e\", \"f\"], \"key3\": [\"g\", \"h\", \"i\"], \"key4\": [\"j\", \"k\", \"l\"], \"key5\": [\"m\", \"n\", \"o\"], \"key6\": [\"p\", \"q\", \"r\"], \"key7\": [\"s\", \"t\", \"u\"], \"key8\": [\"v\"]}");
+        machine.addRule("22", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"d\", \"e\", \"f\"], \"key3\": [\"g\", \"h\", \"i\"], \"key4\": [\"j\", \"k\", \"l\"], \"key5\": [\"m\", \"n\", \"o\"], \"key6\": [\"p\", \"q\", \"r\"], \"key7\": [\"s\", \"t\", \"u\"], \"key8\": [\"w\"]}");
+        machine.addRule("23", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"d\", \"e\", \"f\"], \"key3\": [\"g\", \"h\", \"i\"], \"key4\": [\"j\", \"k\", \"l\"], \"key5\": [\"m\", \"n\", \"o\"], \"key6\": [\"p\", \"q\", \"r\"], \"key7\": [\"s\", \"t\", \"u\"], \"key8\": [\"x\"]}");
+        machine.addRule("24", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"d\", \"e\", \"f\"], \"key3\": [\"g\", \"h\", \"i\"], \"key4\": [\"j\", \"k\", \"l\"], \"key5\": [\"m\", \"n\", \"o\"], \"key6\": [\"p\", \"q\", \"r\"], \"key7\": [\"s\", \"t\", \"u\"], \"key8\": [\"v\", \"w\", \"x\"], \"key9\": [\"y\"]}");
+    }
 }

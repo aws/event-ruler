@@ -14,5 +14,10 @@ package software.amazon.event.ruler;
 public class Machine extends GenericMachine<String> {
 
     public Machine() {
+        super();
+    }
+
+    public Machine(Configuration configuration) {
+        super(configuration);
     }
 }
