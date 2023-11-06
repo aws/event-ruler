@@ -508,17 +508,10 @@ public class Validate {
         // Validate wildcard patterns. Look for wildcard patterns out of all patterns that have been used.
         Machine machine = new Machine();
         int i = 0;
-        ruleLoop: for (Map<String, List<Patterns>> rule : compilationResult) {
-            for (List<Patterns> fieldPatterns : rule.values()) {
-                for (Patterns fieldPattern : fieldPatterns) {
-                    if (fieldPattern.type() == WILDCARD) {
-                        // Add rule to machine for complexity evaluation.
-                        machine.addPatternRule(Integer.toString(++i), rule);
-
-                        // Move on to the next rule.
-                        continue ruleLoop;
-                    }
-                }
+        for (Map<String, List<Patterns>> rule : compilationResult) {
+            if (containsWildcard(rule)) {
+                // Add rule to machine for complexity evaluation.
+                machine.addPatternRule(Integer.toString(++i), rule);
             }
         }
 
@@ -528,6 +521,17 @@ public class Validate {
             InvalidPatternException internalException = EXCEPTION_FACTORY.invalidPatternException("Rule is too complex");
             throw ExceptionMapper.mapToModeledException(internalException);
         }
+    }
+    
+    private boolean containsWildcard(Map<String, List<Patterns>> rule) {
+        for (List<Patterns> fieldPatterns : rule.values()) {
+            for (Patterns fieldPattern : fieldPatterns) {
+                if (fieldPattern.type() == WILDCARD) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
 ```
