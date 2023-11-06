@@ -120,8 +120,8 @@ public class NameStateTest {
     public void testNextNameStateWithoutAdditionalNameStateReuse() {
         NameState nameState = new NameState();
         NameState nextNameState = new NameState();
-        Configuration withoutAdditionalNameStateReuse =
-                new Configuration.Builder().withAdditionalNameStateReuse(false).build();
+        GenericMachineConfiguration withoutAdditionalNameStateReuse =
+                new GenericMachineConfiguration.Builder().withAdditionalNameStateReuse(false).build();
         nameState.addNextNameState("key", nextNameState, withoutAdditionalNameStateReuse);
         assertNull(nameState.getNextNameState("key"));
     }
@@ -130,8 +130,8 @@ public class NameStateTest {
     public void testNextNameStateWithAdditionalNameStateReuse() {
         NameState nameState = new NameState();
         NameState nextNameState = new NameState();
-        Configuration withAdditionalNameStateReuse =
-                new Configuration.Builder().withAdditionalNameStateReuse(true).build();
+        GenericMachineConfiguration withAdditionalNameStateReuse =
+                new GenericMachineConfiguration.Builder().withAdditionalNameStateReuse(true).build();
         nameState.addNextNameState("key", nextNameState, withAdditionalNameStateReuse);
         assertEquals(nextNameState, nameState.getNextNameState("key"));
         nameState.removeNextNameState("key", withAdditionalNameStateReuse);

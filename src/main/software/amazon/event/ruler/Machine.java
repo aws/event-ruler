@@ -17,7 +17,7 @@ public class Machine extends GenericMachine<String> {
         super();
     }
 
-    public Machine(Configuration configuration) {
+    public Machine(GenericMachineConfiguration configuration) {
         super(configuration);
     }
 }

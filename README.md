@@ -480,6 +480,44 @@ the strings it stored and returned were thought of as rule names.
 For safety, the type used to "name" rules should be immutable. If you change the content of an object while
 it's being used as a rule name, this may break the operation of Ruler.
 
+### Configuration
+
+The GenericMachine and Machine constructors optionally accept a GenericMachineConfiguration object, which exposes the
+following configuration options.
+
+#### additionalNameStateReuse
+Default: false
+Normally, NameStates are re-used for a given key subsequence and pattern if this key subsequence and pattern have been
+previously added, or if a pattern has already been added for the given key subsequence. Hence, by default, NameState
+re-use is opportunistic. But by setting this flag to true, NameState re-use will be forced for a key subsequence. This
+means that the first pattern being added for a key subsequence will re-use a NameState if that key subsequence has been
+added before. Meaning each key subsequence has a single NameState. This improves memory utilization exponentially in
+some cases but does lead to more sub-rules being stored in individual NameStates, which Ruler sometimes iterates over,
+which can cause a modest runtime performance regression. This defaults to false for backwards compatibility, but likely,
+all but the most latency sensitive of applications would benefit from setting this to true.
+
+Here's a simple example. Consider:
+
+```javascript
+machine.addRule("0", "{\"key1\": [\"a\", \"b\", \"c\"]}");
+```
+
+The pattern "a" creates a NameState, and then, even with additionalNameStateReuse=false, the second pattern ("b") and
+third pattern ("c") re-use that same NameState. But consider the following instead:
+
+```javascript
+machine.addRule("0", "{\"key1\": [\"a\"]}");
+machine.addRule("1", "{\"key1\": [\"b\"]}");
+machine.addRule("2", "{\"key1\": [\"c\"]}");
+```
+
+Now, with additionalNameStateReuse=false, we end up with three NameStates, because the first pattern encountered for a
+key subsequence on each rule addition will create a new NameState. So, "a", "b", and "c" all get their own NameStates.
+However, with additionalNameStateReuse=true, "a" will create a new NameState, then "b" and "c" will reuse this same
+NameState. This is accomplished by storing that we already have a NameState for the key subsequence "key1".
+
+Note that it doesn't matter if each addRule uses a different rule name or the same rule name.
+
 ### addRule()
 
 All forms of this method have the same first argument, a String which provides

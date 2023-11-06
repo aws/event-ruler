@@ -157,7 +157,7 @@ class NameState {
         mustNotExistMatchers.remove(name);
     }
 
-    void removeNextNameState(String key, Configuration configuration) {
+    void removeNextNameState(String key, GenericMachineConfiguration configuration) {
         if (configuration.isAdditionalNameStateReuse()) {
             keyToNextNameState.remove(key);
         }
@@ -225,7 +225,7 @@ class NameState {
         mustNotExistMatchers.put(key, to);
     }
 
-    void addNextNameState(final String key, final NameState nextNameState, final Configuration configuration) {
+    void addNextNameState(final String key, final NameState nextNameState, final GenericMachineConfiguration configuration) {
         if (configuration.isAdditionalNameStateReuse()) {
             keyToNextNameState.put(key, nextNameState);
         }

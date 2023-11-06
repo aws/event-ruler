@@ -40,7 +40,7 @@ public class GenericMachine<T> {
     /**
      * Configuration for the Machine.
      */
-    private final Configuration configuration;
+    private final GenericMachineConfiguration configuration;
 
     /**
      * The start state of matching and adding rules.
@@ -62,10 +62,10 @@ public class GenericMachine<T> {
     private final SubRuleContext.Generator subRuleContextGenerator = new SubRuleContext.Generator();
 
     public GenericMachine() {
-        this(new Configuration.Builder().build());
+        this(new GenericMachineConfiguration.Builder().build());
     }
 
-    public GenericMachine(Configuration configuration) {
+    public GenericMachine(GenericMachineConfiguration configuration) {
         this.configuration = configuration;
     }
 

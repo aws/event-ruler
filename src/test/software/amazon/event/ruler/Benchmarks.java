@@ -547,6 +547,52 @@ public class Benchmarks {
     }
 
     @Test
+    public void lowNameStateReuseMemoryBenchmark() throws Exception {
+        Machine machine = new Machine();
+        System.out.println("Low NameState Reuse Memory Benchmark");
+        nameStateReuseMemoryBenchmark(machine);
+    }
+
+    @Test
+    public void highNameStateReuseMemoryBenchmark() throws Exception {
+        Machine machine = new Machine(new GenericMachineConfiguration.Builder().withAdditionalNameStateReuse(true).build());
+        System.out.println("High NameState Reuse Memory Benchmark");
+        nameStateReuseMemoryBenchmark(machine);
+    }
+
+    private void nameStateReuseMemoryBenchmark(Machine machine) throws Exception {
+        int maxKeys = 256;
+        System.gc();
+        long memBefore = Runtime.getRuntime().freeMemory();
+        int sizeBefore = machine.approximateObjectCount();
+        System.out.printf("Before: %.1f (%d)\n", 1.0 * memBefore / 1000000, sizeBefore);
+
+        // For a readable version with a similar setup to the rules being added here, see
+        // MachineTest.testApproximateObjectCountEachKeyHasThreePatternsAddedOneAtATime. By adding one pattern at a time
+        // for each key, we create three different branches in the low NameState reuse test, but a single branch in the
+        // high NameState reuse test. So with low NameState reuse, Machine size grows exponentially with number of keys.
+        for (int i = 0; i < maxKeys; i++) {
+            StringBuilder prefix = new StringBuilder();
+            for (int j = 0; j < i; j++) {
+                int k = 3 * j;
+                prefix.append("\"key" + k + "\": [\"" + k + "\", \"" + (k + 1) + "\", \"" + (k + 2) + "\"], ");
+            }
+            int k = 3 * i;
+            machine.addRule("" + k, "{" + prefix + "\"key" + i + "\": [\"" + k + "\"]}");
+            machine.addRule("" + k + 1, "{" + prefix + "\"key" + i + "\": [\"" + (k + 1) + "\"]}");
+            machine.addRule("" + k + 2, "{" + prefix + "\"key" + i + "\": [\"" + (k + 2) + "\"]}");
+        }
+
+        System.gc();
+        long memAfter = Runtime.getRuntime().freeMemory();
+        int sizeAfter = machine.approximateObjectCount();
+        System.out.printf("After: %.1f (%d)\n", 1.0 * memAfter / 1000000, sizeAfter);
+        int perRuleMem = (int) ((1.0 * (memAfter - memBefore)) / (maxKeys * 3));
+        int perRuleSize = (int) ((1.0 * (sizeAfter - sizeBefore)) / (maxKeys * 3));
+        System.out.println("Per rule: " + perRuleMem + " (" + perRuleSize + ")");
+    }
+
+    @Test
     public void AnythingButPerformanceBenchmark() throws Exception {
         readCityLots2();
         final Machine m = new Machine();
