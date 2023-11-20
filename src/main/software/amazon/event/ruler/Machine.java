@@ -13,11 +13,23 @@ package software.amazon.event.ruler;
  */
 public class Machine extends GenericMachine<String> {
 
+    @Deprecated
     public Machine() {
         super();
     }
 
-    public Machine(GenericMachineConfiguration configuration) {
+    private Machine(GenericMachineConfiguration configuration) {
         super(configuration);
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    protected static class Builder extends GenericMachine.Builder<Machine> {
+        @Override
+        public Machine build() {
+            return new Machine(buildConfig());
+        }
     }
 }

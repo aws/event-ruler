@@ -2631,7 +2631,7 @@ public class MachineTest {
 
     @Test
     public void testApproximateObjectCountEachKeyHasThreePatternsAddedOneAtATimeWithAdditionalNameStateReuse() throws Exception {
-        Machine machine = new Machine(new GenericMachineConfiguration.Builder().withAdditionalNameStateReuse(true).build());
+        Machine machine = Machine.builder().withAdditionalNameStateReuse(true).build();
         testApproximateObjectCountEachKeyHasThreePatternsAddedOneAtATime(machine);
         assertEquals(136, machine.approximateObjectCount(500000));
     }

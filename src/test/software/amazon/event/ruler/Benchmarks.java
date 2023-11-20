@@ -555,7 +555,7 @@ public class Benchmarks {
 
     @Test
     public void highNameStateReuseMemoryBenchmark() throws Exception {
-        Machine machine = new Machine(new GenericMachineConfiguration.Builder().withAdditionalNameStateReuse(true).build());
+        Machine machine = Machine.builder().withAdditionalNameStateReuse(true).build();
         System.out.println("High NameState Reuse Memory Benchmark");
         nameStateReuseMemoryBenchmark(machine);
     }

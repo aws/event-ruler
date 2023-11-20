@@ -9,11 +9,11 @@ public class GenericMachineConfigurationTest {
 
     @Test
     public void testAdditionalNameStateReuseTrue() {
-        assertTrue(new GenericMachineConfiguration.Builder().withAdditionalNameStateReuse(true).build().isAdditionalNameStateReuse());
+        assertTrue(new GenericMachineConfiguration(true).isAdditionalNameStateReuse());
     }
 
     @Test
     public void testAdditionalNameStateReuseFalse() {
-        assertFalse(new GenericMachineConfiguration.Builder().withAdditionalNameStateReuse(false).build().isAdditionalNameStateReuse());
+        assertFalse(new GenericMachineConfiguration(false).isAdditionalNameStateReuse());
     }
 }
