@@ -115,4 +115,24 @@ public class NameStateTest {
         assertFalse(nameState.containsRule("rule3", Patterns.exactMatch("a")));
         assertFalse(nameState.containsRule("rule1", Patterns.exactMatch("c")));
     }
+
+    @Test
+    public void testNextNameStateWithoutAdditionalNameStateReuse() {
+        NameState nameState = new NameState();
+        NameState nextNameState = new NameState();
+        GenericMachineConfiguration withoutAdditionalNameStateReuse = new GenericMachineConfiguration(false);
+        nameState.addNextNameState("key", nextNameState, withoutAdditionalNameStateReuse);
+        assertNull(nameState.getNextNameState("key"));
+    }
+
+    @Test
+    public void testNextNameStateWithAdditionalNameStateReuse() {
+        NameState nameState = new NameState();
+        NameState nextNameState = new NameState();
+        GenericMachineConfiguration withAdditionalNameStateReuse = new GenericMachineConfiguration(true);
+        nameState.addNextNameState("key", nextNameState, withAdditionalNameStateReuse);
+        assertEquals(nextNameState, nameState.getNextNameState("key"));
+        nameState.removeNextNameState("key", withAdditionalNameStateReuse);
+        assertNull(nameState.getNextNameState("key"));
+    }
 }

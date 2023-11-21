@@ -38,6 +38,11 @@ public class GenericMachine<T> {
     private static final int MAXIMUM_RULE_SIZE = 256;
 
     /**
+     * Configuration for the Machine.
+     */
+    private final GenericMachineConfiguration configuration;
+
+    /**
      * The start state of matching and adding rules.
      */
     private final NameState startState = new NameState();
@@ -56,7 +61,14 @@ public class GenericMachine<T> {
      */
     private final SubRuleContext.Generator subRuleContextGenerator = new SubRuleContext.Generator();
 
-    public GenericMachine() {}
+    @Deprecated
+    public GenericMachine() {
+        this(builder().buildConfig());
+    }
+
+    protected GenericMachine(GenericMachineConfiguration configuration) {
+        this.configuration = configuration;
+    }
 
     /**
      * Return any rules that match the fields in the event in a way that is Array-Consistent (thus trailing "AC" on
@@ -322,6 +334,7 @@ public class GenericMachine<T> {
                             if (!doesNameStateContainPattern(nextNameState, pattern) &&
                                     deletePattern(state, key, pattern)) {
                                 deletedKeys.add(key);
+                                state.removeNextNameState(key, configuration);
                             }
                         }
                     }
@@ -340,6 +353,7 @@ public class GenericMachine<T> {
                     // does not transition to the next NameState.
                     if (!doesNameStateContainPattern(nextNameState, pattern) && deletePattern(state, key, pattern)) {
                         deletedKeys.add(key);
+                        state.removeNextNameState(key, configuration);
                     }
                 }
             }
@@ -545,6 +559,15 @@ public class GenericMachine<T> {
         // for each pattern, we'll provisionally add it to the BMC, which may already have it.  Pass the states
         // list in in case the BMC doesn't already have a next-step for this pattern and needs to make a new one
         NameState lastNextState = null;
+
+        if (configuration.isAdditionalNameStateReuse()) {
+            lastNextState = state.getNextNameState(key);
+            if (lastNextState == null) {
+                lastNextState = new NameState();
+                state.addNextNameState(key, lastNextState, configuration);
+            }
+        }
+
         Set<NameState> nameStates = new HashSet<>();
         if (nameStatesForEachKey[keyIndex] == null) {
             nameStatesForEachKey[keyIndex] = new HashSet<>();
@@ -553,7 +576,6 @@ public class GenericMachine<T> {
             if (isNamePattern(pattern)) {
                 lastNextState = nameMatcher.addPattern(pattern, lastNextState == null ? new NameState() : lastNextState);
             } else {
-                assert byteMachine != null;
                 lastNextState = byteMachine.addPattern(pattern, lastNextState);
             }
             nameStates.add(lastNextState);
@@ -677,6 +699,37 @@ public class GenericMachine<T> {
                 "startState=" + startState +
                 ", fieldStepsUsedRefCount=" + fieldStepsUsedRefCount +
                 '}';
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    protected static class Builder<T extends GenericMachine> {
+
+        /**
+         * Normally, NameStates are re-used for a given key subsequence and pattern if this key subsequence and pattern have
+         * been previously added, or if a pattern has already been added for the given key subsequence. Hence by default,
+         * NameState re-use is opportunistic. But by setting this flag to true, NameState re-use will be forced for a key
+         * subsequence. This means that the first pattern being added for a key subsequence will re-use a NameState if that
+         * key subsequence has been added before. Meaning each key subsequence has a single NameState. This improves memory
+         * utilization exponentially in some cases but does lead to more sub-rules being stored in individual NameStates,
+         * which Ruler sometimes iterates over, which can cause a modest runtime performance regression.
+         */
+        private boolean additionalNameStateReuse = false;
+
+        public Builder<T> withAdditionalNameStateReuse(boolean additionalNameStateReuse) {
+            this.additionalNameStateReuse = additionalNameStateReuse;
+            return this;
+        }
+
+        public T build() {
+            return (T) new GenericMachine(buildConfig());
+        }
+
+        protected GenericMachineConfiguration buildConfig() {
+            return new GenericMachineConfiguration(additionalNameStateReuse);
+        }
     }
 }
 
