@@ -1,5 +1,11 @@
 # Event Ruler
 
+[![License](https://img.shields.io/github/license/aws/event-ruler.svg?color=blue&logo=apache)]([https://www.apache.org/licenses/LICENSE-2.0.html](https://github.com/aws/event-ruler/blob/main/LICENSE))
+[![Build](https://github.com/aws/event-ruler/actions/workflows/CI.yml/badge.svg)](https://github.com/aws/event-ruler/actions/workflows/CI.yml)
+[![Latest Release](https://img.shields.io/github/release/aws/event-ruler.svg?logo=github&style=flat-square)](https://github.com/aws/event-ruler/releases/latest)
+![Maven Central](https://img.shields.io/maven-central/v/software.amazon.event.ruler/event-ruler?logo=apachemaven)
+
+
 Event Ruler (called Ruler in rest of the doc for brevity) is a Java library 
 that allows matching **Rules** to **Events**. An event is a list of fields, which 
 may be given as name/value pairs or as a JSON object.  A rule associates event 
