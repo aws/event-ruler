@@ -88,33 +88,41 @@ class ByteMachine {
     // Multiple different next-namestate steps can result from  processing a single field value, for example
     //  "foot" matches "foot" exactly, "foo" as a prefix, and "hand" as an anything-but.  So, this
     //  method returns a list.
-    Set<NameStateWithPattern> transitionOn(String valString) {
+    Set<NameStateWithPattern> transitionOn(final String valString) {
 
         // not thread-safe, but this is only used in the scope of this method on one thread
         final Set<NameStateWithPattern> transitionTo = new HashSet<>();
-        boolean fieldValueIsNumeric = false;
-        if (hasNumeric.get() > 0) {
+
+        // Do CIDR matching if there is at least one IP pattern, then move on to NUMERIC or STRING matching below.
+        if (hasIP.get() > 0) {
             try {
-                final double numerically = JavaDoubleParser.parseDouble(valString);
-                valString = ComparableNumber.generate(numerically);
-                fieldValueIsNumeric = true;
-            } catch (Exception e) {
-                // no-op, couldn't treat this as a sensible number
-            }
-        } else if (hasIP.get() > 0) {
-            try {
-                // we'll try both the quoted and unquoted version to help people whose events aren't
-                //  in JSON
+                // we'll try both the quoted and unquoted version to help people whose events aren't in JSON
+                String ipString;
                 if (valString.startsWith("\"") && valString.endsWith("\"")) {
-                    valString = CIDR.ipToString(valString.substring(1, valString.length() -1));
+                    ipString = CIDR.ipToString(valString.substring(1, valString.length() -1));
                 } else {
-                    valString = CIDR.ipToString(valString);
+                    ipString = CIDR.ipToString(valString);
                 }
+                doTransitionOn(ipString, transitionTo, TransitionValueType.CIDR);
             } catch (IllegalArgumentException e) {
                 // no-op, couldn't treat this as an IP address
             }
         }
-        doTransitionOn(valString, transitionTo, fieldValueIsNumeric);
+
+        // Do just one of NUMERIC or STRING matching. Do NUMERIC if machine has numeric patterns and provided value
+        // is a number. Otherwise, do STRING. We'll still get the correct behavior even if there are both numeric and
+        // string patterns present as no value can satisfy both a numeric and a string pattern. This is due to string
+        // patterns starting/ending with a double quotation, where as numeric patterns never do.
+        if (hasNumeric.get() > 0) {
+            try {
+                final double numerically = JavaDoubleParser.parseDouble(valString);
+                doTransitionOn(ComparableNumber.generate(numerically), transitionTo, TransitionValueType.NUMERIC);
+                return transitionTo;
+            } catch (Exception e) {
+                // no-op, couldn't treat this as a sensible number
+            }
+        }
+        doTransitionOn(valString, transitionTo, TransitionValueType.STRING);
         return transitionTo;
     }
 
@@ -454,7 +462,7 @@ class ByteMachine {
     }
 
     private void doTransitionOn(final String valString, final Set<NameStateWithPattern> transitionTo,
-                                boolean fieldValueIsNumeric) {
+                                TransitionValueType valueType) {
         final Map<NameState, List<Patterns>> failedAnythingButs = new HashMap<>();
         final byte[] val = valString.getBytes(StandardCharsets.UTF_8);
 
@@ -490,7 +498,7 @@ class ByteMachine {
                             break;
                         case NUMERIC_EQ:
                             // only matches at last character
-                            if (fieldValueIsNumeric && valIndex == (val.length - 1)) {
+                            if (valueType == TransitionValueType.NUMERIC && valIndex == (val.length - 1)) {
                                 transitionTo.add(new NameStateWithPattern(match.getNextNameState(), match.getPattern()));
                             }
                             break;
@@ -510,7 +518,8 @@ class ByteMachine {
                         case NUMERIC_RANGE:
                             // as soon as you see the match, you've matched
                             Range range = (Range) match.getPattern();
-                            if ((fieldValueIsNumeric && !range.isCIDR) || (!fieldValueIsNumeric && range.isCIDR)) {
+                            if ((valueType == TransitionValueType.NUMERIC && !range.isCIDR) ||
+                                    (valueType != TransitionValueType.NUMERIC && range.isCIDR)) {
                                 transitionTo.add(new NameStateWithPattern(match.getNextNameState(), match.getPattern()));
                             }
                             break;
@@ -518,7 +527,8 @@ class ByteMachine {
                         case ANYTHING_BUT:
                             AnythingBut anythingBut = (AnythingBut) match.getPattern();
                             // only applies if at last character
-                            if (valIndex == (val.length - 1) && anythingBut.isNumeric() == fieldValueIsNumeric) {
+                            if (valIndex == (val.length - 1) &&
+                                    anythingBut.isNumeric() == (valueType == TransitionValueType.NUMERIC)) {
                                 addToAnythingButsMap(failedAnythingButs, match.getNextNameState(), match.getPattern());
                             }
                             break;
@@ -546,8 +556,9 @@ class ByteMachine {
         }
 
         // This may look like premature optimization, but the first "if" here yields roughly 10x performance
-        // improvement.
-        if (!anythingButs.isEmpty()) {
+        // improvement. We exclude CIDR because the value will have been transformed, causing the anythingBut to always
+        // match. Wait for NUMERIC or STRING matching to harvest anythingBut matches.
+        if (!anythingButs.isEmpty() && valueType != TransitionValueType.CIDR) {
             for (Map.Entry<NameState, List<Patterns>> entry : anythingButs.entrySet()) {
                 boolean failedAnythingButsContainsKey = failedAnythingButs.containsKey(entry.getKey());
                 for (Patterns pattern : entry.getValue()) {
@@ -1835,7 +1846,7 @@ class ByteMachine {
         return coalesce(candidates);
     }
 
-    private static void addTransitionNextState(ByteState state, InputCharacter character, InputCharacter[] characters,
+    private void addTransitionNextState(ByteState state, InputCharacter character, InputCharacter[] characters,
                                                int currentIndex, ByteState prevState, Patterns pattern,
                                                ByteState nextState, NameState nameState) {
         if (isWildcard(character)) {
@@ -2088,4 +2099,10 @@ class ByteMachine {
                 ", anythingButs=" + anythingButs +
                 '}';
     }
+
+    enum TransitionValueType {
+        NUMERIC,
+        CIDR,
+        STRING
+    };
 }
