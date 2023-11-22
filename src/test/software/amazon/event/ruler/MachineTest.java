@@ -2179,7 +2179,7 @@ public class MachineTest {
 
         String event = "{" +
                 "\"ip\": \"10.0.1.200\"" +
-                "}";
+        "}";
 
         List<String> matches = machine.rulesForEvent(event);
         assertEquals(1, matches.size());
@@ -2197,7 +2197,7 @@ public class MachineTest {
 
         String event = "{" +
                 "\"ip\": \"10.0.1.200\"" +
-                "}";
+        "}";
 
         List<String> matches = machine.rulesForEvent(event);
         assertEquals(1, matches.size());
@@ -2215,7 +2215,7 @@ public class MachineTest {
 
         String event = "{" +
                 "\"ip\": \"10.0.1.200\"" +
-                "}";
+        "}";
 
         List<String> matches = machine.rulesForEvent(event);
         assertEquals(1, matches.size());
@@ -2233,7 +2233,7 @@ public class MachineTest {
 
         String event = "{" +
                 "\"ip\": \"10.0.1.200\"" +
-                "}";
+        "}";
 
         List<String> matches = machine.rulesForEvent(event);
         assertEquals(1, matches.size());
@@ -2251,7 +2251,7 @@ public class MachineTest {
 
         String event = "{" +
                 "\"ip\": \"10.0.1.200\"" +
-                "}";
+        "}";
 
         List<String> matches = machine.rulesForEvent(event);
         assertEquals(1, matches.size());
