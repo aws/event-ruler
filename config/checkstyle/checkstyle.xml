@@ -18,6 +18,7 @@
     <module name="OneStatementPerLine"/>
     <module name="NoFinalizer"/>
     <module name="RedundantImport"/>
+    <module name="AvoidStarImport"/>
     <module name="DefaultComesLast"/>
     <module name="SuppressWarningsHolder" />
   </module>

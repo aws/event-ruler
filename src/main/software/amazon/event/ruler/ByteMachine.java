@@ -7,6 +7,7 @@ import software.amazon.event.ruler.input.InputCharacterType;
 import software.amazon.event.ruler.input.InputMultiByteSet;
 import software.amazon.event.ruler.input.MultiByte;
 
+import javax.annotation.concurrent.ThreadSafe;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
 import java.util.ArrayDeque;
@@ -20,16 +21,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.annotation.concurrent.ThreadSafe;
 
 import static software.amazon.event.ruler.CompoundByteTransition.coalesce;
+import static software.amazon.event.ruler.MatchType.ANYTHING_BUT_SUFFIX;
 import static software.amazon.event.ruler.MatchType.EQUALS_IGNORE_CASE;
 import static software.amazon.event.ruler.MatchType.EXACT;
 import static software.amazon.event.ruler.MatchType.EXISTS;
 import static software.amazon.event.ruler.MatchType.SUFFIX;
-import static software.amazon.event.ruler.MatchType.ANYTHING_BUT_SUFFIX;
 import static software.amazon.event.ruler.MatchType.SUFFIX_EQUALS_IGNORE_CASE;
-
+import static software.amazon.event.ruler.input.DefaultParser.getParser;
 import static software.amazon.event.ruler.input.MultiByte.MAX_CONTINUATION_BYTE;
 import static software.amazon.event.ruler.input.MultiByte.MAX_FIRST_BYTE_FOR_ONE_BYTE_CHAR;
 import static software.amazon.event.ruler.input.MultiByte.MAX_FIRST_BYTE_FOR_TWO_BYTE_CHAR;
@@ -37,7 +37,6 @@ import static software.amazon.event.ruler.input.MultiByte.MAX_NON_FIRST_BYTE;
 import static software.amazon.event.ruler.input.MultiByte.MIN_CONTINUATION_BYTE;
 import static software.amazon.event.ruler.input.MultiByte.MIN_FIRST_BYTE_FOR_ONE_BYTE_CHAR;
 import static software.amazon.event.ruler.input.MultiByte.MIN_FIRST_BYTE_FOR_TWO_BYTE_CHAR;
-import static software.amazon.event.ruler.input.DefaultParser.getParser;
 
 /**
  * Represents a UTF8-byte-level state machine that matches a Ruler state machine's field values.

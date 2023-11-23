@@ -4,9 +4,9 @@ import software.amazon.event.ruler.MatchType;
 
 import java.nio.charset.StandardCharsets;
 
+import static software.amazon.event.ruler.MatchType.ANYTHING_BUT_IGNORE_CASE;
 import static software.amazon.event.ruler.MatchType.ANYTHING_BUT_SUFFIX;
 import static software.amazon.event.ruler.MatchType.EQUALS_IGNORE_CASE;
-import static software.amazon.event.ruler.MatchType.ANYTHING_BUT_IGNORE_CASE;
 import static software.amazon.event.ruler.MatchType.PREFIX_EQUALS_IGNORE_CASE;
 import static software.amazon.event.ruler.MatchType.SUFFIX;
 import static software.amazon.event.ruler.MatchType.SUFFIX_EQUALS_IGNORE_CASE;

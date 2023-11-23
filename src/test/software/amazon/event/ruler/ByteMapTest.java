@@ -1,7 +1,7 @@
 package software.amazon.event.ruler;
 
-import static software.amazon.event.ruler.CompoundByteTransition.coalesce;
-import static org.junit.Assert.assertEquals;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -10,12 +10,11 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
 
-import org.junit.Before;
-import org.junit.Test;
-
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static software.amazon.event.ruler.CompoundByteTransition.coalesce;
 
 public class ByteMapTest {
 

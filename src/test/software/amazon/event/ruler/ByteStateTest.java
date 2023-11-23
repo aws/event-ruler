@@ -7,12 +7,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 
-import static software.amazon.event.ruler.CompoundByteTransition.coalesce;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static software.amazon.event.ruler.CompoundByteTransition.coalesce;
 
 public class ByteStateTest {
 

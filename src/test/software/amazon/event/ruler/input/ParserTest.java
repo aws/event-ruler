@@ -1,12 +1,12 @@
 package software.amazon.event.ruler.input;
 
-import software.amazon.event.ruler.MatchType;
 import org.junit.Test;
+import software.amazon.event.ruler.MatchType;
 
-import static software.amazon.event.ruler.input.DefaultParser.getParser;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static software.amazon.event.ruler.input.DefaultParser.getParser;
 
 public class ParserTest {
 

@@ -3,7 +3,6 @@ package software.amazon.event.ruler;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
-
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;

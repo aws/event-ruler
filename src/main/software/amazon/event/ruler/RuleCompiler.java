@@ -1,5 +1,12 @@
 package software.amazon.event.ruler;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.core.StreamReadFeature;
+import software.amazon.event.ruler.input.ParseException;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -11,9 +18,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import com.fasterxml.jackson.core.*;
-import software.amazon.event.ruler.input.ParseException;
 
 import static software.amazon.event.ruler.input.DefaultParser.getParser;
 

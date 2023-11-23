@@ -4,14 +4,14 @@ import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
 
-import static software.amazon.event.ruler.input.DefaultParser.NINE_BYTE;
-import static software.amazon.event.ruler.input.DefaultParser.ZERO_BYTE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static software.amazon.event.ruler.input.DefaultParser.NINE_BYTE;
+import static software.amazon.event.ruler.input.DefaultParser.ZERO_BYTE;
 
 public class MultiByteTest {
 

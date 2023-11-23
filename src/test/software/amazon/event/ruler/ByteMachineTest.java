@@ -1,5 +1,8 @@
 package software.amazon.event.ruler;
 
+import org.junit.Test;
+import software.amazon.event.ruler.input.ParseException;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -9,10 +12,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import software.amazon.event.ruler.input.ParseException;
-import org.junit.Test;
-
-import static software.amazon.event.ruler.PermutationsGenerator.generateAllPermutations;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -21,6 +20,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static software.amazon.event.ruler.PermutationsGenerator.generateAllPermutations;
 
 public class ByteMachineTest {
 
