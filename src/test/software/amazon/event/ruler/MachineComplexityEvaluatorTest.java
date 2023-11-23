@@ -7,10 +7,10 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import static software.amazon.event.ruler.PermutationsGenerator.generateAllPermutations;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static software.amazon.event.ruler.PermutationsGenerator.generateAllPermutations;
 
 /**
  * For each test, for illustrative purposes, I will provide one input string that results in the maximum number of

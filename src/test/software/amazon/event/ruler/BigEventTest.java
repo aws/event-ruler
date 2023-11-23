@@ -1,7 +1,9 @@
 package software.amazon.event.ruler;
 
-import java.util.List;
 import org.junit.Test;
+
+import java.util.List;
+
 import static org.junit.Assert.assertTrue;
 
 public class BigEventTest {

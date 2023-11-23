@@ -1,10 +1,10 @@
 package software.amazon.event.ruler;
 
+import javax.annotation.concurrent.ThreadSafe;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.annotation.concurrent.ThreadSafe;
 
 /**
  * Represents a state in the machine.
