@@ -8,7 +8,7 @@ import java.util.Arrays;
  * "Numeric" means that the character repertoire is "digits"; initially, either 0-9 or 0-9a-f. In the current
  *  implementation, the number of digits in the top and bottom of the range is the same.
  */
-public class Range extends Patterns {
+public final class Range extends Patterns {
     /**
      * Bottom and top of the range. openBottom true means we're looking for > bottom, false means >=
      *  Similarly, openTop true means we're looking for < top, false means <= top.

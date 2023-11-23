@@ -9,7 +9,7 @@ import static software.amazon.event.ruler.input.DefaultParser.ZERO_BYTE;
  * A grouping of multiple bytes. This can be used to represent a character that has a UTF-8 representation requiring
  * multiple bytes.
  */
-public class MultiByte {
+public final class MultiByte {
 
     public static final byte MIN_FIRST_BYTE_FOR_ONE_BYTE_CHAR = (byte) 0x00;
     public static final byte MAX_FIRST_BYTE_FOR_ONE_BYTE_CHAR = (byte) 0x7F;
