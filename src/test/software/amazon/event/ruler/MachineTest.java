@@ -2169,6 +2169,96 @@ public class MachineTest {
     }
 
     @Test
+    public void testCIDRRuleWithMatchingAnythingButRule() throws Exception {
+        String rule1 = "{\"ip\": [{\"anything-but\": \"10.0.1.200\"}]}";
+        String rule2 = "{\"ip\": [\"10.0.1.200\"]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        String event = "{" +
+                "\"ip\": \"10.0.1.200\"" +
+        "}";
+
+        List<String> matches = machine.rulesForEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule2"));
+    }
+
+    @Test
+    public void testCIDRRuleWithMatchingAnythingButPrefixRule() throws Exception {
+        String rule1 = "{\"ip\": [{\"anything-but\": {\"prefix\": \"10.0.\"}}]}";
+        String rule2 = "{\"ip\": [\"10.0.1.200\"]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        String event = "{" +
+                "\"ip\": \"10.0.1.200\"" +
+        "}";
+
+        List<String> matches = machine.rulesForEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule2"));
+    }
+
+    @Test
+    public void testCIDRRuleWithMatchingAnythingButSuffixRule() throws Exception {
+        String rule1 = "{\"ip\": [{\"anything-but\": {\"suffix\": \"1.200\"}}]}";
+        String rule2 = "{\"ip\": [\"10.0.1.200\"]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        String event = "{" +
+                "\"ip\": \"10.0.1.200\"" +
+        "}";
+
+        List<String> matches = machine.rulesForEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule2"));
+    }
+
+    @Test
+    public void testCIDRRuleWithMatchingAnythingButEqualsIgnoreCaseRule() throws Exception {
+        String rule1 = "{\"ip\": [{\"anything-but\": {\"equals-ignore-case\": \"10.0.1.200\"}}]}";
+        String rule2 = "{\"ip\": [\"10.0.1.200\"]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        String event = "{" +
+                "\"ip\": \"10.0.1.200\"" +
+        "}";
+
+        List<String> matches = machine.rulesForEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule2"));
+    }
+
+    @Test
+    public void testCIDRRuleWithNumericRule() throws Exception {
+        String rule1 = "{\"ip\": [{\"numeric\": [\">\", 0, \"<=\", 5]}]}";
+        String rule2 = "{\"ip\": [\"10.0.1.200\"]}";
+
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        String event = "{" +
+                "\"ip\": \"10.0.1.200\"" +
+        "}";
+
+        List<String> matches = machine.rulesForEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule2"));
+    }
+
+    @Test
     public void testApproxSizeForSimplestPossibleMachine() throws Exception {
         String rule1 = "{ \"a\" : [ 1 ] }";
         String rule2 = "{ \"b\" : [ 2 ] }";
