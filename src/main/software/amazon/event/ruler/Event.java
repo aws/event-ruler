@@ -46,7 +46,7 @@ import java.util.TreeMap;
 // TODO: Improve unit-test coverage, there are surprising gaps
 @Immutable
 @ThreadSafe
-class Event {
+final class Event {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final JsonFactory JSON_FACTORY = new JsonFactory();

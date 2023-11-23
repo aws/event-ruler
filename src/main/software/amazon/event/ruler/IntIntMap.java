@@ -7,7 +7,7 @@ import java.util.NoSuchElementException;
 /**
  * A fast primitive int-int map implementation. Keys and values may only be positive.
  */
-class IntIntMap implements Cloneable {
+final class IntIntMap implements Cloneable {
 
     // taken from FastUtil
     private static final int INT_PHI = 0x9E3779B9;
