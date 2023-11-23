@@ -12,10 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.core.*;
 import software.amazon.event.ruler.input.ParseException;
 
 import static software.amazon.event.ruler.input.DefaultParser.getParser;
@@ -33,7 +30,9 @@ import static software.amazon.event.ruler.input.DefaultParser.getParser;
  */
 public final class RuleCompiler {
 
-    private static final JsonFactory JSON_FACTORY = new JsonFactory();
+    private static final JsonFactory JSON_FACTORY = JsonFactory.builder()
+            .configure(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION, true)
+            .build();
 
     private RuleCompiler() {
       throw new UnsupportedOperationException("You can't create instance of utility class.");
