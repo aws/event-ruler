@@ -706,7 +706,7 @@ public class GenericMachine<T> {
         return new Builder();
     }
 
-    protected static class Builder<T extends GenericMachine> {
+    public static class Builder<T extends GenericMachine> {
 
         /**
          * Normally, NameStates are re-used for a given key subsequence and pattern if this key subsequence and pattern have
@@ -718,6 +718,8 @@ public class GenericMachine<T> {
          * which Ruler sometimes iterates over, which can cause a modest runtime performance regression.
          */
         private boolean additionalNameStateReuse = false;
+
+        Builder() {}
 
         public Builder<T> withAdditionalNameStateReuse(boolean additionalNameStateReuse) {
             this.additionalNameStateReuse = additionalNameStateReuse;

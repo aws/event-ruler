@@ -26,7 +26,10 @@ public class Machine extends GenericMachine<String> {
         return new Builder();
     }
 
-    protected static class Builder extends GenericMachine.Builder<Machine> {
+    public static class Builder extends GenericMachine.Builder<Machine> {
+
+        private Builder() {}
+
         @Override
         public Machine build() {
             return new Machine(buildConfig());
