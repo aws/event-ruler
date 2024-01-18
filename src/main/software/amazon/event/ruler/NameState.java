@@ -41,9 +41,6 @@ class NameState {
     // All non-terminal sub-rule IDs, keyed by pattern, that led to this NameState.
     private final Map<Patterns, Set<Double>> patternToNonTerminalSubRuleIds = new ConcurrentHashMap<>();
 
-    // All sub-rule IDs mapped to the associated rule (name).
-    private final Map<Double, Object> subRuleIdToRule = new ConcurrentHashMap<>();
-
     // All sub-rule IDs mapped to the number of times that sub-rule has been added to this NameState.
     private final Map<Double, Integer> subRuleIdToCount = new ConcurrentHashMap<>();
 
@@ -115,20 +112,20 @@ class NameState {
     /**
      * Delete a sub-rule to indicate that it no longer transitions to this NameState using the provided pattern.
      *
+     * @param rule The rule, which may have multiple sub-rules.
      * @param subRuleId The ID of the sub-rule.
      * @param pattern The pattern used by the sub-rule to transition to this NameState.
      * @param isTerminal True indicates that the sub-rule is using pattern to match on the final event field.
      * @return True if and only if the sub-rule was found and deleted.
      */
-    boolean deleteSubRule(final double subRuleId, final Patterns pattern, final boolean isTerminal) {
-        deleteFromPatternToSetMap(patternToRules, pattern, subRuleIdToRule.get(subRuleId));
+    boolean deleteSubRule(final Object rule, final double subRuleId, final Patterns pattern, final boolean isTerminal) {
+        deleteFromPatternToSetMap(patternToRules, pattern, rule);
         Map<Patterns, ?> patternToSubRules = isTerminal ? patternToTerminalSubRuleIds : patternToNonTerminalSubRuleIds;
         boolean deleted = deleteFromPatternToSetMap(patternToSubRules, pattern, subRuleId);
         if (deleted) {
             Integer count = subRuleIdToCount.get(subRuleId);
             if (count == 1) {
                 subRuleIdToCount.remove(subRuleId);
-                subRuleIdToRule.remove(subRuleId);
             } else {
                 subRuleIdToCount.put(subRuleId, count - 1);
             }
@@ -157,10 +154,8 @@ class NameState {
         mustNotExistMatchers.remove(name);
     }
 
-    void removeNextNameState(String key, GenericMachineConfiguration configuration) {
-        if (configuration.isAdditionalNameStateReuse()) {
-            keyToNextNameState.remove(key);
-        }
+    void removeNextNameState(String key) {
+        keyToNextNameState.remove(key);
     }
 
     boolean isEmpty() {
@@ -169,7 +164,6 @@ class NameState {
                 patternToRules.isEmpty() &&
                 patternToTerminalSubRuleIds.isEmpty() &&
                 patternToNonTerminalSubRuleIds.isEmpty() &&
-                subRuleIdToRule.isEmpty() &&
                 subRuleIdToCount.isEmpty();
     }
 
@@ -187,9 +181,6 @@ class NameState {
         if (addToPatternToSetMap(patternToSubRules, pattern, subRuleId)) {
             Integer count = subRuleIdToCount.get(subRuleId);
             subRuleIdToCount.put(subRuleId, count == null ? 1 : count + 1);
-            if (count == null) {
-                subRuleIdToRule.put(subRuleId, rule);
-            }
         }
     }
 
@@ -199,10 +190,6 @@ class NameState {
             ((Map<Patterns, Set>) map).put(pattern, new HashSet<>());
         }
         return ((Set) map.get(pattern)).add(setElement);
-    }
-
-    Object getRule(Double subRuleId) {
-        return subRuleIdToRule.get(subRuleId);
     }
 
     /**
@@ -225,10 +212,8 @@ class NameState {
         mustNotExistMatchers.put(key, to);
     }
 
-    void addNextNameState(final String key, final NameState nextNameState, final GenericMachineConfiguration configuration) {
-        if (configuration.isAdditionalNameStateReuse()) {
-            keyToNextNameState.put(key, nextNameState);
-        }
+    void addNextNameState(final String key, final NameState nextNameState) {
+        keyToNextNameState.put(key, nextNameState);
     }
 
     NameMatcher<NameState> getKeyTransitionOn(final String token) {
@@ -345,7 +330,6 @@ class NameState {
                 ", patternToRules=" + patternToRules +
                 ", patternToTerminalSubRuleIds=" + patternToTerminalSubRuleIds +
                 ", patternToNonTerminalSubRuleIds=" + patternToNonTerminalSubRuleIds +
-                ", subRuleIdToRule=" + subRuleIdToRule +
                 ", subRuleIdToCount=" + subRuleIdToCount +
                 '}';
     }

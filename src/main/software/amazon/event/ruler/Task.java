@@ -80,7 +80,8 @@ class Task {
         return new ArrayList<>(matchingRules);
     }
 
-    void collectRules(final Set<Double> candidateSubRuleIds, final NameState nameState, final Patterns pattern) {
+    void collectRules(final Set<Double> candidateSubRuleIds, final NameState nameState, final Patterns pattern,
+                      final SubRuleContext.Generator subRuleContextGenerator) {
         Set<Double> terminalSubRuleIds = nameState.getTerminalSubRuleIdsForPattern(pattern);
         if (terminalSubRuleIds == null) {
             return;
@@ -89,10 +90,11 @@ class Task {
         // If no candidates, that means we're on the first step, so all sub-rules are candidates.
         if (candidateSubRuleIds == null || candidateSubRuleIds.isEmpty()) {
             for (Double terminalSubRuleId : terminalSubRuleIds) {
-                matchingRules.add(nameState.getRule(terminalSubRuleId));
+                matchingRules.add(subRuleContextGenerator.getNameForGeneratedId(terminalSubRuleId));
             }
         } else {
-            intersection(candidateSubRuleIds, terminalSubRuleIds, matchingRules, id -> nameState.getRule(id));
+            intersection(candidateSubRuleIds, terminalSubRuleIds, matchingRules,
+                    id -> subRuleContextGenerator.getNameForGeneratedId(id));
         }
     }
 }

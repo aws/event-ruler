@@ -19,6 +19,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import static software.amazon.event.ruler.SetOperations.intersection;
+
 /**
  *  Represents a state machine used to match name/value patterns to rules.
  *  The machine is thread safe. The concurrency strategy is:
@@ -81,12 +83,12 @@ public class GenericMachine<T> {
     @SuppressWarnings("unchecked")
     public List<T> rulesForJSONEvent(final String jsonEvent) throws Exception {
         final Event event = new Event(jsonEvent, this);
-        return (List<T>) ACFinder.matchRules(event, this);
+        return (List<T>) ACFinder.matchRules(event, this, subRuleContextGenerator);
     }
     @SuppressWarnings("unchecked")
     public List<T> rulesForJSONEvent(final JsonNode eventRoot) {
         final Event event = new Event(eventRoot, this);
-        return (List<T>) ACFinder.matchRules(event, this);
+        return (List<T>) ACFinder.matchRules(event, this, subRuleContextGenerator);
     }
 
     /**
@@ -99,7 +101,7 @@ public class GenericMachine<T> {
     @Deprecated
     @SuppressWarnings("unchecked")
     public List<T> rulesForEvent(final String jsonEvent) {
-        return (List<T>) Finder.rulesForEvent(Event.flatten(jsonEvent), this);
+        return (List<T>) Finder.rulesForEvent(Event.flatten(jsonEvent), this, subRuleContextGenerator);
     }
 
     /**
@@ -110,7 +112,7 @@ public class GenericMachine<T> {
      */
     @SuppressWarnings("unchecked")
     public List<T> rulesForEvent(final List<String> event) {
-        return (List<T>) Finder.rulesForEvent(event, this);
+        return (List<T>) Finder.rulesForEvent(event, this, subRuleContextGenerator);
     }
 
     /**
@@ -123,7 +125,7 @@ public class GenericMachine<T> {
     @Deprecated
     @SuppressWarnings("unchecked")
     public List<T> rulesForEvent(final JsonNode eventRoot) {
-        return (List<T>) Finder.rulesForEvent(Event.flatten(eventRoot), this);
+        return (List<T>) Finder.rulesForEvent(Event.flatten(eventRoot), this, subRuleContextGenerator);
     }
 
     /**
@@ -134,7 +136,7 @@ public class GenericMachine<T> {
      */
     @SuppressWarnings("unchecked")
     public List<T> rulesForEvent(final String[] event) {
-        return (List<T>) Finder.rulesForEvent(event, this);
+        return (List<T>) Finder.rulesForEvent(event, this, subRuleContextGenerator);
     }
 
     /**
@@ -318,7 +320,8 @@ public class GenericMachine<T> {
                     // When initializing, ensure that sub-rule IDs match the provided rule name for deletion.
                 } else if (candidateSubRuleIds.isEmpty()) {
                     for (Double nextNameStateSubRuleId : nextNameStateSubRuleIds) {
-                        if (Objects.equals(ruleName, nextNameState.getRule(nextNameStateSubRuleId))) {
+                        if (Objects.equals(ruleName,
+                                subRuleContextGenerator.getNameForGeneratedId(nextNameStateSubRuleId))) {
                             candidateSubRuleIds.add(nextNameStateSubRuleId);
                         }
                     }
@@ -329,13 +332,15 @@ public class GenericMachine<T> {
 
                 if (isTerminal) {
                     for (Double candidateSubRuleId : candidateSubRuleIds) {
-                        if (nextNameState.deleteSubRule(candidateSubRuleId, pattern, true)) {
+                        if (nextNameState.deleteSubRule(
+                                subRuleContextGenerator.getNameForGeneratedId(candidateSubRuleId), candidateSubRuleId,
+                                pattern, true)) {
                             deletedSubRuleIds.add(candidateSubRuleId);
                             // Only delete the pattern if the pattern does not transition to the next NameState.
                             if (!doesNameStateContainPattern(nextNameState, pattern) &&
                                     deletePattern(state, key, pattern)) {
                                 deletedKeys.add(key);
-                                state.removeNextNameState(key, configuration);
+                                state.removeNextNameState(key);
                             }
                         }
                     }
@@ -347,14 +352,15 @@ public class GenericMachine<T> {
                             deletedKeys, new HashSet<>(candidateSubRuleIds)));
 
                     for (double deletedSubRuleId : deletedSubRuleIds) {
-                        nextNameState.deleteSubRule(deletedSubRuleId, pattern, false);
+                        nextNameState.deleteSubRule(subRuleContextGenerator.getNameForGeneratedId(deletedSubRuleId),
+                                deletedSubRuleId, pattern, false);
                     }
 
                     // Unwinding the key recursion, so we aren't on a rule match. Only delete the pattern if the pattern
                     // does not transition to the next NameState.
                     if (!doesNameStateContainPattern(nextNameState, pattern) && deletePattern(state, key, pattern)) {
                         deletedKeys.add(key);
-                        state.removeNextNameState(key, configuration);
+                        state.removeNextNameState(key);
                     }
                 }
             }
@@ -507,8 +513,8 @@ public class GenericMachine<T> {
                          final T ruleName) {
         List<String> addedKeys = new ArrayList<>();
         Set<NameState> nameStates[] = new Set[keys.size()];
-        if (addStep(getStartState(), keys, 0, patterns, ruleName, addedKeys, nameStates)) {
-            SubRuleContext context = subRuleContextGenerator.generate();
+        if (addStep(getStartState(), keys, 0, patterns, ruleName, addedKeys, nameStates).isEmpty()) {
+            SubRuleContext context = subRuleContextGenerator.generate(ruleName);
             for (int i = 0; i < keys.size(); i++) {
                 boolean isTerminal = i + 1 == keys.size();
                 for (Patterns pattern : patterns.get(keys.get(i))) {
@@ -531,16 +537,17 @@ public class GenericMachine<T> {
      * @param ruleName Name of the rule.
      * @param addedKeys Pass in an empty list - this tracks keys that have been added.
      * @param nameStatesForEachKey Pass in array of length keys.size() - this tracks NameStates accessible by each key.
-     * @return True if and only if the keys and patterns being added represent a new sub-rule. Specifically, there
-     *         exists at least one key or at least one pattern for a key not present in another sub-rule of the rule.
+     * @return The IDs of sub-rules that used the same rule name and added the same patterns for the same keys at
+     *         keyIndex and greater. If keyIndex==0 and the returned set is empty, then the keys and patterns being
+     *         added represent a new sub-rule.
      */
-    private boolean addStep(final NameState state,
-                            final List<String> keys,
-                            final int keyIndex,
-                            final Map<String, List<Patterns>> patterns,
-                            final T ruleName,
-                            List<String> addedKeys,
-                            final Set<NameState>[] nameStatesForEachKey) {
+    private Set<Double> addStep(final NameState state,
+                                final List<String> keys,
+                                final int keyIndex,
+                                final Map<String, List<Patterns>> patterns,
+                                final T ruleName,
+                                List<String> addedKeys,
+                                final Set<NameState>[] nameStatesForEachKey) {
 
         final String key = keys.get(keyIndex);
         ByteMachine byteMachine = state.getTransitionOn(key);
@@ -565,7 +572,7 @@ public class GenericMachine<T> {
             lastNextState = state.getNextNameState(key);
             if (lastNextState == null) {
                 lastNextState = new NameState();
-                state.addNextNameState(key, lastNextState, configuration);
+                state.addNextNameState(key, lastNextState);
             }
         }
 
@@ -584,28 +591,66 @@ public class GenericMachine<T> {
         }
 
         // Determine if we are adding a new rule or not. If we are not yet at the terminal key, go deeper recursively.
-        // If we are at the terminal key, unwind recursion stack, checking each NameState to see if any pattern for
-        // rule name is new. As soon as one rule+pattern for any NameState is new, we know we are processing a new
-        // sub-rule and can continue returning true without further NameState checks.
-        boolean isRuleNew = false;
+        // If we are at the terminal key, unwind recursion stack. Any sub-rule IDs that have previously added the
+        // rule+pattern for the given key are returned up the recursion stack as our "candidates". At each level of the
+        // stack, we remove any candidates if they did not have the same rule+pattern for that level's key. If our
+        // candidate set becomes empty, we know we are adding a new rule.
+        Set<Double> candidateSubRuleIds = null;
+        Set<Double> candidateSubRuleIdsForThisKey = null;
         final int nextKeyIndex = keyIndex + 1;
         boolean isTerminal = nextKeyIndex == keys.size();
         for (NameState nameState : nameStates) {
-            if (!isTerminal) {
-                isRuleNew = addStep(nameState, keys, nextKeyIndex, patterns, ruleName, addedKeys, nameStatesForEachKey)
-                        || isRuleNew;
-            }
-            if (!isRuleNew) {
+
+            // At the terminal key, we initialize the candidate IDs to the previously-added sub-rules with the same rule
+            // name and pattern for this key.
+            if (isTerminal) {
+                candidateSubRuleIds = new HashSet<>();
                 for (Patterns pattern : patterns.get(key)) {
-                    if (!nameState.containsRule(ruleName, pattern)) {
-                        isRuleNew = true;
-                        break;
+                    Set<Double> subRuleIdsForPattern = nameState.getTerminalSubRuleIdsForPattern(pattern);
+                    Set<Double> subRuleIdsForName = subRuleContextGenerator.getIdsGeneratedForName(ruleName);
+                    if (subRuleIdsForPattern != null && subRuleIdsForName != null) {
+                        intersection(subRuleIdsForPattern, subRuleIdsForName, candidateSubRuleIds);
+                    }
+                }
+
+            // At all non-terminal keys, we gather the sub-rule IDs for the key that use the same pattern.
+            } else {
+                candidateSubRuleIds = addStep(nameState, keys, nextKeyIndex, patterns, ruleName,
+                        addedKeys, nameStatesForEachKey);
+                if (candidateSubRuleIds.isEmpty()) {
+                    continue;
+                }
+
+                // This is an optimization for the single pattern, single NameState case. This appears to be the
+                // majority of cases so it's worth the extra code.
+                List<Patterns> patternsForThisKey = patterns.get(key);
+                if (patternsForThisKey.size() == 1 && nameStates.size() == 1) {
+                    candidateSubRuleIdsForThisKey = nameState.getNonTerminalSubRuleIdsForPattern(
+                            patternsForThisKey.get(0));
+                    break;
+                }
+
+                candidateSubRuleIdsForThisKey = new HashSet<>();
+                for (Patterns pattern : patternsForThisKey) {
+                    Set<Double> nonTerminalSubRuleIds = nameState.getNonTerminalSubRuleIdsForPattern(pattern);
+                    if (nonTerminalSubRuleIds != null) {
+                        candidateSubRuleIdsForThisKey.addAll(nonTerminalSubRuleIds);
                     }
                 }
             }
         }
 
-        return isRuleNew;
+        // At all non-terminal keys, remove candidates that are not present for this key.
+        if (!isTerminal) {
+            if (candidateSubRuleIdsForThisKey == null) {
+                candidateSubRuleIds.clear();
+            } else {
+                candidateSubRuleIds.retainAll(candidateSubRuleIdsForThisKey);
+            }
+        }
+
+        // Return remaining candidates up the stack.
+        return candidateSubRuleIds;
     }
 
     private boolean hasValuePatterns(List<Patterns> patterns) {

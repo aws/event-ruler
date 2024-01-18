@@ -35,19 +35,19 @@ public class NameStateTest {
 
         assertEquals(new HashSet<>(asList(1.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
         assertEquals(new HashSet<>(asList(2.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("b")));
-        nameState.deleteSubRule(1.0, Patterns.exactMatch("b"), true);
+        nameState.deleteSubRule("rule1", 1.0, Patterns.exactMatch("b"), true);
         assertEquals(new HashSet<>(asList(1.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
         assertEquals(new HashSet<>(asList(2.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("b")));
-        nameState.deleteSubRule(2.0, Patterns.exactMatch("b"), true);
+        nameState.deleteSubRule("rule2", 2.0, Patterns.exactMatch("b"), true);
         assertEquals(new HashSet<>(asList(1.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
         assertNull(nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("b")));
-        nameState.deleteSubRule(2.0, Patterns.exactMatch("a"), true);
+        nameState.deleteSubRule("rule2", 2.0, Patterns.exactMatch("a"), true);
         assertEquals(new HashSet<>(asList(1.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
         assertNull(nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("b")));
-        nameState.deleteSubRule(1.0, Patterns.exactMatch("a"), false);
+        nameState.deleteSubRule("rule1", 1.0, Patterns.exactMatch("a"), false);
         assertEquals(new HashSet<>(asList(1.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
         assertNull(nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("b")));
-        nameState.deleteSubRule(1.0, Patterns.exactMatch("a"), true);
+        nameState.deleteSubRule("rule1", 1.0, Patterns.exactMatch("a"), true);
         assertNull(nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
         assertNull(nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("b")));
     }
@@ -117,22 +117,12 @@ public class NameStateTest {
     }
 
     @Test
-    public void testNextNameStateWithoutAdditionalNameStateReuse() {
-        NameState nameState = new NameState();
-        NameState nextNameState = new NameState();
-        GenericMachineConfiguration withoutAdditionalNameStateReuse = new GenericMachineConfiguration(false);
-        nameState.addNextNameState("key", nextNameState, withoutAdditionalNameStateReuse);
-        assertNull(nameState.getNextNameState("key"));
-    }
-
-    @Test
     public void testNextNameStateWithAdditionalNameStateReuse() {
         NameState nameState = new NameState();
         NameState nextNameState = new NameState();
-        GenericMachineConfiguration withAdditionalNameStateReuse = new GenericMachineConfiguration(true);
-        nameState.addNextNameState("key", nextNameState, withAdditionalNameStateReuse);
+        nameState.addNextNameState("key", nextNameState);
         assertEquals(nextNameState, nameState.getNextNameState("key"));
-        nameState.removeNextNameState("key", withAdditionalNameStateReuse);
+        nameState.removeNextNameState("key");
         assertNull(nameState.getNextNameState("key"));
     }
 }

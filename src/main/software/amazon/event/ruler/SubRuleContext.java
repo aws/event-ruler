@@ -1,5 +1,10 @@
 package software.amazon.event.ruler;
 
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * This class stores context regarding a sub-rule.
  *
@@ -39,13 +44,30 @@ public class SubRuleContext {
 
         private double nextId = -Double.MAX_VALUE;
 
-        public SubRuleContext generate() {
+        private Map<Object, Set<Double>> nameToIds = new ConcurrentHashMap<>();
+        private Map<Double, Object> idToName = new ConcurrentHashMap<>();
+
+        public SubRuleContext generate(Object ruleName) {
             assert nextId < Double.MAX_VALUE : "SubRuleContext.Generator's nextId reached Double.MAX_VALUE - " +
                     "this required the equivalent of calling generate() at 6 billion TPS for 100 years";
 
             SubRuleContext subRuleContext = new SubRuleContext(nextId);
+            if (!nameToIds.containsKey(ruleName)) {
+                nameToIds.put(ruleName, new HashSet<>());
+            }
+            nameToIds.get(ruleName).add(nextId);
+            idToName.put(nextId, ruleName);
+
             nextId = Math.nextUp(nextId);
             return subRuleContext;
+        }
+
+        public Set<Double> getIdsGeneratedForName(Object ruleName) {
+            return nameToIds.get(ruleName);
+        }
+
+        public Object getNameForGeneratedId(Double id) {
+            return idToName.get(id);
         }
     }
 }

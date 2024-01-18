@@ -2399,4 +2399,55 @@ public class ACMachineTest {
         assertTrue(matches.contains("rule2"));
     }
 
+    @Test
+    public void testAdditionalNameSateReuseAllKeysAndPatternsEncounteredInPreviousSubRules() throws Exception {
+        String rule1 = "{\"$or\":[\n" +
+                "         {\"foo\": [\"a\"],\n" +
+                "          \"bar\": [\"1\"]\n" +
+                "         },\n" +
+                "         {\"foo\": [\"b\"],\n" +
+                "          \"bar\": [\"2\"]\n" +
+                "         },\n" +
+                "         {\"foo\": [\"b\"],\n" +
+                "          \"bar\": [\"1\"]\n" +
+                "         }\n" +
+                "       ]}";
+
+        Machine machine = Machine.builder().withAdditionalNameStateReuse(true).build();
+        machine.addRule("rule1", rule1);
+
+        String event = "{" +
+                "  \"foo\": [\"b\"]," +
+                "  \"bar\": [\"1\"]" +
+                "}";
+
+        List<String> matches = machine.rulesForJSONEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+    }
+
+    @Test
+    public void testAdditionalNameStateReuseSecondSubRuleSubsetOfFirstSubRule() throws Exception {
+        String rule1 = "{\"$or\":[\n" +
+                "         {\"bar\": [\"1\"],\n" +
+                "          \"foo\": [\"a\"],\n" +
+                "          \"zoo\": [\"x\"]\n" +
+                "         },\n" +
+                "         {\"bar\": [\"1\"],\n" +
+                "          \"zoo\": [\"x\"]\n" +
+                "         }\n" +
+                "       ]}";
+
+        Machine machine = Machine.builder().withAdditionalNameStateReuse(true).build();
+        machine.addRule("rule1", rule1);
+
+        String event = "{" +
+                "  \"bar\": [\"1\"]," +
+                "  \"zoo\": [\"x\"]" +
+                "}";
+
+        List<String> matches = machine.rulesForJSONEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+    }
 }
