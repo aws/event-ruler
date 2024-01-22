@@ -2259,6 +2259,58 @@ public class MachineTest {
     }
 
     @Test
+    public void testAdditionalNameSateReuseAllKeysAndPatternsEncounteredInPreviousSubRules() throws Exception {
+        String rule1 = "{\"$or\":[\n" +
+                "         {\"foo\": [\"a\"],\n" +
+                "          \"bar\": [\"1\"]\n" +
+                "         },\n" +
+                "         {\"foo\": [\"b\"],\n" +
+                "          \"bar\": [\"2\"]\n" +
+                "         },\n" +
+                "         {\"foo\": [\"b\"],\n" +
+                "          \"bar\": [\"1\"]\n" +
+                "         }\n" +
+                "       ]}";
+
+        Machine machine = Machine.builder().withAdditionalNameStateReuse(true).build();
+        machine.addRule("rule1", rule1);
+
+        String event = "{" +
+                "  \"foo\": [\"b\"]," +
+                "  \"bar\": [\"1\"]" +
+                "}";
+
+        List<String> matches = machine.rulesForEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+    }
+
+    @Test
+    public void testAdditionalNameStateReuseSecondSubRuleSubsetOfFirstSubRule() throws Exception {
+        String rule1 = "{\"$or\":[\n" +
+                "         {\"bar\": [\"1\"],\n" +
+                "          \"foo\": [\"a\"],\n" +
+                "          \"zoo\": [\"x\"]\n" +
+                "         },\n" +
+                "         {\"bar\": [\"1\"],\n" +
+                "          \"zoo\": [\"x\"]\n" +
+                "         }\n" +
+                "       ]}";
+
+        Machine machine = Machine.builder().withAdditionalNameStateReuse(true).build();
+        machine.addRule("rule1", rule1);
+
+        String event = "{" +
+                "  \"bar\": [\"1\"]," +
+                "  \"zoo\": [\"x\"]" +
+                "}";
+
+        List<String> matches = machine.rulesForEvent(event);
+        assertEquals(1, matches.size());
+        assertTrue(matches.contains("rule1"));
+    }
+
+    @Test
     public void testApproxSizeForSimplestPossibleMachine() throws Exception {
         String rule1 = "{ \"a\" : [ 1 ] }";
         String rule2 = "{ \"b\" : [ 2 ] }";
@@ -2331,7 +2383,7 @@ public class MachineTest {
 
         // Adding rule with terminal key having superset of values will be treated as new rule and increase count
         machine.addRule("r1", rule1b);
-        assertEquals(90, machine.approximateObjectCount(10000));
+        assertEquals(87, machine.approximateObjectCount(10000));
     }
 
     @Test
@@ -2345,7 +2397,7 @@ public class MachineTest {
 
         // Adding rule with non-terminal key having superset of values will be treated as new rule and increase count
         machine.addRule("r1", rule1b);
-        assertEquals(90, machine.approximateObjectCount(10000));
+        assertEquals(87, machine.approximateObjectCount(10000));
     }
 
     @Test

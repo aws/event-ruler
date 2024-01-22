@@ -22,31 +22,33 @@ class ACFinder {
      *
      * @param event the Event structure containing the flattened event information
      * @param machine the compiled state machine
+     * @param subRuleContextGenerator the sub-rule context generator
      * @return list of rule names that match. The list may be empty but never null.
      */
-    static List<Object> matchRules(final Event event, final GenericMachine<?> machine) {
-        return find(new ACTask(event, machine));
+    static List<Object> matchRules(final Event event, final GenericMachine<?> machine,
+                                   final SubRuleContext.Generator subRuleContextGenerator) {
+        return find(new ACTask(event, machine), subRuleContextGenerator);
     }
 
-    private static List<Object> find(final ACTask task) {
+    private static List<Object> find(final ACTask task, final SubRuleContext.Generator subRuleContextGenerator) {
 
         // bootstrap the machine: Start state, first field
         NameState startState = task.startState();
         if (startState == null) {
             return Collections.emptyList();
         }
-        moveFrom(null, startState, 0, task, new ArrayMembership());
+        moveFrom(null, startState, 0, task, new ArrayMembership(), subRuleContextGenerator);
 
         // each iteration removes a Step and adds zero or more new ones
         while (task.stepsRemain()) {
-            tryStep(task);
+            tryStep(task, subRuleContextGenerator);
         }
 
         return task.getMatchedRules();
     }
 
     // remove a step from the work queue and see if there's a transition
-    private static void tryStep(final ACTask task) {
+    private static void tryStep(final ACTask task, final SubRuleContext.Generator subRuleContextGenerator) {
         final ACStep step = task.nextStep();
         final Field field = task.event.fields.get(step.fieldIndex);
 
@@ -65,32 +67,36 @@ class ACFinder {
                     // we have moved to a new NameState
                     // this NameState might imply a rule match
                     task.collectRules(step.candidateSubRuleIds, nextNameStateWithPattern.getNameState(),
-                            nextNameStateWithPattern.getPattern());
+                            nextNameStateWithPattern.getPattern(), subRuleContextGenerator);
 
                     // set up for attempting to move on from the new state
                     moveFromWithPriorCandidates(step.candidateSubRuleIds, nextNameStateWithPattern.getNameState(),
-                            nextNameStateWithPattern.getPattern(), nextFieldIndex, task, newMembership);
+                            nextNameStateWithPattern.getPattern(), nextFieldIndex, task, newMembership,
+                            subRuleContextGenerator);
                 }
             }
         }
     }
 
     private static void tryMustNotExistMatch(final Set<Double> candidateSubRuleIds, final NameState nameState,
-                                             final ACTask task, int nextKeyIndex, final ArrayMembership arrayMembership) {
+                                             final ACTask task, int nextKeyIndex, final ArrayMembership arrayMembership,
+                                             final SubRuleContext.Generator subRuleContextGenerator) {
         if (!nameState.hasKeyTransitions()) {
             return;
         }
 
         for (NameState nextNameState : nameState.getNameTransitions(task.event, arrayMembership)) {
             if (nextNameState != null) {
-                addNameState(candidateSubRuleIds, nextNameState, ABSENCE_PATTERN, task, nextKeyIndex, arrayMembership);
+                addNameState(candidateSubRuleIds, nextNameState, ABSENCE_PATTERN, task, nextKeyIndex, arrayMembership,
+                        subRuleContextGenerator);
             }
         }
     }
 
     // Move from a state. Give all the remaining event fields a chance to transition from it.
     private static void moveFrom(final Set<Double> candidateSubRuleIdsForNextStep, final NameState nameState,
-                                 int fieldIndex, final ACTask task, final ArrayMembership arrayMembership) {
+                                 int fieldIndex, final ACTask task, final ArrayMembership arrayMembership,
+                                 final SubRuleContext.Generator subRuleContextGenerator) {
         /*
          * The Name Matchers look for an [ { exists: false } ] match. They
          * will match if a particular key is not present
@@ -106,7 +112,8 @@ class ACFinder {
          * the final state can still be evaluated to true if the particular event
          * does not have the key configured for [ { exists: false } ].
          */
-        tryMustNotExistMatch(candidateSubRuleIdsForNextStep, nameState, task, fieldIndex, arrayMembership);
+        tryMustNotExistMatch(candidateSubRuleIdsForNextStep, nameState, task, fieldIndex, arrayMembership,
+                subRuleContextGenerator);
 
         while (fieldIndex < task.fieldCount) {
             task.addStep(fieldIndex++, nameState, candidateSubRuleIdsForNextStep, arrayMembership);
@@ -116,13 +123,15 @@ class ACFinder {
     private static void moveFromWithPriorCandidates(final Set<Double> candidateSubRuleIds,
                                                     final NameState fromState, final Patterns fromPattern,
                                                     final int fieldIndex, final ACTask task,
-                                                    final ArrayMembership arrayMembership) {
+                                                    final ArrayMembership arrayMembership,
+                                                    final SubRuleContext.Generator subRuleContextGenerator) {
         Set<Double> candidateSubRuleIdsForNextStep = calculateCandidateSubRuleIdsForNextStep(candidateSubRuleIds,
                 fromState, fromPattern);
 
         // If there are no more candidate sub-rules, there is no need to proceed further.
         if (candidateSubRuleIdsForNextStep != null && !candidateSubRuleIdsForNextStep.isEmpty()) {
-            moveFrom(candidateSubRuleIdsForNextStep, fromState, fieldIndex, task, arrayMembership);
+            moveFrom(candidateSubRuleIdsForNextStep, fromState, fieldIndex, task, arrayMembership,
+                    subRuleContextGenerator);
         }
     }
 
@@ -163,11 +172,13 @@ class ACFinder {
     }
 
     private static void addNameState(Set<Double> candidateSubRuleIds, NameState nameState, Patterns pattern,
-                                     ACTask task, int nextKeyIndex, final ArrayMembership arrayMembership) {
+                                     ACTask task, int nextKeyIndex, final ArrayMembership arrayMembership,
+                                     final SubRuleContext.Generator subRuleContextGenerator) {
         // one of the matches might imply a rule match
-        task.collectRules(candidateSubRuleIds, nameState, pattern);
+        task.collectRules(candidateSubRuleIds, nameState, pattern, subRuleContextGenerator);
 
-        moveFromWithPriorCandidates(candidateSubRuleIds, nameState, pattern, nextKeyIndex, task, arrayMembership);
+        moveFromWithPriorCandidates(candidateSubRuleIds, nameState, pattern, nextKeyIndex, task, arrayMembership,
+                subRuleContextGenerator);
     }
 }
 
