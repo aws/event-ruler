@@ -28,7 +28,7 @@ public class Machine extends GenericMachine<String> {
 
     public static class Builder extends GenericMachine.Builder<Machine> {
 
-        private Builder() {}
+        Builder() {}
 
         @Override
         public Machine build() {
