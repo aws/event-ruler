@@ -1457,6 +1457,12 @@ public class ACMachineTest {
         assertEquals(1, machine.rulesForJSONEvent(event1).size());
         assertEquals(1, machine.rulesForJSONEvent(event2).size());
         assertEquals(0, machine.rulesForJSONEvent(event3).size());
+
+        machine.deleteRule("r1", rule);
+
+        assertTrue(machine.isEmpty());
+        assertEquals(0, machine.rulesForJSONEvent(event2).size());
+        assertEquals(0, machine.rulesForJSONEvent(event3).size());
     }
 
     @Test
@@ -1488,6 +1494,12 @@ public class ACMachineTest {
         assertEquals(1, machine.rulesForJSONEvent(event2).size());
         assertEquals(0, machine.rulesForJSONEvent(event3).size());
         assertEquals(0, machine.rulesForJSONEvent(event4).size());
+
+        machine.deleteRule("r1", rule);
+
+        assertTrue(machine.isEmpty());
+        assertEquals(0, machine.rulesForJSONEvent(event3).size());
+        assertEquals(0, machine.rulesForJSONEvent(event4).size());
     }
 
     @Test
@@ -1514,6 +1526,12 @@ public class ACMachineTest {
         assertEquals(0, machine.rulesForJSONEvent(event1).size());
         assertEquals(1, machine.rulesForJSONEvent(event2).size());
         assertEquals(1, machine.rulesForJSONEvent(event3).size());
+
+        machine.deleteRule("r1", rule);
+
+        assertTrue(machine.isEmpty());
+        assertEquals(0, machine.rulesForJSONEvent(event2).size());
+        assertEquals(0, machine.rulesForJSONEvent(event3).size());
     }
 
     @Test
@@ -1545,6 +1563,12 @@ public class ACMachineTest {
         assertEquals(0, machine.rulesForJSONEvent(event2).size());
         assertEquals(1, machine.rulesForJSONEvent(event3).size());
         assertEquals(1, machine.rulesForJSONEvent(event4).size());
+
+        machine.deleteRule("r1", rule);
+
+        assertTrue(machine.isEmpty());
+        assertEquals(0, machine.rulesForJSONEvent(event3).size());
+        assertEquals(0, machine.rulesForJSONEvent(event4).size());
     }
 
     @Test
@@ -1613,6 +1637,10 @@ public class ACMachineTest {
         assertEquals(0, machine.rulesForJSONEvent(event8).size());
         assertEquals(0, machine.rulesForJSONEvent(event9).size());
 
+        machine.deleteRule("r1", rule);
+
+        assertTrue(machine.isEmpty());
+        assertEquals(0, machine.rulesForJSONEvent(event1).size());
     }
 
     @Test
