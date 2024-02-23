@@ -137,19 +137,27 @@ public class Ruler {
                 }
                 return false;
             case ANYTHING_BUT_IGNORE_CASE:
-                assert (pattern instanceof AnythingButEqualsIgnoreCase);
-                AnythingButEqualsIgnoreCase anythingButIgnoreCasePattern = (AnythingButEqualsIgnoreCase) pattern;
+                assert (pattern instanceof AnythingButValuesSet);
+                AnythingButValuesSet anythingButIgnoreCasePattern = (AnythingButValuesSet) pattern;
                 if (val.isTextual()) {
                     return anythingButIgnoreCasePattern.getValues().stream().noneMatch(v -> v.equalsIgnoreCase('"' + val.asText() + '"'));
                 }
                 return false;
 
             case ANYTHING_BUT_SUFFIX:
-                valuePattern = (ValuePatterns) pattern;
-                return !(val.isTextual() && (val.asText() + '"').startsWith(valuePattern.pattern()));
+                AnythingButValuesSet anythingButSuffixPattern = (AnythingButValuesSet) pattern;
+                String valueForSuffix = val.asText() + '"';
+                if (val.isTextual()) {
+                    return anythingButSuffixPattern.getValues().stream().noneMatch(v -> valueForSuffix.startsWith(v));
+                }
+                return false;
             case ANYTHING_BUT_PREFIX:
-                valuePattern = (ValuePatterns) pattern;
-                return !(val.isTextual() && ('"' + val.asText()).startsWith(valuePattern.pattern()));
+                AnythingButValuesSet anythingButPrefixPattern = (AnythingButValuesSet) pattern;
+                String valueForPrefix = '"' + val.asText() + '"';
+                if (val.isTextual()) {
+                    return anythingButPrefixPattern.getValues().stream().noneMatch(v -> valueForPrefix.startsWith(v));
+                }
+                return false;
 
             case NUMERIC_EQ:
                 valuePattern = (ValuePatterns) pattern;

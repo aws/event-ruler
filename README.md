@@ -154,8 +154,8 @@ actual backslash character. A backslash escaping any character other than asteri
 
 Anything-but matching does what the name says: matches anything *except* what's provided in the rule.
 
-Anything-but works with single string and numeric values or lists, which have to contain entirely strings or
-entirely numerics.  It also may be applied to a prefix match.
+Anything-but works with single string and numeric values or lists, which have to contain entirely strings or entirely
+numerics. It also may be applied to a prefix, suffix, or equals-ignore-case match of a string or a list of strings.
 
 Single anything-but (string, then numeric):
 ```javascript
@@ -198,6 +198,15 @@ Anything-but prefix:
 }
 ```
 
+Anything-but prefix list (strings):
+```javascript
+{
+  "detail": {
+    "state": [ { "anything-but": { "prefix": [ "init", "error" ] } } ]
+  }
+}
+```
+
 Anything-but suffix:
 ```javascript
 {
@@ -205,6 +214,25 @@ Anything-but suffix:
     "instance-id": [ { "anything-but": { "suffix": "1234" } } ]
   }
 }
+```
+
+Anything-but suffix list (strings):
+```javascript
+{
+  "detail": {
+    "instance-id": [ { "anything-but": { "suffix": [ "1234", "6789" ] } } ]
+  }
+}
+```
+
+Anything-but-ignore-case:
+```javascript
+{
+  "detail": {
+    "state": [ { "anything-but": {"equals-ignore-case": "Stopped" } } ]
+  }
+}
+
 ```
 
 Anything-but-ignore-case list (strings):

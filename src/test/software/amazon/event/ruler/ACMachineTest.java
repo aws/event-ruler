@@ -1434,8 +1434,64 @@ public class ACMachineTest {
     }
 
     @Test
-    public void testAnythingButSuffix() throws Exception {
+    public void testAnythingButPrefix() throws Exception {
+        String rule = "{\n" +
+                "\"a\": [ { \"anything-but\": {\"prefix\": \"$\"} } ]\n" +
+                "}";
 
+        Machine machine = new Machine();
+        machine.addRule("r1", rule);
+
+        String event1 = "{" +
+                "    \"a\": \"value$\"\n" +
+                "}\n";
+
+        String event2 = "{" +
+                "    \"a\": \"notvalue\"\n" +
+                "}\n";
+
+        String event3 = "{" +
+                "    \"a\": \"$notvalue\"\n" +
+                "}\n";
+
+        assertEquals(1, machine.rulesForJSONEvent(event1).size());
+        assertEquals(1, machine.rulesForJSONEvent(event2).size());
+        assertEquals(0, machine.rulesForJSONEvent(event3).size());
+    }
+
+    @Test
+    public void testAnythingButPrefixSet() throws Exception {
+        String rule = "{\n" +
+                "\"a\": [ { \"anything-but\": {\"prefix\": [\"$\", \"%\"] } } ]\n" +
+                "}";
+
+        Machine machine = new Machine();
+        machine.addRule("r1", rule);
+
+        String event1 = "{" +
+                "    \"a\": \"value$\"\n" +
+                "}\n";
+
+        String event2 = "{" +
+                "    \"a\": \"notvalue%\"\n" +
+                "}\n";
+
+        String event3 = "{" +
+                "    \"a\": \"$notvalue\"\n" +
+                "}\n";
+
+        String event4 = "{" +
+                "    \"a\": \"%notvalue\"\n" +
+                "}\n";
+
+        assertEquals(1, machine.rulesForJSONEvent(event1).size());
+        assertEquals(1, machine.rulesForJSONEvent(event2).size());
+        assertEquals(0, machine.rulesForJSONEvent(event3).size());
+        assertEquals(0, machine.rulesForJSONEvent(event4).size());
+    }
+
+    @Test
+    public void testAnythingButSuffix() throws Exception {
         String rule = "{\n" +
                 "\"a\": [ { \"anything-but\": {\"suffix\": \"$\"} } ]\n" +
                 "}";
@@ -1458,7 +1514,37 @@ public class ACMachineTest {
         assertEquals(0, machine.rulesForJSONEvent(event1).size());
         assertEquals(1, machine.rulesForJSONEvent(event2).size());
         assertEquals(1, machine.rulesForJSONEvent(event3).size());
+    }
 
+    @Test
+    public void testAnythingButSuffixSet() throws Exception {
+        String rule = "{\n" +
+                "\"a\": [ { \"anything-but\": {\"suffix\": [\"$\", \"%\"] } } ]\n" +
+                "}";
+
+        Machine machine = new Machine();
+        machine.addRule("r1", rule);
+
+        String event1 = "{" +
+                "    \"a\": \"value$\"\n" +
+                "}\n";
+
+        String event2 = "{" +
+                "    \"a\": \"notvalue%\"\n" +
+                "}\n";
+
+        String event3 = "{" +
+                "    \"a\": \"$notvalue\"\n" +
+                "}\n";
+
+        String event4 = "{" +
+                "    \"a\": \"%notvalue\"\n" +
+                "}\n";
+
+        assertEquals(0, machine.rulesForJSONEvent(event1).size());
+        assertEquals(0, machine.rulesForJSONEvent(event2).size());
+        assertEquals(1, machine.rulesForJSONEvent(event3).size());
+        assertEquals(1, machine.rulesForJSONEvent(event4).size());
     }
 
     @Test

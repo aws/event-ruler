@@ -129,15 +129,26 @@ public class JsonRuleCompilerTest {
         j = "{\"a\": [ { \"anything-but\": { \"prefix\": \"foo\" } } ] }";
         assertNull("Good anything-but should parse", JsonRuleCompiler.check(j));
 
+        j = "{\"a\": [ { \"anything-but\": { \"prefix\": [\"abc\", \"123\"] } } ] }";
+        assertNull("Good anything-but should parse", JsonRuleCompiler.check(j));
+
         j = "{\"a\": [ { \"anything-but\": { \"suffix\": \"foo\" } } ] }";
+        assertNull("Good anything-but should parse", JsonRuleCompiler.check(j));
+
+        j = "{\"a\": [ { \"anything-but\": { \"suffix\": [\"abc\", \"123\"] } } ] }";
         assertNull("Good anything-but should parse", JsonRuleCompiler.check(j));
 
         j = "{\"a\": [ { \"anything-but\": {\"equals-ignore-case\": \"rule\" } } ] }";
         assertNull("Good anything-but/ignore-case should parse", JsonRuleCompiler.check(j));
 
+        j = "{\"a\": [ { \"anything-but\": {\"equals-ignore-case\": \"\" } } ] }";
+        assertNull("Good anything-but/ignore-case should parse", JsonRuleCompiler.check(j));
+
         j = "{\"a\": [ { \"anything-but\": {\"equals-ignore-case\": [\"abc\", \"123\"] } } ] }";
         assertNull("Good anything-but/ignore-case should parse", JsonRuleCompiler.check(j));
 
+        j = "{\"a\": [ { \"anything-but\": {\"equals-ignore-case\": [\"abc\", \"\"] } } ] }";
+        assertNull("Good anything-but/ignore-case should parse", JsonRuleCompiler.check(j));
 
         j = "{\"a\": [ { \"exactly\": \"child\" } ] }";
         assertNull("Good exact-match should parse", JsonRuleCompiler.check(j));
@@ -177,12 +188,24 @@ public class JsonRuleCompilerTest {
                 "{\"a\": [ { \"anything-but\": { \"prefix\": \"\" } } ] }",
                 "{\"a\": [ { \"anything-but\": { \"prefix\": \"foo\", \"a\":1 } } ] }",
                 "{\"a\": [ { \"anything-but\": { \"prefix\": \"foo\" }, \"x\": 1 } ] }",
+                "{\"a\": [ { \"anything-but\": { \"prefix\": [\"1\", \"2\" \"3\"] } } ] }", // missing ,
+                "{\"a\": [ { \"anything-but\": { \"prefix\": [\"1\", \"\"] } } ] }", // no empty string
+                "{\"a\": [ { \"anything-but\": { \"prefix\": [1, 2, 3] } } ] }", // no numbers
+                "{\"a\": [ { \"anything-but\": { \"prefix\": [\"1\", \"2\" } } ] }", // missing ]
+                "{\"a\": [ { \"anything-but\": { \"prefix\": [\"1\", \"2\" ] } ] }", // missing }
                 "{\"a\": [ { \"anything-but\": { \"suffix\": 27 } } ] }",
                 "{\"a\": [ { \"anything-but\": { \"suffix\": \"\" } } ] }",
                 "{\"a\": [ { \"anything-but\": { \"suffix\": \"foo\", \"a\":1 } } ] }",
                 "{\"a\": [ { \"anything-but\": { \"suffix\": \"foo\" }, \"x\": 1 } ] }",
-                "{\"a\": [ { \"anything-but\" : { \"equals-ignore-case\": [1, 2 3] } } ] }",
-                "{\"a\": [ { \"anything-but\": {\"equals-ignore-case\": [1, 2, 3] } } ] }", // no numbers
+                "{\"a\": [ { \"anything-but\": { \"suffix\": [\"1\", \"2\" \"3\"] } } ] }", // missing ,
+                "{\"a\": [ { \"anything-but\": { \"suffix\": [\"1\", \"\"] } } ] }", // no empty string
+                "{\"a\": [ { \"anything-but\": { \"suffix\": [1, 2, 3] } } ] }", // no numbers
+                "{\"a\": [ { \"anything-but\": { \"suffix\": [\"1\", \"2\" } } ] }", // missing ]
+                "{\"a\": [ { \"anything-but\": { \"suffix\": [\"1\", \"2\" ] } ] }", // missing }
+                "{\"a\": [ { \"anything-but\": { \"equals-ignore-case\": [\"1\", \"2\" \"3\"] } } ] }", // missing ,
+                "{\"a\": [ { \"anything-but\": { \"equals-ignore-case\": [1, 2, 3] } } ] }", // no numbers
+                "{\"a\": [ { \"anything-but\": { \"equals-ignore-case\": [\"1\", \"2\" } } ] }", // missing ]
+                "{\"a\": [ { \"anything-but\": { \"equals-ignore-case\": [\"1\", \"2\" ] } ] }", // missing }
                 "{\"a\": [ { \"equals-ignore-case\": 5 } ] }",
                 "{\"a\": [ { \"equals-ignore-case\": [ \"abc\" ] } ] }",
                 "{\"a\": [ { \"prefix\": { \"invalid-expression\": [ \"abc\" ] } } ] }",

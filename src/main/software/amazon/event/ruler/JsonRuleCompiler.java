@@ -407,7 +407,7 @@ public class JsonRuleCompiler {
             return range;
         } else if (Constants.ANYTHING_BUT_MATCH.equals(matchTypeName)) {
 
-            boolean isIgnoreCase = false;
+            MatchType matchType = MatchType.ANYTHING_BUT;
             JsonToken anythingButExpressionToken = parser.nextToken();
             if (anythingButExpressionToken == JsonToken.START_OBJECT) {
 
@@ -417,36 +417,22 @@ public class JsonRuleCompiler {
                     barf(parser, "Anything-But expression name not found");
                 }
                 final String anythingButObjectOp = parser.getCurrentName();
-                final boolean isPrefix = Constants.PREFIX_MATCH.equals(anythingButObjectOp);
-                final boolean isSuffix = Constants.SUFFIX_MATCH.equals(anythingButObjectOp);
-                isIgnoreCase = Constants.EQUALS_IGNORE_CASE.equals(anythingButObjectOp);
-                if(!isIgnoreCase) {
-                    if (!isPrefix && !isSuffix) {
+                switch (anythingButObjectOp) {
+                    case Constants.EQUALS_IGNORE_CASE:
+                        matchType = MatchType.ANYTHING_BUT_IGNORE_CASE;
+                        break;
+                    case Constants.PREFIX_MATCH:
+                        matchType = MatchType.ANYTHING_BUT_PREFIX;
+                        break;
+                    case Constants.SUFFIX_MATCH:
+                        matchType = MatchType.ANYTHING_BUT_SUFFIX;
+                        break;
+                    default:
                         barf(parser, "Unsupported anything-but pattern: " + anythingButObjectOp);
-                    }
-                    final JsonToken anythingButParamType = parser.nextToken();
-                    if (anythingButParamType != JsonToken.VALUE_STRING) {
-                        barf(parser, "prefix/suffix match pattern must be a string");
-                    }
-                    final String text = parser.getText();
-                    if (text.isEmpty()) {
-                        barf(parser, "Null prefix/suffix not allowed");
-                    }
-                    if (parser.nextToken() != JsonToken.END_OBJECT) {
-                        barf(parser, "Only one key allowed in match expression");
-                    }
-                    if (parser.nextToken() != JsonToken.END_OBJECT) {
-                        barf(parser, "Only one key allowed in match expression");
-                    }
-                    if(isPrefix) {
-                        return  Patterns.anythingButPrefix('"' + text); // note no trailing quote
-                    } else {
-                        return  Patterns.anythingButSuffix(text + '"'); // note no leading quote
-                    }
-                } else {
-                    // Step into anything-but's equals-ignore-case
-                    anythingButExpressionToken = parser.nextToken();
                 }
+
+                // Step into anything-but's equals-ignore-case/prefix/suffix
+                anythingButExpressionToken = parser.nextToken();
             }
 
             if (anythingButExpressionToken != JsonToken.START_ARRAY &&
@@ -459,24 +445,24 @@ public class JsonRuleCompiler {
 
             Patterns anythingBut;
             if (anythingButExpressionToken == JsonToken.START_ARRAY) {
-               if(isIgnoreCase) {
-                  anythingBut = processAnythingButEqualsIgnoreCaseListMatchExpression(parser);
-               } else {
-                  anythingBut = processAnythingButListMatchExpression(parser);
-               }
+                if (matchType == MatchType.ANYTHING_BUT) {
+                    anythingBut = processAnythingButListMatchExpression(parser);
+                } else {
+                    anythingBut = processAnythingButValuesSetMatchExpression(parser, matchType);
+                }
             } else {
-               if(isIgnoreCase) {
-                  anythingBut = processAnythingButEqualsIgnoreCaseMatchExpression(parser, anythingButExpressionToken);
-               } else {
-                  anythingBut = processAnythingButMatchExpression(parser, anythingButExpressionToken);
-               }
+                if (matchType == MatchType.ANYTHING_BUT) {
+                    anythingBut = processAnythingButMatchExpression(parser, anythingButExpressionToken);
+                } else {
+                    anythingBut = processAnythingButValuesSetSingleValueMatchExpression(parser, anythingButExpressionToken, matchType);
+                }
             }
 
             if (parser.nextToken() != JsonToken.END_OBJECT) {
                 tooManyElements(parser);
             }
-            // Complete the object closure for equals-ignore-case
-            if (isIgnoreCase && parser.nextToken() != JsonToken.END_OBJECT) {
+            // Complete the object closure when a set is present
+            if (matchType != MatchType.ANYTHING_BUT && parser.nextToken() != JsonToken.END_OBJECT) {
                 tooManyElements(parser);
             }
 
@@ -608,25 +594,41 @@ public class JsonRuleCompiler {
         return AnythingBut.anythingButMatch(values, hasNumber);
     }
 
-    private static Patterns processAnythingButEqualsIgnoreCaseListMatchExpression(JsonParser parser) throws JsonParseException {
+    private static Patterns processAnythingButValuesSetMatchExpression(JsonParser parser, MatchType matchType)
+            throws JsonParseException {
         JsonToken token;
         Set<String> values = new HashSet<>();
-        boolean hasNumber = false;
         try {
             while ((token = parser.nextToken()) != JsonToken.END_ARRAY) {
                 switch (token) {
                     case VALUE_STRING:
-                        values.add('"' + parser.getText() + '"');
+                        String text = parser.getText();
+                        if (matchType != MatchType.ANYTHING_BUT_IGNORE_CASE && text.isEmpty()) {
+                            barf(parser, "Null prefix/suffix not allowed");
+                        }
+                        values.add((matchType != MatchType.ANYTHING_BUT_SUFFIX ? "\"" : "") +
+                                   text +
+                                   (matchType != MatchType.ANYTHING_BUT_PREFIX ? "\"" : ""));
                         break;
                     default:
-                        barf(parser, "Inside anything-but/equals-ignore-case list, number|start|null|boolean is not supported.");
+                        if (matchType == MatchType.ANYTHING_BUT_IGNORE_CASE) {
+                            barf(parser, "Inside anything-but/equals-ignore-case list, number|start|null|boolean is not supported.");
+                        } else {
+                            barf(parser, "prefix/suffix match pattern must be a string");
+                        }
                 }
             }
         } catch (IllegalArgumentException | IOException e) {
             barf(parser, e.getMessage());
         }
 
-        return AnythingButEqualsIgnoreCase.anythingButIgnoreCaseMatch(values);
+        switch (matchType) {
+            case ANYTHING_BUT_IGNORE_CASE: return Patterns.anythingButIgnoreCaseMatch(values);
+            case ANYTHING_BUT_PREFIX: return Patterns.anythingButPrefix(values);
+            case ANYTHING_BUT_SUFFIX: return Patterns.anythingButSuffix(values);
+            // Not barfing as this is a code bug rather than bad JSON.
+            default: throw new IllegalArgumentException("processAnythingButValuesSetMatchExpression received invalid matchType of " + matchType);
+        }
     }
 
     private static Patterns processAnythingButMatchExpression(JsonParser parser,
@@ -648,17 +650,34 @@ public class JsonRuleCompiler {
         return AnythingBut.anythingButMatch(values, hasNumber);
     }
 
-    private static Patterns processAnythingButEqualsIgnoreCaseMatchExpression(JsonParser parser,
-                                                              JsonToken anythingButExpressionToken) throws IOException {
+    private static Patterns processAnythingButValuesSetSingleValueMatchExpression(JsonParser parser,
+                JsonToken anythingButExpressionToken, MatchType matchType) throws IOException {
         Set<String> values = new HashSet<>();
         switch (anythingButExpressionToken) {
             case VALUE_STRING:
-                values.add('"' + parser.getText() + '"');
+                String text = parser.getText();
+                if (matchType != MatchType.ANYTHING_BUT_IGNORE_CASE && text.isEmpty()) {
+                    barf(parser, "Null prefix/suffix not allowed");
+                }
+                values.add((matchType != MatchType.ANYTHING_BUT_SUFFIX ? "\"" : "") +
+                        text +
+                        (matchType != MatchType.ANYTHING_BUT_PREFIX ? "\"" : ""));
                 break;
             default:
-                barf(parser, "Inside anything-but/equals-ignore-case list, number|start|null|boolean is not supported.");
+                if (matchType == MatchType.ANYTHING_BUT_IGNORE_CASE) {
+                    barf(parser, "Inside anything-but/equals-ignore-case list, number|start|null|boolean is not supported.");
+                } else {
+                    barf(parser, "prefix/suffix match pattern must be a string");
+                }
         }
-        return AnythingButEqualsIgnoreCase.anythingButIgnoreCaseMatch(values);
+
+        switch (matchType) {
+            case ANYTHING_BUT_IGNORE_CASE: return Patterns.anythingButIgnoreCaseMatch(values);
+            case ANYTHING_BUT_PREFIX: return Patterns.anythingButPrefix(values);
+            case ANYTHING_BUT_SUFFIX: return Patterns.anythingButSuffix(values);
+            // Not barfing as this is a code bug rather than bad JSON.
+            default: throw new IllegalArgumentException("processAnythingButValuesSetSingleValueMatchExpression received invalid matchType of " + matchType);
+        }
     }
 
     private static Patterns processNumericMatchExpression(final JsonParser parser) throws IOException {
