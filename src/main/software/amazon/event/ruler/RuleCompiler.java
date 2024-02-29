@@ -524,7 +524,7 @@ public final class RuleCompiler {
             barf(parser, e.getMessage());
         }
 
-        return AnythingButEqualsIgnoreCase.anythingButIgnoreCaseMatch(values);
+        return AnythingButValuesSet.anythingButIgnoreCaseMatch(values);
     }
 
 
@@ -557,7 +557,7 @@ public final class RuleCompiler {
             default:
                 barf(parser, "Inside anything-but/ignore-case list, number|start|null|boolean is not supported.");
         }
-        return AnythingButEqualsIgnoreCase.anythingButIgnoreCaseMatch(values);
+        return AnythingButValuesSet.anythingButIgnoreCaseMatch(values);
     }
 
     private static Patterns processNumericMatchExpression(final JsonParser parser) throws IOException {

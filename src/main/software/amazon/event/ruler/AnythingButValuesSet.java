@@ -5,16 +5,16 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Represents denylist like rule: any value matches if it's *not* in the anything-but/ignore-case list.
+ * Represents denylist like rule: any value matches if it's *not* in the anything-but set.
  * It supports lists whose members must be all strings.
- * Matching is case-insensitive
+ * This can be used for anything-but-equals-ignore-case, anything-but-prefix, and anything-but-suffix.
  */
-public class AnythingButEqualsIgnoreCase extends Patterns {
+public class AnythingButValuesSet extends Patterns {
 
     private final Set<String> values;
 
-    AnythingButEqualsIgnoreCase(final Set<String> values) {
-        super(MatchType.ANYTHING_BUT_IGNORE_CASE);
+    AnythingButValuesSet(final MatchType matchType, final Set<String> values) {
+        super(matchType);
         this.values = Collections.unmodifiableSet(values);
     }
 
@@ -34,7 +34,7 @@ public class AnythingButEqualsIgnoreCase extends Patterns {
             return false;
         }
 
-        AnythingButEqualsIgnoreCase that = (AnythingButEqualsIgnoreCase) o;
+        AnythingButValuesSet that = (AnythingButValuesSet) o;
 
         return (Objects.equals(values, that.values));
     }
@@ -48,6 +48,6 @@ public class AnythingButEqualsIgnoreCase extends Patterns {
 
     @Override
     public String toString() {
-        return "ABIC:"+ values + ", (" + super.toString() + ")";
+        return "ABVS:"+ values + ", (" + super.toString() + ")";
     }
 }
