@@ -606,9 +606,7 @@ public class JsonRuleCompiler {
                         if (matchType != MatchType.ANYTHING_BUT_IGNORE_CASE && text.isEmpty()) {
                             barf(parser, "Null prefix/suffix not allowed");
                         }
-                        values.add((matchType != MatchType.ANYTHING_BUT_SUFFIX ? "\"" : "") +
-                                   text +
-                                   (matchType != MatchType.ANYTHING_BUT_PREFIX ? "\"" : ""));
+                        values.add(generateValueBasedOnMatchType(text, matchType));
                         break;
                     default:
                         if (matchType == MatchType.ANYTHING_BUT_IGNORE_CASE) {
@@ -659,9 +657,7 @@ public class JsonRuleCompiler {
                 if (matchType != MatchType.ANYTHING_BUT_IGNORE_CASE && text.isEmpty()) {
                     barf(parser, "Null prefix/suffix not allowed");
                 }
-                values.add((matchType != MatchType.ANYTHING_BUT_SUFFIX ? "\"" : "") +
-                        text +
-                        (matchType != MatchType.ANYTHING_BUT_PREFIX ? "\"" : ""));
+                values.add(generateValueBasedOnMatchType(text, matchType));
                 break;
             default:
                 if (matchType == MatchType.ANYTHING_BUT_IGNORE_CASE) {
@@ -677,6 +673,21 @@ public class JsonRuleCompiler {
             case ANYTHING_BUT_SUFFIX: return Patterns.anythingButSuffix(values);
             // Not barfing as this is a code bug rather than bad JSON.
             default: throw new IllegalArgumentException("processAnythingButValuesSetSingleValueMatchExpression received invalid matchType of " + matchType);
+        }
+    }
+
+    private static String generateValueBasedOnMatchType(String text, MatchType matchType) {
+        switch (matchType) {
+            case PREFIX:
+            case PREFIX_EQUALS_IGNORE_CASE:
+            case ANYTHING_BUT_PREFIX:
+                return '"' + text;
+            case SUFFIX:
+            case SUFFIX_EQUALS_IGNORE_CASE:
+            case ANYTHING_BUT_SUFFIX:
+                return text + '"';
+            default:
+                return '"' + text + '"';
         }
     }
 
