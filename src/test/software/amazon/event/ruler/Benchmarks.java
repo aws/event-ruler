@@ -443,6 +443,35 @@ public class Benchmarks {
     };
     private final int[] ANYTHING_BUT_SUFFIX_MATCHES = { 211136, 210411, 94908, 0, 209055 };
 
+    private final String[] ANYTHING_BUT_WILDCARD_RULES = {
+            "{\n" +
+                    "  \"properties\": {\n" +
+                    "    \"MAPBLKLOT\": [ { \"anything-but\": {\"wildcard\": \"143*\" } } ]\n" +
+                    "  }" +
+                    "}",
+            "{\n" +
+                    "  \"properties\": {\n" +
+                    "    \"MAPBLKLOT\": [ { \"anything-but\": {\"wildcard\": \"2*0*1*7\" } } ]\n" +
+                    "  }\n" +
+                    "}",
+            "{\n" +
+                    "  \"properties\": {\n" +
+                    "    \"MAPBLKLOT\": [ { \"anything-but\": {\"wildcard\": \"*218\" } } ]\n" +
+                    "  }\n" +
+                    "}",
+            "{\n" +
+                    "  \"properties\": {\n" +
+                    "    \"MAPBLKLOT\": [ { \"anything-but\": {\"wildcard\": \"3*5*2\" } } ]\n" +
+                    "  }\n" +
+                    "}",
+            "{\n" +
+                    "  \"properties\": {\n" +
+                    "    \"MAPBLKLOT\": [ { \"anything-but\": {\"wildcard\": \"VA*IL\" } } ]\n" +
+                    "  }\n" +
+                    "}"
+    };
+    private final int[] ANYTHING_BUT_WILDCARD_MATCHES = { 212578, 212355, 213025, 210528, 213067 };
+
     // This needs to be run with -Xms2g -Xmx2g (Dunno about the 2g but the same Xms and Xmx, and big enough
     //  to hold several copies of the 200M in citylots2
     private final static int NUMBER_OF_RULES = 400000;
@@ -746,6 +775,12 @@ public class Benchmarks {
 
         bm = new Benchmarker();
 
+        bm.addRules(ANYTHING_BUT_WILDCARD_RULES, ANYTHING_BUT_WILDCARD_MATCHES);
+        bm.run(citylots2);
+        System.out.println("ANYTHING-BUT-WILDCARD events/sec: " + String.format("%.1f", bm.getEPS()));
+
+        bm = new Benchmarker();
+
         bm.addRules(COMPLEX_ARRAYS_RULES, COMPLEX_ARRAYS_MATCHES);
         bm.run(citylots2);
         System.out.println("COMPLEX_ARRAYS events/sec: " + String.format("%.1f", bm.getEPS()));
@@ -762,6 +797,7 @@ public class Benchmarks {
         bm.addRules(ANYTHING_BUT_IGNORE_CASE_RULES, ANYTHING_BUT_IGNORE_CASE_MATCHES);
         bm.addRules(ANYTHING_BUT_PREFIX_RULES, ANYTHING_BUT_PREFIX_MATCHES);
         bm.addRules(ANYTHING_BUT_SUFFIX_RULES, ANYTHING_BUT_SUFFIX_MATCHES);
+        bm.addRules(ANYTHING_BUT_WILDCARD_RULES, ANYTHING_BUT_WILDCARD_MATCHES);
         bm.run(citylots2);
         System.out.println("PARTIAL_COMBO events/sec: " + String.format("%.1f", bm.getEPS()));
 
@@ -773,6 +809,7 @@ public class Benchmarks {
         bm.addRules(ANYTHING_BUT_IGNORE_CASE_RULES, ANYTHING_BUT_IGNORE_CASE_MATCHES);
         bm.addRules(ANYTHING_BUT_PREFIX_RULES, ANYTHING_BUT_PREFIX_MATCHES);
         bm.addRules(ANYTHING_BUT_SUFFIX_RULES, ANYTHING_BUT_SUFFIX_MATCHES);
+        bm.addRules(ANYTHING_BUT_WILDCARD_RULES, ANYTHING_BUT_WILDCARD_MATCHES);
         bm.addRules(COMPLEX_ARRAYS_RULES, COMPLEX_ARRAYS_MATCHES);
         bm.run(citylots2);
         System.out.println("COMBO events/sec: " + String.format("%.1f", bm.getEPS()));
