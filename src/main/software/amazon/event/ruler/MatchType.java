@@ -17,6 +17,7 @@ public enum MatchType {
     ANYTHING_BUT_IGNORE_CASE, // deny list effect (case insensitive)
     ANYTHING_BUT_PREFIX, // anything that doesn't start with this
     ANYTHING_BUT_SUFFIX, // anything that doesn't end with this
+    ANYTHING_BUT_WILDCARD, // anything that doesn't match the wildcard pattern
     EQUALS_IGNORE_CASE,  // case-insensitive string match
     WILDCARD,             // string match using one or more non-consecutive '*' wildcard characters
 }

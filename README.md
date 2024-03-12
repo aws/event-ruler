@@ -232,7 +232,6 @@ Anything-but-ignore-case:
     "state": [ { "anything-but": {"equals-ignore-case": "Stopped" } } ]
   }
 }
-
 ```
 
 Anything-but-ignore-case list (strings):
@@ -242,7 +241,24 @@ Anything-but-ignore-case list (strings):
     "state": [ { "anything-but": {"equals-ignore-case": [ "Stopped", "OverLoaded" ] } } ]
   }
 }
+```
 
+Anything-but wildcard:
+```javascript
+{
+  "detail": {
+    "state": [ { "anything-but": { "wildcard": "*/bin/*.jar" } } ]
+  }
+}
+```
+
+Anything-but wildcard list (strings):
+```javascript
+{
+  "detail": {
+    "state": [ { "anything-but": { "wildcard": [ "*/bin/*.jar", "*/bin/*.class" ] } } ]
+  }
+}
 ```
 
 ### Numeric matching
@@ -754,6 +770,8 @@ public static AnythingButValuesSet anythingButSuffix(final String suffix);
 public static AnythingButValuesSet anythingButSuffix(final Set<String> anythingButs);
 public static AnythingButValuesSet anythingButIgnoreCaseMatch(final String anythingBut);
 public static AnythingButValuesSet anythingButIgnoreCaseMatch(final Set<String> anythingButs);
+public static AnythingButValuesSet anythingButWildcard(final String value);
+public static AnythingButValuesSet anythingButWildcard(final Set<String> anythingButs);
 public static ValuePatterns numericEquals(final double val);
 public static Range lessThan(final double val);
 public static Range lessThanOrEqualTo(final double val);

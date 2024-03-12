@@ -149,6 +149,7 @@ class ByteMachine {
             case ANYTHING_BUT_IGNORE_CASE:
             case ANYTHING_BUT_PREFIX:
             case ANYTHING_BUT_SUFFIX:
+            case ANYTHING_BUT_WILDCARD:
                 assert pattern instanceof AnythingButValuesSet;
                 deleteAnythingButValuesSetPattern((AnythingButValuesSet) pattern);
                 break;
@@ -532,6 +533,7 @@ class ByteMachine {
                             }
                             break;
                         case ANYTHING_BUT_IGNORE_CASE:
+                        case ANYTHING_BUT_WILDCARD:
                             // only applies if at last character
                             if (valIndex == (val.length - 1)) {
                                 addToAnythingButsMap(failedAnythingButs, match.getNextNameState(), match.getPattern());
@@ -689,6 +691,7 @@ class ByteMachine {
             case ANYTHING_BUT_IGNORE_CASE:
             case ANYTHING_BUT_SUFFIX:
             case ANYTHING_BUT_PREFIX:
+            case ANYTHING_BUT_WILDCARD:
                 assert pattern instanceof AnythingButValuesSet;
                 return addAnythingButValuesSetPattern((AnythingButValuesSet) pattern, nameState);
 
@@ -939,6 +942,7 @@ class ByteMachine {
         case ANYTHING_BUT_IGNORE_CASE:
         case ANYTHING_BUT_SUFFIX:
         case ANYTHING_BUT_PREFIX:
+        case ANYTHING_BUT_WILDCARD:
             assert pattern instanceof AnythingButValuesSet;
             return findAnythingButValuesSetPattern((AnythingButValuesSet) pattern);
         case EXACT:
@@ -1680,14 +1684,13 @@ class ByteMachine {
                 hasNumeric.incrementAndGet();
             }
             break;
+        case ANYTHING_BUT_PREFIX:
         case ANYTHING_BUT_IGNORE_CASE:
+        case ANYTHING_BUT_WILDCARD:
             addToAnythingButsMap(anythingButs, match.getNextNameState(), match.getPattern());
             break;
         case ANYTHING_BUT_SUFFIX:
             hasSuffix.incrementAndGet();
-            addToAnythingButsMap(anythingButs, match.getNextNameState(), match.getPattern());
-            break;
-        case ANYTHING_BUT_PREFIX:
             addToAnythingButsMap(anythingButs, match.getNextNameState(), match.getPattern());
             break;
         default:
@@ -1784,14 +1787,13 @@ class ByteMachine {
                 hasNumeric.decrementAndGet();
             }
             break;
+        case ANYTHING_BUT_PREFIX:
         case ANYTHING_BUT_IGNORE_CASE:
+        case ANYTHING_BUT_WILDCARD:
             removeFromAnythingButsMap(anythingButs, match.getNextNameState(), match.getPattern());
             break;
         case ANYTHING_BUT_SUFFIX:
             hasSuffix.decrementAndGet();
-            removeFromAnythingButsMap(anythingButs, match.getNextNameState(), match.getPattern());
-            break;
-        case ANYTHING_BUT_PREFIX:
             removeFromAnythingButsMap(anythingButs, match.getNextNameState(), match.getPattern());
             break;
         default:

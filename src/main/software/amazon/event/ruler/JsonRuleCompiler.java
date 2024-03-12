@@ -427,11 +427,14 @@ public class JsonRuleCompiler {
                     case Constants.SUFFIX_MATCH:
                         matchType = MatchType.ANYTHING_BUT_SUFFIX;
                         break;
+                    case Constants.WILDCARD:
+                        matchType = MatchType.ANYTHING_BUT_WILDCARD;
+                        break;
                     default:
                         barf(parser, "Unsupported anything-but pattern: " + anythingButObjectOp);
                 }
 
-                // Step into anything-but's equals-ignore-case/prefix/suffix
+                // Step into anything-but's equals-ignore-case/prefix/suffix/wildcard
                 anythingButExpressionToken = parser.nextToken();
             }
 
@@ -603,7 +606,8 @@ public class JsonRuleCompiler {
                 switch (token) {
                     case VALUE_STRING:
                         String text = parser.getText();
-                        if (matchType != MatchType.ANYTHING_BUT_IGNORE_CASE && text.isEmpty()) {
+                        if ((matchType == MatchType.ANYTHING_BUT_PREFIX || matchType ==  MatchType.ANYTHING_BUT_SUFFIX)
+                                && text.isEmpty()) {
                             barf(parser, "Null prefix/suffix not allowed");
                         }
                         values.add(generateValueBasedOnMatchType(text, matchType));
@@ -611,6 +615,8 @@ public class JsonRuleCompiler {
                     default:
                         if (matchType == MatchType.ANYTHING_BUT_IGNORE_CASE) {
                             barf(parser, "Inside anything-but/equals-ignore-case list, number|start|null|boolean is not supported.");
+                        } else if (matchType == MatchType.ANYTHING_BUT_WILDCARD) {
+                            barf(parser, "wildcard match pattern must be a string");
                         } else {
                             barf(parser, "prefix/suffix match pattern must be a string");
                         }
@@ -624,6 +630,15 @@ public class JsonRuleCompiler {
             case ANYTHING_BUT_IGNORE_CASE: return Patterns.anythingButIgnoreCaseMatch(values);
             case ANYTHING_BUT_PREFIX: return Patterns.anythingButPrefix(values);
             case ANYTHING_BUT_SUFFIX: return Patterns.anythingButSuffix(values);
+            case ANYTHING_BUT_WILDCARD:
+                for (String value : values) {
+                    try {
+                        getParser().parse(MatchType.ANYTHING_BUT_WILDCARD, value);
+                    } catch (ParseException e) {
+                        barf(parser, e.getLocalizedMessage());
+                    }
+                }
+                return Patterns.anythingButWildcard(values);
             // Not barfing as this is a code bug rather than bad JSON.
             default: throw new IllegalArgumentException("processAnythingButValuesSetMatchExpression received invalid matchType of " + matchType);
         }
@@ -654,7 +669,8 @@ public class JsonRuleCompiler {
         switch (anythingButExpressionToken) {
             case VALUE_STRING:
                 String text = parser.getText();
-                if (matchType != MatchType.ANYTHING_BUT_IGNORE_CASE && text.isEmpty()) {
+                if ((matchType == MatchType.ANYTHING_BUT_PREFIX || matchType ==  MatchType.ANYTHING_BUT_SUFFIX)
+                        && text.isEmpty()) {
                     barf(parser, "Null prefix/suffix not allowed");
                 }
                 values.add(generateValueBasedOnMatchType(text, matchType));
@@ -662,6 +678,8 @@ public class JsonRuleCompiler {
             default:
                 if (matchType == MatchType.ANYTHING_BUT_IGNORE_CASE) {
                     barf(parser, "Inside anything-but/equals-ignore-case list, number|start|null|boolean is not supported.");
+                } else if (matchType == MatchType.ANYTHING_BUT_WILDCARD) {
+                    barf(parser, "wildcard match pattern must be a string");
                 } else {
                     barf(parser, "prefix/suffix match pattern must be a string");
                 }
@@ -671,6 +689,13 @@ public class JsonRuleCompiler {
             case ANYTHING_BUT_IGNORE_CASE: return Patterns.anythingButIgnoreCaseMatch(values);
             case ANYTHING_BUT_PREFIX: return Patterns.anythingButPrefix(values);
             case ANYTHING_BUT_SUFFIX: return Patterns.anythingButSuffix(values);
+            case ANYTHING_BUT_WILDCARD:
+                try {
+                    getParser().parse(MatchType.ANYTHING_BUT_WILDCARD, values.iterator().next());
+                } catch (ParseException e) {
+                    barf(parser, e.getLocalizedMessage());
+                }
+                return Patterns.anythingButWildcard(values);
             // Not barfing as this is a code bug rather than bad JSON.
             default: throw new IllegalArgumentException("processAnythingButValuesSetSingleValueMatchExpression received invalid matchType of " + matchType);
         }

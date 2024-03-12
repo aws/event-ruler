@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 
 import static software.amazon.event.ruler.MatchType.ANYTHING_BUT_IGNORE_CASE;
 import static software.amazon.event.ruler.MatchType.ANYTHING_BUT_SUFFIX;
+import static software.amazon.event.ruler.MatchType.ANYTHING_BUT_WILDCARD;
 import static software.amazon.event.ruler.MatchType.EQUALS_IGNORE_CASE;
 import static software.amazon.event.ruler.MatchType.PREFIX_EQUALS_IGNORE_CASE;
 import static software.amazon.event.ruler.MatchType.SUFFIX;
@@ -61,7 +62,7 @@ public class DefaultParser implements MatchTypeParser, ByteParser {
 
     @Override
     public InputCharacter[] parse(final MatchType type, final String value) {
-        if (type == WILDCARD) {
+        if (type == WILDCARD || type == ANYTHING_BUT_WILDCARD) {
             return wildcardParser.parse(value);
         } else if (type == EQUALS_IGNORE_CASE || type == ANYTHING_BUT_IGNORE_CASE || type == PREFIX_EQUALS_IGNORE_CASE) {
             return equalsIgnoreCaseParser.parse(value);
