@@ -104,6 +104,14 @@ public class Patterns implements Cloneable  {
                 anythingButs.stream().map(s -> new StringBuilder(s).reverse().toString()).collect(Collectors.toSet()));
     }
 
+    public static AnythingButValuesSet anythingButWildcard(final String value) {
+        return new AnythingButValuesSet(MatchType.ANYTHING_BUT_WILDCARD, Collections.singleton(value));
+    }
+
+    public static AnythingButValuesSet anythingButWildcard(final Set<String> anythingButs) {
+        return new AnythingButValuesSet(MatchType.ANYTHING_BUT_WILDCARD, anythingButs);
+    }
+
     public static ValuePatterns numericEquals(final double val) {
         return new ValuePatterns(MatchType.NUMERIC_EQ, ComparableNumber.generate(val));
     }

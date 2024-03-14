@@ -232,7 +232,6 @@ Anything-but-ignore-case:
     "state": [ { "anything-but": {"equals-ignore-case": "Stopped" } } ]
   }
 }
-
 ```
 
 Anything-but-ignore-case list (strings):
@@ -242,7 +241,24 @@ Anything-but-ignore-case list (strings):
     "state": [ { "anything-but": {"equals-ignore-case": [ "Stopped", "OverLoaded" ] } } ]
   }
 }
+```
 
+Anything-but wildcard:
+```javascript
+{
+  "detail": {
+    "state": [ { "anything-but": { "wildcard": "*/bin/*.jar" } } ]
+  }
+}
+```
+
+Anything-but wildcard list (strings):
+```javascript
+{
+  "detail": {
+    "state": [ { "anything-but": { "wildcard": [ "*/bin/*.jar", "*/bin/*.class" ] } } ]
+  }
+}
 ```
 
 ### Numeric matching
@@ -484,13 +500,14 @@ The matching time does not depend on the number of rules.  This is the best choi
 if you have multiple possible rules you want to select from, and especially
 if you have a way to store the compiled Machine.
 
-The matching time is impacted by the degree of non-determinism introduced by wildcard rules. Performance deteriorates as
-an increasing number of the wildcard rule prefixes match a theoretical worst-case event. To avoid this, wildcard rules
-pertaining to the same event field should avoid common prefixes leading up to their first wildcard character. If a
-common prefix is required, then use the minimum number of wildcard characters and limit repeating character sequences
-that occur following a wildcard character. MachineComplexityEvaluator can be used to evaluate a machine and determine
-the degree of non-determinism, or "complexity" (i.e. how many wildcard rule prefixes match a theoretical worst-case
-event). Here are some data points showing a typical decrease in performance for increasing complexity scores.
+The matching time is impacted by the degree of non-determinism caused by wildcard and anything-but-wildcard rules.
+Performance deteriorates as an increasing number of the wildcard rule prefixes match a theoretical worst-case event. To
+avoid this, wildcard rules pertaining to the same event field should avoid common prefixes leading up to their first
+wildcard character. If a common prefix is required, then use the minimum number of wildcard characters and limit
+repeating character sequences that occur following a wildcard character. MachineComplexityEvaluator can be used to
+evaluate a machine and determine the degree of non-determinism, or "complexity" (i.e. how many wildcard rule prefixes
+match a theoretical worst-case event). Here are some data points showing a typical decrease in performance for
+increasing complexity scores.
 
 - Complexity = 1, Events per Second = 140,000
 - Complexity = 17, Events per Second = 12,500
@@ -560,7 +577,7 @@ public class Validate {
     private boolean containsWildcard(Map<String, List<Patterns>> rule) {
         for (List<Patterns> fieldPatterns : rule.values()) {
             for (Patterns fieldPattern : fieldPatterns) {
-                if (fieldPattern.type() == WILDCARD) {
+                if (fieldPattern.type() == WILDCARD || fieldPattern.type() == ANYTHING_BUT_WILDCARD) {
                     return true;
                 }
             }
@@ -754,6 +771,8 @@ public static AnythingButValuesSet anythingButSuffix(final String suffix);
 public static AnythingButValuesSet anythingButSuffix(final Set<String> anythingButs);
 public static AnythingButValuesSet anythingButIgnoreCaseMatch(final String anythingBut);
 public static AnythingButValuesSet anythingButIgnoreCaseMatch(final Set<String> anythingButs);
+public static AnythingButValuesSet anythingButWildcard(final String value);
+public static AnythingButValuesSet anythingButWildcard(final Set<String> anythingButs);
 public static ValuePatterns numericEquals(final double val);
 public static Range lessThan(final double val);
 public static Range lessThanOrEqualTo(final double val);

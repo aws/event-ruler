@@ -1,5 +1,7 @@
 package software.amazon.event.ruler;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -8,12 +10,16 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.Stack;
 
+import static software.amazon.event.ruler.MatchType.ANYTHING_BUT_WILDCARD;
 import static software.amazon.event.ruler.MatchType.WILDCARD;
 
 /**
  * Evaluates the complexity of machines.
  */
 public class MachineComplexityEvaluator {
+
+    private static final Set<MatchType> MATCH_TYPES_WITH_COMPLEXITY = Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList(WILDCARD, ANYTHING_BUT_WILDCARD)));
 
     /**
      * Cap evaluation of complexity at this threshold.
@@ -63,7 +69,7 @@ public class MachineComplexityEvaluator {
             // current traversal is the number of wildcard rule prefixes matching a theoretical worst-case input value.
             int size = 0;
             for (SingleByteTransition single : transition.expand()) {
-                size += getWildcardPatterns(matchesAccessibleFromEachTransition.get(single)).size();
+                size += getPatternsWithComplexity(matchesAccessibleFromEachTransition.get(single)).size();
 
                 // Look for "transitions for all bytes" (i.e. wildcard transitions). Since an input value that matches
                 // foo will also match foo*, we also need to include in our size wildcard patterns accessible from foo*.
@@ -72,7 +78,7 @@ public class MachineComplexityEvaluator {
                     for (SingleByteTransition transitionForAllBytes : nextState.getTransitionForAllBytes().expand()) {
                         if (!(transitionForAllBytes instanceof ByteMachine.EmptyByteTransition) &&
                                 !contains(transition.expand(), transitionForAllBytes)) {
-                            size += getWildcardPatterns(matchesAccessibleFromEachTransition.get(transitionForAllBytes))
+                            size += getPatternsWithComplexity(matchesAccessibleFromEachTransition.get(transitionForAllBytes))
                                     .size();
                         }
                     }
@@ -184,10 +190,10 @@ public class MachineComplexityEvaluator {
         return false;
     }
 
-    private static Set<Patterns> getWildcardPatterns(Set<ByteMatch> matches) {
+    private static Set<Patterns> getPatternsWithComplexity(Set<ByteMatch> matches) {
         Set<Patterns> patterns = new HashSet<>();
         for (ByteMatch match : matches) {
-            if (match.getPattern().type() == WILDCARD) {
+            if (MATCH_TYPES_WITH_COMPLEXITY.contains(match.getPattern().type())) {
                 patterns.add(match.getPattern());
             }
         }

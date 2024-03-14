@@ -3,6 +3,8 @@ package software.amazon.event.ruler;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -479,6 +481,43 @@ public class MachineComplexityEvaluatorTest {
 
         // Cancel the timeoutTask in case it hasn't run yet.
         timeoutTask.cancel();
+    }
+
+    @Test
+    public void testEvaluateAnythingButWildcard() {
+        ByteMachine machine = new ByteMachine();
+        machine.addPattern(Patterns.anythingButWildcard("a*b*b"));
+        // "abb" is matched by 4 wildcard prefixes: "a*", "a*b", "a*b*", "a*b*b"
+        assertEquals(4, machine.evaluateComplexity(evaluator));
+    }
+
+    @Test
+    public void testEvaluateAnythingButWildcardMultiplePatterns() {
+        // "aaaa" is matched by 7 wildcard prefixes: "a*", "a*a", "a*aa", "a*aaa", "aa*", "aa*a", "aa*aa"
+        testPatternPermutations(7, Patterns.anythingButWildcard("a*aaa"),
+                                   Patterns.anythingButWildcard("aa*aa"));
+    }
+
+    @Test
+    public void testEvaluateAnythingButWildcardMultiplePatternsViaSet() {
+        ByteMachine machine = new ByteMachine();
+        machine.addPattern(Patterns.anythingButWildcard(new HashSet<>(Arrays.asList("a*aaa", "aa*aa"))));
+        // "aaaa" is matched by 7 wildcard prefixes: "a*", "a*a", "a*aa", "a*aaa", "aa*", "aa*a", "aa*aa"
+        assertEquals(7, machine.evaluateComplexity(evaluator));
+    }
+
+    @Test
+    public void testEvaluateAnythingButWildcardWithWildcard() {
+        // "aaaa" is matched by 7 wildcard prefixes: "a*", "a*a", "a*aa", "a*aaa", "aa*", "aa*a", "aa*aa"
+        testPatternPermutations(7, Patterns.anythingButWildcard("a*aaa"),
+                                   Patterns.wildcardMatch("aa*aa"));
+    }
+
+    @Test
+    public void testEvaluateWildcardWithAnythingButWildcard() {
+        // "aaaa" is matched by 7 wildcard prefixes: "a*", "a*a", "a*aa", "a*aaa", "aa*", "aa*a", "aa*aa"
+        testPatternPermutations(7, Patterns.wildcardMatch("a*aaa"),
+                                   Patterns.anythingButWildcard("aa*aa"));
     }
 
     private void testPatternPermutations(int expectedComplexity, Patterns ... patterns) {
