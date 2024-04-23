@@ -28,6 +28,15 @@ class Path {
         return path.removeLast();
     }
 
+    void append(String suffix) {
+        push(pop() + suffix);
+    }
+
+    void uppend(String suffix) {
+        final String before = pop();
+        push(before.substring(0, before.length() - suffix.length() ));
+    }
+
     /**
      * return the pathname as a .-separated string.
      * This turns out to be a performance bottleneck so it's memoized and uses StringBuilder rather than StringJoiner.
@@ -62,5 +71,12 @@ class Path {
             base += SEPARATOR;
         }
         return base + lastStep;
+    }
+
+    @Override
+    public String toString() {
+        return "Path{" +
+                "path=" + path +
+                '}';
     }
 }

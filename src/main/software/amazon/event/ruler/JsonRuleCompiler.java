@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -156,6 +157,14 @@ public class JsonRuleCompiler {
                 continue;
             }
 
+            // If it is "$and" primitive, we should bypass that primitive itself in the path as it is not
+            // a real field name, it is just used to describe the "$and" relationship among object in the followed array.
+            if (stepName.equals(Constants.AND_RELATIONSHIP_KEYWORD)) {
+                parseIntoAndRelationship(rules, path, parser, withQuotes);
+                // all Objects in $and array have been handled in above function, just bypass below logic.
+                continue;
+            }
+
             switch (parser.nextToken()) {
             case START_OBJECT:
                 path.push(stepName);
@@ -195,7 +204,7 @@ public class JsonRuleCompiler {
                 continue;
             }
 
-            if (Constants.RESERVED_FIELD_NAMES_IN_OR_RELATIONSHIP.contains(stepName)) {
+            if (Constants.RESERVED_FIELD_NAMES_IN_OR_AND_RELATIONSHIP.contains(stepName)) {
                 barf(parser, stepName +
                         " is Ruler reserved fieldName which cannot be used inside "
                         + Constants.OR_RELATIONSHIP_KEYWORD + ".");
@@ -275,6 +284,115 @@ public class JsonRuleCompiler {
         if (loopCnt < 2) {
             barf(parser, "There must have at least 2 Objects in " + Constants.OR_RELATIONSHIP_KEYWORD + " relationship.");
         }
+    }
+
+    private static void parseObjectInsideAndRelationship(final List<Map<String, List<Patterns>>> rules,
+                                                        final Path path,
+                                                        final JsonParser parser,
+                                                        final boolean withQuotes) throws IOException {
+
+        boolean fieldsPresent = false;
+        while (parser.nextToken() != JsonToken.END_OBJECT) {
+            fieldsPresent = true;
+
+            // field name
+            final String stepName = parser.getCurrentName();
+
+            // If it is "$and" primitive, we should bypass the "$and" primitive itself in the path as it is not
+            // a real step name, it is just used to describe the "$and" relationship among object in the followed Array.
+            if (stepName.equals(Constants.AND_RELATIONSHIP_KEYWORD)) {
+                parseIntoAndRelationship(rules, path, parser, withQuotes);
+                continue;
+            }
+
+            if (Constants.RESERVED_FIELD_NAMES_IN_OR_AND_RELATIONSHIP.contains(stepName)) {
+                barf(parser, stepName +
+                        " is Ruler reserved fieldName which cannot be used inside "
+                        + Constants.AND_RELATIONSHIP_KEYWORD + ".");
+            }
+
+            switch (parser.nextToken()) {
+                case START_OBJECT:
+                    path.push(stepName);
+                    parseObjectInsideAndRelationship(rules, path, parser, withQuotes);
+                    path.pop();
+                    break;
+
+                case START_ARRAY:
+                    writeRules(rules, path.extendedName(stepName), parser, withQuotes);
+                    break;
+
+                default:
+                    barf(parser, String.format("\"%s\" must be an object or an array", stepName));
+            }
+        }
+        if (!fieldsPresent) {
+            barf(parser, "Empty objects are not allowed");
+        }
+    }
+
+    /**
+     * This function is to parse the "$and" relationship described as an array, each object in the array will be
+     * interpreted as "$or" relationship, for example:
+     * {
+     *     "detail": {
+     *         "$and" : [
+     *             {"c-count": [ { "numeric": [ ">", 0, "<=", 5 ] } ]},
+     *             {"c-count": [ { "numeric": [ "<", 10 ] } ]},
+     *             {"c-count": [ { "numeric": [ ">", 3.018e2 ] } ]}
+     *         ]
+     *     }
+     * }
+     * above rule will be interpreted as or effect: ("> 0 && <= 5 && < 10 && > 3.018e2"),
+     * The result will be described as the list of Map, each Map represents a sub rule composed of fields of patterns in
+     * that and condition path, for example:
+     * [
+     *   {detail.c-count=[38D7EA4C68000/38D7EA512CB40:true/false]}, FIXME
+     *   {detail.c-count=[0000000000000/38D7EA55F1680:false/true]},
+     *   {detail.c-count=[VP:38D7EB6C39A40]}
+     * ]
+     * This List will be added into Ruler with the same rule name to demonstrate the "and" effects inside Ruler state
+     * machine.
+     */
+    private static void parseIntoAndRelationship(final List<Map<String, List<Patterns>>> rules,
+                                                final Path path,
+                                                final JsonParser parser,
+                                                final boolean withQuotes) throws IOException {
+
+        List<List<Map<String, List<Patterns>>>> andRules = new ArrayList<>();
+        JsonToken token = parser.nextToken();
+        if (token != JsonToken.START_ARRAY) {
+            barf(parser, "It must be an Array followed with " + Constants.AND_RELATIONSHIP_KEYWORD + ".");
+        }
+
+        int loopCnt = 0;
+        while ((token = parser.nextToken()) != JsonToken.END_ARRAY) {
+            loopCnt++;
+            if (token == JsonToken.START_OBJECT) {
+//                final String jsonPathForArray = "[" + loopCnt + "]";
+//                path.push(jsonPathForArray); // FIXME might be worth doing a fresh path here
+                final List<Map<String, List<Patterns>>> newRules = new ArrayList<>();
+                parseObjectInsideAndRelationship(newRules, path, parser, withQuotes);
+                andRules.add(newRules);
+//                path.pop();
+            } else {
+                barf(parser,
+                        "Only JSON object is allowed in array of " + Constants.AND_RELATIONSHIP_KEYWORD + " relationship.");
+            }
+        }
+        if (loopCnt < 2) {
+            barf(parser, "There must have at least 2 Objects in " + Constants.AND_RELATIONSHIP_KEYWORD + " relationship.");
+        }
+
+//        final Map<String, List<Patterns>> values = new HashMap<>();
+//        values.put(path.name(), );
+//        rules.add(values);
+
+        // If the rules list is empty, add the first rule
+        if (rules.isEmpty()) {
+            rules.add(new HashMap<>());
+        }
+        rules.forEach(rule -> rule.put(path.name(), Collections.singletonList(AndPattern.and(andRules))));
     }
 
     // This is not exactly the real deep copy because here we only need deep copy at List element level,
