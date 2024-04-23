@@ -392,7 +392,7 @@ public class JsonRuleCompiler {
         if (rules.isEmpty()) {
             rules.add(new HashMap<>());
         }
-        rules.forEach(rule -> rule.put(path.name(), Collections.singletonList(AndPattern.and(andRules))));
+        rules.forEach(rule -> rule.put(path.name(), Collections.singletonList(AggregatingPattern.and(andRules))));
     }
 
     // This is not exactly the real deep copy because here we only need deep copy at List element level,

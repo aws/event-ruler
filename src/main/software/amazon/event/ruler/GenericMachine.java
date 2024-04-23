@@ -580,8 +580,42 @@ public class GenericMachine<T> {
         if (nameStatesForEachKey[keyIndex] == null) {
             nameStatesForEachKey[keyIndex] = new HashSet<>();
         }
+
         for (Patterns pattern : patterns.get(key)) {
-            if (isNamePattern(pattern)) {
+            if (isAndPattern(pattern)) {
+                if (lastNextState == null) {
+                    lastNextState = new NameState();
+                    state.addNextNameState(key, lastNextState);
+                }
+
+                // add steps to enable $and matching
+                System.out.println(pattern);
+                final AggregatingPattern andPattern = (AggregatingPattern) pattern;
+                final List<List<Map<String, List<Patterns>>>> values = andPattern.getValues();
+                System.out.println("values");
+                System.out.println(values);
+                System.out.println(values.size());
+
+                for(List<Map<String, List<Patterns>>> subrules : values) {
+                    System.out.println("subrules");
+                    System.out.println(subrules);
+                    System.out.println(subrules.size());
+
+                    for(Map<String, List<Patterns>> subrulePatterns : subrules) {
+                        System.out.println("subrulePatterns");
+                        System.out.println(subrulePatterns);
+                        System.out.println(subrulePatterns.size());
+
+                        final ArrayList<String> subruleKeys = new ArrayList<>(subrulePatterns.keySet());
+                        Collections.sort(subruleKeys);
+                        final Set<Double> subRuleIds = addStep(lastNextState, subruleKeys, 0, subrulePatterns, ruleName,
+                                addedKeys, nameStatesForEachKey);
+                        System.out.println(subRuleIds);
+
+                    }
+                }
+
+            } else if (isNamePattern(pattern)) {
                 lastNextState = nameMatcher.addPattern(pattern, lastNextState == null ? new NameState() : lastNextState);
             } else {
                 lastNextState = byteMachine.addPattern(pattern, lastNextState);
@@ -651,6 +685,14 @@ public class GenericMachine<T> {
 
         // Return remaining candidates up the stack.
         return candidateSubRuleIds;
+    }
+
+    private boolean hasAndPattern(List<Patterns> patterns) {
+        return patterns.stream().anyMatch(this::isAndPattern);
+    }
+
+    private boolean isAndPattern(Patterns pattern) {
+        return pattern.type() == MatchType.AND;
     }
 
     private boolean hasValuePatterns(List<Patterns> patterns) {

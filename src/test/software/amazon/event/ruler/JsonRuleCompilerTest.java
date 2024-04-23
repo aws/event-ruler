@@ -543,7 +543,7 @@ public class JsonRuleCompilerTest {
                 "    \"info\": {\n" +
                 "        \"state-status\": [ \"initializing\", \"running\" ],\n" +
                 "        \"state-count\" : { \n" +
-                "          \"count\" : [ 4 ]\n" +
+                "          \"count\" : [ 100 ]\n" +
                 "        }\n" +
                 "    },\n" +
                 "    \"$and\" : [\n" +
