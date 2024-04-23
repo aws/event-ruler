@@ -627,7 +627,7 @@ public class JsonRuleCompilerTest {
             fail("Expected JSONParseException");
         } catch (JsonParseException e) {
             assertEquals("Unrecognized character escape 'd' (code 100)\n" +
-                            " at [Source: (String)\"{\"key\": [{\"wildcard\": \"a*c\\def\"}]}\"; line: 1, column: 29]",
+                            " at [Source: (String)\"{\"key\": [{\"wildcard\": \"a*c\\def\"}]}\"; line: 1, column: 28]",
                     e.getMessage());
         }
     }
