@@ -56,7 +56,7 @@ public class DefaultParser implements MatchTypeParser, ByteParser {
         this.suffixEqualsIgnoreCaseParser = suffixEqualsIgnoreCaseParser;
     }
 
-    public static DefaultParser getParser() {
+    public static synchronized DefaultParser getParser() {
         return SINGLETON;
     }
 
