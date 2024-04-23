@@ -26,7 +26,7 @@ public class ParserTest {
     @Test
     public void testOtherMatchTypes() {
         final int[] parserInvokedCount = { 0, 0, 0, 0 };
-        DefaultParser parser = new DefaultParser(
+        DefaultParser parser = DefaultParser.getNonSingletonParserForTesting(
             new WildcardParser() {
                 @Override
                 public InputCharacter[] parse(String value) {

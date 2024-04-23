@@ -44,20 +44,25 @@ public class DefaultParser implements MatchTypeParser, ByteParser {
     private final SuffixParser suffixParser;
     private final SuffixEqualsIgnoreCaseParser suffixEqualsIgnoreCaseParser;
 
-    DefaultParser() {
+    private DefaultParser() {
         this(new WildcardParser(), new EqualsIgnoreCaseParser(), new SuffixParser(), new SuffixEqualsIgnoreCaseParser());
     }
 
-    DefaultParser(WildcardParser wildcardParser, EqualsIgnoreCaseParser equalsIgnoreCaseParser, SuffixParser suffixParser,
-                  SuffixEqualsIgnoreCaseParser suffixEqualsIgnoreCaseParser) {
+    private DefaultParser(WildcardParser wildcardParser, EqualsIgnoreCaseParser equalsIgnoreCaseParser,
+                          SuffixParser suffixParser, SuffixEqualsIgnoreCaseParser suffixEqualsIgnoreCaseParser) {
         this.wildcardParser = wildcardParser;
         this.equalsIgnoreCaseParser = equalsIgnoreCaseParser;
         this.suffixParser = suffixParser;
         this.suffixEqualsIgnoreCaseParser = suffixEqualsIgnoreCaseParser;
     }
 
-    public static DefaultParser getParser() {
+    public static synchronized DefaultParser getParser() {
         return SINGLETON;
+    }
+
+    static DefaultParser getNonSingletonParserForTesting(WildcardParser wildcardParser, EqualsIgnoreCaseParser equalsIgnoreCaseParser,
+                                          SuffixParser suffixParser, SuffixEqualsIgnoreCaseParser suffixEqualsIgnoreCaseParser) {
+        return new DefaultParser(wildcardParser, equalsIgnoreCaseParser, suffixParser, suffixEqualsIgnoreCaseParser);
     }
 
     @Override
