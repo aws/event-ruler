@@ -526,12 +526,21 @@ public class JsonRuleCompilerTest {
                 "  }\n" +
                 "}";
 
+//        String rule1 = "{\n" +
+//                "  \"detail\": {\n" +
+//                "    \"$and\" : [\n" +
+//                "       {\"c-count\": [ { \"numeric\": [ \">\", 0, \"<=\", 5 ] } ]},\n" +
+//                "       {\"c-count\": [ { \"numeric\": [ \"<\", 10 ] } ]},\n" +
+//                "       {\"c-count\": [ { \"numeric\": [ \">\", 3.018e2 ] } ]}\n" +
+//                "    ]\n" +
+//                "  }\n" +
+//                "}";
         String rule1 = "{\n" +
                 "  \"detail\": {\n" +
                 "    \"$and\" : [\n" +
-                "       {\"c-count\": [ { \"numeric\": [ \">\", 0, \"<=\", 5 ] } ]},\n" +
-                "       {\"c-count\": [ { \"numeric\": [ \"<\", 10 ] } ]},\n" +
-                "       {\"c-count\": [ { \"numeric\": [ \">\", 3.018e2 ] } ]}\n" +
+                "       {\"resources\": [ { \"prefix\":  \"arn\"  } ]},\n" +
+                "       {\"resources\": [ { \"suffix\":  \"000\"  } ]},\n" +
+                "       {\"resources\": [ { \"wildcard\":  \"*aws*\"  } ]}\n" +
                 "    ]\n" +
                 "  }\n" +
                 "}";

@@ -564,6 +564,7 @@ public class GenericMachine<T> {
             state.addKeyTransition(key, nameMatcher);
             addedKeys.add(key);
         }
+
         // for each pattern, we'll provisionally add it to the BMC, which may already have it.  Pass the states
         // list in in case the BMC doesn't already have a next-step for this pattern and needs to make a new one
         NameState lastNextState = null;
