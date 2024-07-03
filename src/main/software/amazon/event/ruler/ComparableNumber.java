@@ -1,5 +1,7 @@
 package software.amazon.event.ruler;
 
+import com.fasterxml.jackson.core.io.doubleparser.JavaDoubleParser;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
@@ -11,11 +13,11 @@ import java.nio.charset.StandardCharsets;
  *  They are turned into strings by:
  *  1. Add 10**9 (so no negatives), then multiply by 10**6 to remove the decimal point
  *  2. Format to a 14 char string left padded with 0 because hex string converted from 5e9*1e6=10e15 has 14 characters.
- *  Note: We use Hex because of a) it can save 3 bytes memory per number than decimal b) it aligned IP address radix.
- *  If needed, we can consider to use 32 or 64 radix description to save more memory,e.g. the string length will be 10
+ *  <br>
+ *  We are using Hex because a) it saves 3 bytes memory per number than decimal b) it is aligned with IP address radix.
+ *  If needed, we can use 32 or 64 radix description to save more memory, e.g. the string length will be 10
  *  for 32 radix, and 9 for 64 radix.
- *
- *  Note:
+ *  <br>
  *  The number is parsed to be java double to support number with decimal fraction, the max range supported is from
  *  -5e9 to 5e9 with precision of 6 digits to the right of decimal point.
  *  There is well known issue that double number will lose the precision while calculation among double and other data
@@ -24,10 +26,11 @@ import java.nio.charset.StandardCharsets;
  *  5 digits of precision from right of decimal point can be guaranteed with existing implementation.
  *  The current max number 5e9 is selected with a balance between keeping the committed 6 digits of precision from right
  *  of decimal point and the memory cost (each number is parsed into a 14 characters HEX string).
- *
+ *  <br>
  *  CAVEAT:
  *  When there is need to further enlarging the max number, PLEASE BE VERY CAREFUL TO RESERVE THE NUMBER PRECISION AND
- *  TAKEN THE MEMORY COST INTO CONSIDERATION, BigDecimal shall be used to ensure the precision of double calculation ...
+ *  TAKEN THE MEMORY COST INTO CONSIDERATION. Also, while BigDecimal can ensure the precision of double calculation, it
+ *  has shown to be 2~4x slower.
  */
 class ComparableNumber {
     private static final double TEN_E_SIX = 1E6;
@@ -44,13 +47,71 @@ class ComparableNumber {
     private ComparableNumber() {
     }
 
-    static String generate(final double f) {
-        if (f < -Constants.FIVE_BILLION || f > Constants.FIVE_BILLION) {
+
+    static String generate(final String str) {
+        if (getPrecision(str) > 6) {
+            throw new IllegalArgumentException("Only values upto 6 decimals are supported");
+        }
+
+        return generate(JavaDoubleParser.parseDouble(str));
+    }
+
+    static long getPrecision(String str) {
+        int exponentialAt = 0;
+        int decimalAt = 0;
+        long trailingZeros = 0;
+        final int length = str.length();
+        for(int i = 0; i < length; i++) { // check for hexes
+            char c = str.charAt(i);
+            if (c == 'I' ||c == 'N' ) {
+                return 0; // no decimals for Infinity or NaN
+            }
+            if(c == 'x' || c == 'X') {
+                return 0; // FIXME Hex Exponents need more work (0x12.0P2)
+            }
+
+            if (c == '.') {
+                decimalAt = length - i - 1;
+            } else if ((c == 'e' || c == 'E') && i < length - 1) {
+                exponentialAt = i + 1;
+            }
+
+            if(decimalAt > 0 && exponentialAt == 0) {
+                if(c == '0') {
+                    trailingZeros += 1;
+                } else {
+                    trailingZeros = 0;
+                }
+            }
+        }
+
+        long precision = decimalAt;
+        final long exponent;
+        final long preDecimal;
+        final long postDecimal;
+
+        if(trailingZeros > 0) {
+            precision -= trailingZeros;
+        }
+
+        if (decimalAt > 0 && exponentialAt != 0) {
+            exponent = Long.parseLong(str.substring(exponentialAt)); // use math here.
+            precision -= exponent; // move decimal by exponent value
+            precision -= length - exponentialAt + 1; // remove the exponents from the count as well
+        }
+
+        return Math.max(0, precision);
+    }
+
+    static String generate(final double d) {
+        if (d < -Constants.FIVE_BILLION || d > Constants.FIVE_BILLION) {
             throw new IllegalArgumentException("Value must be between " + -Constants.FIVE_BILLION +
                     " and " + Constants.FIVE_BILLION + ", inclusive");
         }
-        return toHexStringSkippingFirstByte((long) (TEN_E_SIX * (Constants.FIVE_BILLION + f)));
+
+        return toHexStringSkippingFirstByte(Math.round(TEN_E_SIX * Constants.FIVE_BILLION) + Math.round(TEN_E_SIX * d));
     }
+
 
     /**
      * converts a single byte to its two hexadecimal character representation
