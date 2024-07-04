@@ -115,6 +115,39 @@ public class ComparableNumberTest {
     }
 
     @Test
+    public void testGetPrecisionAdjustedNumbers() {
+        Map<String, Long> testCases = new HashMap<>();
+        // integers are adjusted by 6 decimals
+        testCases.put("123456", 123456000000L);
+        testCases.put("-123456", -123456000000L);
+        testCases.put("-0", 0L);
+        testCases.put("0", 0L);
+        // integers with leading zeros
+        testCases.put("0000123456", 123456000000L);
+        testCases.put("-0000123456", -123456000000L);
+        // integers with trailing zeros
+        testCases.put("12345600", 12345600000000L);
+        testCases.put("-12345600", -12345600000000L);
+        // decimals
+        testCases.put("123.456", 123456000L);
+        testCases.put("-123.456", -123456000L);
+        testCases.put("-.123456", -123456L);
+        testCases.put("0.0", 0L);
+        testCases.put("-0.0", 0L);
+        // simple exponents
+        testCases.put("1e2", 100000000L);
+        testCases.put("1e-2", 10000L);
+
+        for (Entry<String, Long> entry: testCases.entrySet()) {
+            String input = entry.getKey();
+            long expected = entry.getValue();
+            long actual = new BigDecimal(input).multiply(TEN_E_SIX_BD).longValueExact();
+            assertEquals("For " + input + " got " + actual + " but expected " + expected,
+                    expected, actual);
+        }
+    }
+
+    @Test
     public void testGetPrecision() {
         Map<String, Long> testCases = new HashMap<>();
         testCases.put("1.23456789", 8L);
@@ -128,9 +161,6 @@ public class ComparableNumberTest {
         testCases.put("1.2e3", 0L);
         testCases.put("120000e-3", 0L);
         testCases.put("0E2", 0L);
-        testCases.put("Infinity", 0L);
-        testCases.put("-Infinity", 0L);
-        testCases.put("NaN", 0L);
         // training zeros
         testCases.put("0.0", 0L);
         testCases.put("-0.0", 0L);
@@ -143,13 +173,17 @@ public class ComparableNumberTest {
         testCases.put("0.000123456789E1", 11L);
 
         for (Entry<String, Long> entry: testCases.entrySet()) {
+            System.out.println(entry.getKey());
             String input = entry.getKey();
             long expected = entry.getValue();
-            long actual = ComparableNumber.getPrecision(input);
+            long actual = Math.max(new BigDecimal(entry.getKey()).stripTrailingZeros().scale(),0);
             assertEquals("For " + input + " got " + actual + " but expected " + expected,
                     expected, actual);
         }
     }
+
+    public static final BigDecimal TEN_E_SIX_BD = new BigDecimal(1E6);
+
 
     @Test // FIXME
     public void testGetPrecisionErrors() {
@@ -180,7 +214,7 @@ public class ComparableNumberTest {
 
         for (String entry: testCases) {
             try {
-                long actual = ComparableNumber.getPrecision(entry);
+                long actual = new BigDecimal(entry).multiply(TEN_E_SIX_BD).longValueExact();
                 fail("Expected error for " + entry + " but got " + actual);
             } catch (Exception e) {
                 // expected

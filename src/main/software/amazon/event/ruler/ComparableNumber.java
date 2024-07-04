@@ -1,7 +1,9 @@
 package software.amazon.event.ruler;
 
+import com.fasterxml.jackson.core.io.doubleparser.JavaBigDecimalParser;
 import com.fasterxml.jackson.core.io.doubleparser.JavaDoubleParser;
 
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
@@ -43,64 +45,27 @@ class ComparableNumber {
 
     // 0000 1111
     private static final int LOWER_NIBBLE_MASK = 0x0F;
+    public static final BigDecimal FIVE_BILLION_BIG_DECIMAL = new BigDecimal(Constants.FIVE_BILLION);
+    public static final BigDecimal TEN_E_SIX_BD = new BigDecimal(TEN_E_SIX);
+    public static final long FIV_BILL_TEN_E_SIX = FIVE_BILLION_BIG_DECIMAL.multiply(TEN_E_SIX_BD).longValueExact();
 
     private ComparableNumber() {
     }
 
 
     static String generate(final String str) {
-        if (getPrecision(str) > 6) {
+        final BigDecimal bigDecimal = JavaBigDecimalParser.parseBigDecimal(str).stripTrailingZeros();
+        if (bigDecimal.scale() > 6) {
             throw new IllegalArgumentException("Only values upto 6 decimals are supported");
         }
 
-        return generate(JavaDoubleParser.parseDouble(str));
-    }
-
-    static long getPrecision(String str) {
-        int exponentialAt = 0;
-        int decimalAt = 0;
-        long trailingZeros = 0;
-        final int length = str.length();
-        for(int i = 0; i < length; i++) { // check for hexes
-            char c = str.charAt(i);
-            if (c == 'I' ||c == 'N' ) {
-                return 0; // no decimals for Infinity or NaN
-            }
-            if(c == 'x' || c == 'X') {
-                return 0; // FIXME Hex Exponents need more work (0x12.0P2)
-            }
-
-            if (c == '.') {
-                decimalAt = length - i - 1;
-            } else if ((c == 'e' || c == 'E') && i < length - 1) {
-                exponentialAt = i + 1;
-            }
-
-            if(decimalAt > 0 && exponentialAt == 0) {
-                if(c == '0') {
-                    trailingZeros += 1;
-                } else {
-                    trailingZeros = 0;
-                }
-            }
+        final long shiftedBySixDecimals = bigDecimal.multiply(TEN_E_SIX_BD).longValueExact();
+        if (shiftedBySixDecimals < -FIV_BILL_TEN_E_SIX || shiftedBySixDecimals > FIV_BILL_TEN_E_SIX) {
+            throw new IllegalArgumentException("Value must be between " + -Constants.FIVE_BILLION +
+                    " and " + Constants.FIVE_BILLION + ", inclusive");
         }
 
-        long precision = decimalAt;
-        final long exponent;
-        final long preDecimal;
-        final long postDecimal;
-
-        if(trailingZeros > 0) {
-            precision -= trailingZeros;
-        }
-
-        if (decimalAt > 0 && exponentialAt != 0) {
-            exponent = Long.parseLong(str.substring(exponentialAt)); // use math here.
-            precision -= exponent; // move decimal by exponent value
-            precision -= length - exponentialAt + 1; // remove the exponents from the count as well
-        }
-
-        return Math.max(0, precision);
+        return toHexStringSkippingFirstByte(shiftedBySixDecimals + FIV_BILL_TEN_E_SIX);
     }
 
     static String generate(final double d) {

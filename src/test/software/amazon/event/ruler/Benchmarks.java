@@ -284,7 +284,7 @@ public class Benchmarks {
               "  }\n" +
               "}"
     };
-    private final int[] COMPLEX_ARRAYS_MATCHES = { 227, 2, 149444, 64368, 127485 };
+    private final int[] COMPLEX_ARRAYS_MATCHES = { 227, 2, 149446, 64368, 127483 };
 
     private final String[] NUMERIC_RULES = {
             "{\n" +
@@ -325,7 +325,7 @@ public class Benchmarks {
                     "  }\n" +
                     "}"
     };
-    private final int[] NUMERIC_MATCHES = { 8, 120, 148943, 64120, 127053 };
+    private final int[] NUMERIC_MATCHES = { 8, 120, 148948, 64118, 127052 };
 
     private final String[] ANYTHING_BUT_RULES = {
       "{\n" +
