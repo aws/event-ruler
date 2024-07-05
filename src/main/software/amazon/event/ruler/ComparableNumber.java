@@ -1,8 +1,11 @@
 package software.amazon.event.ruler;
 
 import com.fasterxml.jackson.core.io.doubleparser.JavaBigDecimalParser;
+import com.fasterxml.jackson.core.io.doubleparser.JavaDoubleParser;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
@@ -66,9 +69,9 @@ class ComparableNumber {
      *                                  or is outside the allowed range
      */
     static String generate(final String str) {
-        final BigDecimal number = JavaBigDecimalParser.parseBigDecimal(str).stripTrailingZeros();
+        final BigDecimal number = getNumber(str).stripTrailingZeros();
         if (number.scale() > MAX_DECIMAL_PRECISON) {
-            throw new IllegalArgumentException("Only values upto 6 decimals are supported");
+            throw new IllegalArgumentException("Only values upto 6 decimals are supported" + number + " " + str + " " + Double.toHexString(number.setScale(6, RoundingMode.HALF_UP).doubleValue()));
         }
 
         final long shiftedBySixDecimals = number.multiply(TEN_E_SIX).longValueExact();
@@ -80,6 +83,17 @@ class ComparableNumber {
         }
 
         return toHexStringSkippingFirstByte(shiftedBySixDecimals + FIV_BILL_TEN_E_SIX);
+    }
+
+    private static BigDecimal getNumber(String str) {
+        try {
+            return JavaBigDecimalParser.parseBigDecimal(str);
+        } catch (NumberFormatException e) {
+            // maybe it is a hex, fall back to using double where precision isn't guaranteed
+            // we keep existing behaviour of ignore after 6 decimal to avoid breaking backward compatibility
+            // as an acceptable trade-off https://github.com/aws/event-ruler/issues/163
+            return new BigDecimal(Double.parseDouble(str)).setScale(MAX_DECIMAL_PRECISON, RoundingMode.DOWN);
+        }
     }
 
     /**
