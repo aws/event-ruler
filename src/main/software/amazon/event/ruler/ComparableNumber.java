@@ -69,7 +69,7 @@ class ComparableNumber {
     static String generate(final String str) {
         final BigDecimal number = getNumber(str).stripTrailingZeros();
         if (number.scale() > MAX_DECIMAL_PRECISON) {
-            throw new IllegalArgumentException("Only values upto 6 decimals are supported" + number + " " + str + " " + Double.toHexString(number.setScale(6, RoundingMode.HALF_UP).doubleValue()));
+            throw new IllegalArgumentException("Only values upto 6 decimals are supported");
         }
 
         final long shiftedBySixDecimals = number.multiply(TEN_E_SIX).longValueExact();
