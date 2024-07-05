@@ -3,9 +3,6 @@ package software.amazon.event.ruler;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.math.BigDecimal;
-import java.math.MathContext;
-import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -332,8 +329,12 @@ public class ComparableNumberTest {
         final char[] smallArr = less.toCharArray();
         final char[] bigArr = big.toCharArray();
         for (int j = 0; j < smallArr.length; j++) { // quick check
-            if (smallArr[j] == bigArr[j]) continue;
-            if (smallArr[j] < bigArr[j]) break;
+            if (smallArr[j] == bigArr[j]) {
+                continue;
+            }
+            if (smallArr[j] < bigArr[j]) {
+                break;
+            }
             fail("failed: " + big + " vs " + less);
         }
     }

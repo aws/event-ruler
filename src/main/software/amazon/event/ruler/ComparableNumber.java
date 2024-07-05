@@ -1,10 +1,8 @@
 package software.amazon.event.ruler;
 
 import com.fasterxml.jackson.core.io.doubleparser.JavaBigDecimalParser;
-import com.fasterxml.jackson.core.io.doubleparser.JavaDoubleParser;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.math.RoundingMode;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;

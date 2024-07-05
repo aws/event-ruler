@@ -1,6 +1,5 @@
 package software.amazon.event.ruler;
 
-import com.fasterxml.jackson.core.io.doubleparser.JavaDoubleParser;
 import software.amazon.event.ruler.input.InputByte;
 import software.amazon.event.ruler.input.InputCharacter;
 import software.amazon.event.ruler.input.InputCharacterType;
