@@ -1,7 +1,6 @@
 package software.amazon.event.ruler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.BufferedReader;
@@ -35,7 +34,6 @@ import static org.junit.Assert.assertNull;
  *  There are two slightly varying versions, citylots.json.gz and citylots2.json.gz.  Between the two of them they
  *  total ~400Mbytes, which makes Ruler a little slow to check out from git.
  */
-@Ignore
 public class Benchmarks {
 
     // original citylots
@@ -1144,6 +1142,10 @@ public class Benchmarks {
         return lines;
     }
 
+    /**
+     * Removes digits after the {@code ComparableNumber.MAX_DECIMAL_PRECISON} decimal place from all decimal numbers
+     * in the given input string. Numbers wth more decimals numbers are ignored for numeric / range comparisons by ruler
+     */
     public static String removeDigitsAfterSixthDecimal(String input) {
         StringBuilder result = new StringBuilder();
         Pattern pattern = Pattern.compile("\\d+\\.\\d*");
@@ -1153,10 +1155,11 @@ public class Benchmarks {
         while (matcher.find()) {
             String match = matcher.group();
             int dotIndex = match.indexOf(".");
-            if (match.length() - dotIndex < 7) { // FIXME use some constant from ComparableNumber class
+            if (match.length() - dotIndex <= ComparableNumber.MAX_DECIMAL_PRECISON) {
                 result.append(input, lastEnd, matcher.start()).append(match);
             } else {
-                result.append(input, lastEnd, matcher.start()).append(match, 0, dotIndex + 7);
+                result.append(input, lastEnd, matcher.start())
+                        .append(match, 0, dotIndex + ComparableNumber.MAX_DECIMAL_PRECISON + 1);
             }
             lastEnd = matcher.end();
         }
