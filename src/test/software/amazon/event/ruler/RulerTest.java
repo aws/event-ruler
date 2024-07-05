@@ -255,8 +255,8 @@ public class RulerTest {
         for (double d1 : data) {
             for (double d2 : data) {
 
-                byte[] s0 = ComparableNumber.generate(d1).getBytes(StandardCharsets.UTF_8);
-                byte[] s1 = ComparableNumber.generate(d2).getBytes(StandardCharsets.UTF_8);
+                byte[] s0 = ComparableNumber.generate(Double.toString(d1)).getBytes(StandardCharsets.UTF_8);
+                byte[] s1 = ComparableNumber.generate(Double.toString(d2)).getBytes(StandardCharsets.UTF_8);
                 if (d1 < d2) {
                     assertTrue(Ruler.compare(s0, s1) < 0);
                 } else if (d1 == d2) {

@@ -114,8 +114,7 @@ class ByteMachine {
         // patterns starting/ending with a double quotation, where as numeric patterns never do.
         if (hasNumeric.get() > 0) {
             try {
-                final double numerically = JavaDoubleParser.parseDouble(valString);
-                doTransitionOn(ComparableNumber.generate(numerically), transitionTo, TransitionValueType.NUMERIC);
+                doTransitionOn(ComparableNumber.generate(valString), transitionTo, TransitionValueType.NUMERIC);
                 return transitionTo;
             } catch (Exception e) {
                 // no-op, couldn't treat this as a sensible number

@@ -318,7 +318,7 @@ public class JsonRuleCompiler {
                  *  so make that condition survivable.
                  */
                 try {
-                    values.add(Patterns.numericEquals(parser.getDoubleValue()));
+                    values.add(Patterns.numericEquals(parser.getText()));
                 } catch (Exception e) {
                     // no-op
                 }
@@ -579,7 +579,7 @@ public class JsonRuleCompiler {
                         break;
                     case VALUE_NUMBER_FLOAT:
                     case VALUE_NUMBER_INT:
-                        values.add(ComparableNumber.generate(parser.getDoubleValue()));
+                        values.add(ComparableNumber.generate(parser.getText()));
                         hasNumber = true;
                         break;
                     default:
@@ -654,7 +654,7 @@ public class JsonRuleCompiler {
                 break;
             case VALUE_NUMBER_FLOAT:
             case VALUE_NUMBER_INT:
-                values.add(ComparableNumber.generate(parser.getDoubleValue()));
+                values.add(ComparableNumber.generate(parser.getText()));
                 hasNumber = true;
                 break;
             default:
@@ -728,7 +728,7 @@ public class JsonRuleCompiler {
                 if (!token.isNumeric()) {
                     barf(parser, "Value of equals must be numeric");
                 }
-                final double val = parser.getDoubleValue();
+                final String val = parser.getText();
                 if (parser.nextToken() != JsonToken.END_ARRAY) {
                     tooManyElements(parser);
                 }
@@ -737,7 +737,7 @@ public class JsonRuleCompiler {
                 if (!token.isNumeric()) {
                     barf(parser, "Value of >= must be numeric");
                 }
-                final double val = parser.getDoubleValue();
+                final String val = parser.getText();
                 token = parser.nextToken();
                 if (token == JsonToken.END_ARRAY) {
                     return Range.greaterThanOrEqualTo(val);
@@ -748,7 +748,7 @@ public class JsonRuleCompiler {
                 if (!token.isNumeric()) {
                     barf(parser, "Value of > must be numeric");
                 }
-                final double val = parser.getDoubleValue();
+                final String val = parser.getText();
                 token = parser.nextToken();
                 if (token == JsonToken.END_ARRAY) {
                     return Range.greaterThan(val);
@@ -759,7 +759,7 @@ public class JsonRuleCompiler {
                 if (!token.isNumeric()) {
                     barf(parser, "Value of <= must be numeric");
                 }
-                final double top = parser.getDoubleValue();
+                final String top = parser.getText();
                 if (parser.nextToken() != JsonToken.END_ARRAY) {
                     tooManyElements(parser);
                 }
@@ -769,7 +769,7 @@ public class JsonRuleCompiler {
                 if (!token.isNumeric()) {
                     barf(parser, "Value of < must be numeric");
                 }
-                final double top = parser.getDoubleValue();
+                final String top = parser.getText();
                 if (parser.nextToken() != JsonToken.END_ARRAY) {
                     tooManyElements(parser);
                 }
@@ -787,7 +787,7 @@ public class JsonRuleCompiler {
 
     private static Patterns completeNumericRange(final JsonParser parser,
                                                  final JsonToken token,
-                                                 final double bottom,
+                                                 final String bottom,
                                                  final boolean openBottom) throws IOException {
         if (token != JsonToken.VALUE_STRING) {
             barf(parser, "Bad value in numeric range: " + parser.getText());
@@ -803,7 +803,7 @@ public class JsonRuleCompiler {
         if (!parser.nextToken().isNumeric()) {
             barf(parser, "Value of " + operator + " must be numeric");
         }
-        final double top = parser.getDoubleValue();
+        final String top = parser.getText();
         if (parser.nextToken() != JsonToken.END_ARRAY) {
             barf(parser, "Too many terms in numeric range expression");
         }

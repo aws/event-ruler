@@ -42,8 +42,8 @@ public class ComparableNumberTest {
                 4_999_999_999.99997, 4_999_999_999.99998, 4_999_999_999.99999, Constants.FIVE_BILLION
         };
         for (int i = 1; i < data.length; i++) { // -122.415028278886751
-            String s0 = ComparableNumber.generate(data[i-1]);
-            String s1 = ComparableNumber.generate(data[i]);
+            String s0 = ComparableNumber.generate(Double.toString(data[i-1]));
+            String s1 = ComparableNumber.generate(Double.toString(data[i]));
             System.out.println("i=" + i + " s0:"+s0+" s1:"+s1 );
         }
     }
@@ -60,8 +60,8 @@ public class ComparableNumberTest {
             final double sd = start.doubleValue();
             final double nd = next.doubleValue();
 
-            String s0 = ComparableNumber.generate(sd);
-            String s1 = ComparableNumber.generate(nd);
+            String s0 = ComparableNumber.generate(Double.toString(sd));
+            String s1 = ComparableNumber.generate(Double.toString(nd));
             assertTrue(s1 + " vs " + s0 + " " + next + " vs " + start, s1.compareTo(s0) < 0);
 
             start = next;
@@ -243,8 +243,8 @@ public class ComparableNumberTest {
             double next = doubles[i];
             assertTrue("failed: " + next + " vs " + first, first <= next);
 
-            String s0 = ComparableNumber.generate(first);
-            String s1 = ComparableNumber.generate(next);
+            String s0 = ComparableNumber.generate(Double.toString(first));
+            String s1 = ComparableNumber.generate(Double.toString(next));
             final char[] s0ca = s0.toCharArray();
             final char[] s1ca = s1.toCharArray();
             for(int j = 0; j < s0ca.length; j++) { // quick check
@@ -275,8 +275,8 @@ public class ComparableNumberTest {
             double next = doubles[i];
             assertTrue("failed: " + next + " vs " + first, first <= next);
 
-            String s0 = ComparableNumber.generate(first);
-            String s1 = ComparableNumber.generate(next);
+            String s0 = ComparableNumber.generate(Double.toString(first));
+            String s1 = ComparableNumber.generate(Double.toString(next));
             final char[] s0ca = s0.toCharArray();
             final char[] s1ca = s1.toCharArray();
             for(int j = 0; j < s0ca.length; j++) {
@@ -294,25 +294,25 @@ public class ComparableNumberTest {
 
         // This looses precision
         for (double low : lows) { // FIXME REMOVE BEFORE MAINLINE MERGE
-            String c = ComparableNumber.generate(low);
+            String c = ComparableNumber.generate(Double.toString(low));
             System.out.printf("%f => %s\n", low, c);
         }
         for (double high : highs) { // FIXME REMOVE BEFORE MAINLINE MERGE
-            String c = ComparableNumber.generate(high);
+            String c = ComparableNumber.generate(Double.toString(high));
             System.out.printf("%f => %s\n", high, c);
         }
 
 
         for (int i = 1; i < lows.length; i++) {
-            String s0 = ComparableNumber.generate(lows[i - 1]);
-            String s1 = ComparableNumber.generate(lows[i]);
+            String s0 = ComparableNumber.generate(Double.toString(lows[i - 1]));
+            String s1 = ComparableNumber.generate(Double.toString(lows[i]));
             System.out.println("i=" + i + " s0:" + s0 + " s1:" + s1);
             assertTrue(s0.compareTo(s1) < 0);
         }
 
         for (int i = 1; i < highs.length; i++) {
-            String s0 = ComparableNumber.generate(highs[i - 1]);
-            String s1 = ComparableNumber.generate(highs[i]);
+            String s0 = ComparableNumber.generate(Double.toString(highs[i - 1]));
+            String s1 = ComparableNumber.generate(Double.toString(highs[i]));
             System.out.println("i=" + i + " s0:" + s0 + " s1:" + s1);
             assertTrue(s0.compareTo(s1) < 0);
         }

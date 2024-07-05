@@ -18,6 +18,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
 import static org.junit.Assert.assertEquals;
@@ -250,7 +252,7 @@ public class Benchmarks {
               "  \"geometry\": {\n" +
               "    \"type\": [ \"Polygon\" ],\n" +
               "    \"coordinates\": {\n" +
-              "      \"x\": [ { \"numeric\": [ \"=\", -122.42916360922355 ] } ]\n" +
+              "      \"x\": [ { \"numeric\": [ \"=\", -122.429163 ] } ]\n" +
               "    }\n" +
               "  }\n" +
               "}",
@@ -258,40 +260,40 @@ public class Benchmarks {
               "  \"geometry\": {\n" +
               "    \"type\": [ \"MultiPolygon\" ],\n" +
               "    \"coordinates\": {\n" +
-              "      \"y\": [ { \"numeric\": [ \"=\", 37.729900216217324 ] } ]\n" +
+              "      \"y\": [ { \"numeric\": [ \"=\", 37.729900 ] } ]\n" +
               "    }\n" +
               "  }\n" +
               "}",
       "{\n" +
               "  \"geometry\": {\n" +
               "    \"coordinates\": {\n" +
-              "      \"x\": [ { \"numeric\": [ \"<\", -122.41600944012424 ] } ]\n" +
+              "      \"x\": [ { \"numeric\": [ \"<\", -122.416009 ] } ]\n" +
               "    }\n" +
               "  }\n" +
               "}",
       "{\n" +
               "  \"geometry\": {\n" +
               "    \"coordinates\": {\n" +
-              "      \"x\": [ { \"numeric\": [ \">\", -122.41600944012424 ] } ]\n" +
+              "      \"x\": [ { \"numeric\": [ \">\", -122.416009 ] } ]\n" +
               "    }\n" +
               "  }\n" +
               "}",
       "{\n" +
               "  \"geometry\": {\n" +
               "    \"coordinates\": {\n" +
-              "      \"x\": [ { \"numeric\": [ \">\",  -122.46471267081272, \"<\", -122.4063085128395 ] } ]\n" +
+              "      \"x\": [ { \"numeric\": [ \">\",  -122.464712, \"<\", -122.406308 ] } ]\n" +
               "    }\n" +
               "  }\n" +
               "}"
     };
-    private final int[] COMPLEX_ARRAYS_MATCHES = { 227, 2, 149446, 64368, 127483 };
+    private final int[] COMPLEX_ARRAYS_MATCHES = { 229, 2, 149444, 64368, 127484 };
 
     private final String[] NUMERIC_RULES = {
             "{\n" +
                     "  \"geometry\": {\n" +
                     "    \"type\": [ \"Polygon\" ],\n" +
                     "    \"firstCoordinates\": {\n" +
-                    "      \"x\": [ { \"numeric\": [ \"=\", -122.42916360922355 ] } ]\n" +
+                    "      \"x\": [ { \"numeric\": [ \"=\", -122.429163 ] } ]\n" +
                     "    }\n" +
                     "  }\n" +
                     "}",
@@ -306,26 +308,26 @@ public class Benchmarks {
             "{\n" +
                     "  \"geometry\": {\n" +
                     "    \"firstCoordinates\": {\n" +
-                    "      \"x\": [ { \"numeric\": [ \"<\", -122.41600944012424 ] } ]\n" +
+                    "      \"x\": [ { \"numeric\": [ \"<\", -122.416009 ] } ]\n" +
                     "    }\n" +
                     "  }\n" +
                     "}",
             "{\n" +
                     "  \"geometry\": {\n" +
                     "    \"firstCoordinates\": {\n" +
-                    "      \"x\": [ { \"numeric\": [ \">\", -122.41600944012424 ] } ]\n" +
+                    "      \"x\": [ { \"numeric\": [ \">\", -122.416009 ] } ]\n" +
                     "    }\n" +
                     "  }\n" +
                     "}",
             "{\n" +
                     "  \"geometry\": {\n" +
                     "    \"firstCoordinates\": {\n" +
-                    "      \"x\": [ { \"numeric\": [ \">\",  -122.46471267081272, \"<\", -122.4063085128395 ] } ]\n" +
+                    "      \"x\": [ { \"numeric\": [ \">\",  -122.464712, \"<\", -122.406308 ] } ]\n" +
                     "    }\n" +
                     "  }\n" +
                     "}"
     };
-    private final int[] NUMERIC_MATCHES = { 8, 120, 148948, 64118, 127052 };
+    private final int[] NUMERIC_MATCHES = { 7, 120, 148946, 64120, 127052 };
 
     private final String[] ANYTHING_BUT_RULES = {
       "{\n" +
@@ -943,7 +945,8 @@ public class Benchmarks {
             BufferedReader cl2Reader = new BufferedReader(new InputStreamReader(gzipInputStream));
             String line = cl2Reader.readLine();
             while (line != null) {
-                citylots2.add(line);
+                String fixedLine = removeDigitsAfterSixthDecimal(line);
+                citylots2.add(fixedLine);
                 line = cl2Reader.readLine();
             }
             cl2Reader.close();
@@ -1135,9 +1138,31 @@ public class Benchmarks {
         String line;
         List<String> lines = new ArrayList<>();
         while ((line = cityLotsReader.readLine()) != null) {
-            lines.add(line);
+            String fixedLine = removeDigitsAfterSixthDecimal(line);
+            lines.add(fixedLine);
         }
         return lines;
+    }
+
+    public static String removeDigitsAfterSixthDecimal(String input) {
+        StringBuilder result = new StringBuilder();
+        Pattern pattern = Pattern.compile("\\d+\\.\\d*");
+        Matcher matcher = pattern.matcher(input);
+        int lastEnd = 0;
+
+        while (matcher.find()) {
+            String match = matcher.group();
+            int dotIndex = match.indexOf(".");
+            if (match.length() - dotIndex < 7) { // FIXME use some constant from ComparableNumber class
+                result.append(input, lastEnd, matcher.start()).append(match);
+            } else {
+                result.append(input, lastEnd, matcher.start()).append(match, 0, dotIndex + 7);
+            }
+            lastEnd = matcher.end();
+        }
+
+        result.append(input.substring(lastEnd));
+        return result.toString();
     }
 
     private List<String[]> readAndParseLines() throws Exception {

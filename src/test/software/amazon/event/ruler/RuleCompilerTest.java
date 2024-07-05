@@ -108,7 +108,7 @@ public class RuleCompilerTest {
         for (Patterns p : l) {
             ValuePatterns vp = (ValuePatterns) p;
             if (p.type() == MatchType.NUMERIC_EQ) {
-                assertEquals(ComparableNumber.generate(1.0), vp.pattern());
+                assertEquals(ComparableNumber.generate("1.0"), vp.pattern());
             } else {
                 assertEquals("1", vp.pattern());
             }
@@ -274,14 +274,14 @@ public class RuleCompilerTest {
 
         Map<List<String>, List<Patterns>> expected = new HashMap<>();
         expected.put(Arrays.asList("a1"), Arrays.asList(
-                Patterns.numericEquals(123),
+                Patterns.numericEquals("123"),
                 Patterns.exactMatch("123"),
                 Patterns.exactMatch("\"child\""),
-                Range.between(0, true, 5, false)
+                Range.between("0", true, "5", false)
         ));
         expected.put(Arrays.asList("a2", "b", "c1"), Arrays.asList(
                 Patterns.suffixMatch("child\""),
-                Patterns.anythingButNumberMatch(Stream.of(111, 222, 333).map(Double::valueOf).collect(Collectors.toSet())),
+                Patterns.anythingButNumbersMatch(Stream.of(111, 222, 333).map(d -> Double.toString(d)).collect(Collectors.toSet())),
                 Patterns.anythingButPrefix("\"foo"),
                 Patterns.anythingButSuffix("ing\""),
                 Patterns.anythingButIgnoreCaseMatch("\"def\"")
@@ -298,20 +298,20 @@ public class RuleCompilerTest {
     @Test
     public void testNumericExpressions() {
         String[] goods = {
-                "[\"=\", 3.8]", "[\"=\", 0.00000033]", "[\"=\", -4e-8]", "[\"=\", 55555]",
-                "[\"<\", 3.8]", "[\"<\", 0.00000033]", "[\"<\", -4e-8]", "[\"<\", 55555]",
-                "[\">\", 3.8]", "[\">\", 0.00000033]", "[\">\", -4e-8]", "[\">\", 55555]",
-                "[\"<=\", 3.8]", "[\"<=\", 0.00000033]", "[\"<=\", -4e-8]", "[\"<=\", 55555]",
-                "[\">=\", 3.8]", "[\">=\", 0.00000033]", "[\">=\", -4e-8]", "[\">=\", 55555]",
+                "[\"=\", 3.8]", "[\"=\", 0.000033]", "[\"=\", -4e-6]", "[\"=\", 55555]",
+                "[\"<\", 3.8]", "[\"<\", 0.000033]", "[\"<\", -4e-6]", "[\"<\", 55555]",
+                "[\">\", 3.8]", "[\">\", 0.000033]", "[\">\", -4e-6]", "[\">\", 55555]",
+                "[\"<=\", 3.8]", "[\"<=\", 0.000033]", "[\"<=\", -4e-6]", "[\"<=\", 55555]",
+                "[\">=\", 3.8]", "[\">=\", 0.000033]", "[\">=\", -4e-6]", "[\">=\", 55555]",
                 "[\">\", 0, \"<\", 1]", "[\">=\", 0, \"<\", 1]",
                 "[\">\", 0, \"<=\", 1]", "[\">=\", 0, \"<=\", 1]"
         };
 
         String[] bads = {
-                "[\"=\", true]", "[\"=\", 2.0e22]", "[\"=\", \"-4e-8\"]", "[\"=\"]",
-                "[\"<\", true]", "[\"<\", 2.0e22]", "[\"<\", \"-4e-8\"]", "[\"<\"]",
-                "[\">=\", true]", "[\">=\", 2.0e22]", "[\">=\", \"-4e-8\"]", "[\">=\"]",
-                "[\"<=\", true]", "[\"<=\", 2.0e22]", "[\"<=\", \"-4e-8\"]", "[\"<=\"]",
+                "[\"=\", true]", "[\"=\", 2.0e22]", "[\"=\", \"-4e-6\"]", "[\"=\"]",
+                "[\"<\", true]", "[\"<\", 2.0e22]", "[\"<\", \"-4e-6\"]", "[\"<\"]",
+                "[\">=\", true]", "[\">=\", 2.0e22]", "[\">=\", \"-4e-6\"]", "[\">=\"]",
+                "[\"<=\", true]", "[\"<=\", 2.0e22]", "[\"<=\", \"-4e-6\"]", "[\"<=\"]",
                 "[\"<>\", 1, \">\", 0]", "[\"==\", 1, \">\", 0]",
                 "[\"<\", 1, \">\", 0]", "[\">\", 1, \"<\", 1]",
                 "[\">\", 30, \"<\", 1]", "[\">\", 1, \"<\", 30, false]"

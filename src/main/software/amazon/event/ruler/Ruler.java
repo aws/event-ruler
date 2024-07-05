@@ -133,7 +133,7 @@ public class Ruler {
                     return anythingButPattern.getValues().stream().noneMatch(v -> v.equals('"' + val.asText() + '"'));
                 } else if (val.isNumber()) {
                     return anythingButPattern.getValues().stream()
-                            .noneMatch(v -> v.equals(ComparableNumber.generate(val.asDouble())));
+                            .noneMatch(v -> v.equals(ComparableNumber.generate(val.asText())));
                 }
                 return false;
             case ANYTHING_BUT_IGNORE_CASE:
@@ -161,7 +161,7 @@ public class Ruler {
 
             case NUMERIC_EQ:
                 valuePattern = (ValuePatterns) pattern;
-                return val.isNumber() && ComparableNumber.generate(val.asDouble()).equals(valuePattern.pattern());
+                return val.isNumber() && ComparableNumber.generate(val.asText()).equals(valuePattern.pattern());
             case EXISTS:
                 return true;
             case ABSENT:
@@ -182,7 +182,7 @@ public class Ruler {
                     if (!val.isNumber()) {
                         return false;
                     }
-                    bytes = ComparableNumber.generate(val.asDouble()).getBytes(StandardCharsets.UTF_8);
+                    bytes = ComparableNumber.generate(val.asText()).getBytes(StandardCharsets.UTF_8);
                 }
                 final int comparedToBottom = compare(bytes, nr.bottom);
                 if ((comparedToBottom > 0) || (comparedToBottom == 0 && !nr.openBottom)) {
