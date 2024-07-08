@@ -359,7 +359,7 @@ public class MachineTest {
         absencePatterns.add(Patterns.absencePatterns());
         r2.put("c", absencePatterns);
         List<Patterns> numericalPattern = new ArrayList<>();
-        numericalPattern.add(Patterns.numericEquals(3));
+        numericalPattern.add(Patterns.numericEquals("3"));
         r2.put("d", numericalPattern);
 
         String rule3 = "rule3";
@@ -526,7 +526,7 @@ public class MachineTest {
         r1.put("a", exactPattern);
 
         List<Patterns> greaterPattern = new ArrayList<>();
-        greaterPattern.add(Range.greaterThan(10));
+        greaterPattern.add(Range.greaterThan("10"));
         r1.put("b", greaterPattern);
 
         List<Patterns> existsPattern = new ArrayList<>();
@@ -1267,7 +1267,7 @@ public class MachineTest {
 
         // add the rule, ensure it matches
         cut.addRule("r1", rule);
-        String[] event = {"x", "111111111.111111111"};
+        String[] event = {"x", "111111111.111111"};
         String[] event1 = {"x", "1000000000"};
         assertEquals(1, cut.rulesForEvent(event).size());
         assertEquals(0, cut.rulesForEvent(event1).size());

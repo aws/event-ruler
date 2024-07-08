@@ -62,7 +62,13 @@ public class Patterns implements Cloneable  {
         return new AnythingBut(Collections.singleton(anythingBut), false);
     }
 
+    /** use anythingButMatch(String) instead */
+    @Deprecated
     public static AnythingBut anythingButMatch(final double anythingBut) {
+        return anythingButNumberMatch(Double.toString(anythingBut));
+    }
+
+    public static AnythingBut anythingButNumberMatch(final String anythingBut) {
         return new AnythingBut(Collections.singleton(ComparableNumber.generate(anythingBut)), true);
     }
 
@@ -78,9 +84,16 @@ public class Patterns implements Cloneable  {
         return new AnythingButValuesSet(MatchType.ANYTHING_BUT_IGNORE_CASE, anythingButs);
     }
 
+    /** Use anythingButNumbersMatch(Set<String>) that accepts String */
+    @Deprecated
     public static AnythingBut anythingButNumberMatch(final Set<Double> anythingButs) {
+        final Set<String> anyButsAsStrings = anythingButs.stream().map(d -> Double.toString(d)).collect(Collectors.toSet());
+        return anythingButNumbersMatch(anyButsAsStrings);
+    }
+
+    public static AnythingBut anythingButNumbersMatch(final Set<String> anythingButs) {
         Set<String> normalizedNumbers = new HashSet<>(anythingButs.size());
-        for (Double d : anythingButs) {
+        for (String d : anythingButs) {
             normalizedNumbers.add(ComparableNumber.generate(d));
         }
         return new AnythingBut(normalizedNumbers, true);
@@ -112,7 +125,13 @@ public class Patterns implements Cloneable  {
         return new AnythingButValuesSet(MatchType.ANYTHING_BUT_WILDCARD, anythingButs);
     }
 
+    /** Use the other numericEquals(String) instead */
+    @Deprecated
     public static ValuePatterns numericEquals(final double val) {
+        return numericEquals(Double.toString(val));
+    }
+
+    public static ValuePatterns numericEquals(final String val) {
         return new ValuePatterns(MatchType.NUMERIC_EQ, ComparableNumber.generate(val));
     }
 

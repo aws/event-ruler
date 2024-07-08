@@ -111,7 +111,7 @@ public class ByteMachineTest {
     public void WHEN_NumericEQIsAdded_THEN_ItMatchesMultipleNumericForms() {
 
         ByteMachine cut = new ByteMachine();
-        cut.addPattern(Patterns.numericEquals(300.0));
+        cut.addPattern(Patterns.numericEquals("300.0"));
         String[] threeHundreds = { "300", "3.0e+2", "300.0000" };
         for (String threeHundred : threeHundreds) {
             assertEquals(1, cut.transitionOn(threeHundred).size());
@@ -133,8 +133,8 @@ public class ByteMachineTest {
             int rangeIdx = 0;
             ByteMachine cut = new ByteMachine();
             for (int i = 1; i < data.length; i++) {
-                cut.addPattern(Range.lessThan(data[i]));
-                ranges[rangeIdx++] = Range.lessThan(data[i]);
+                cut.addPattern(Range.lessThan(Double.toString(data[i])));
+                ranges[rangeIdx++] = Range.lessThan(Double.toString(data[i]));
             }
             // shuffle the array
             List<Range> list = Arrays.asList(ranges);
@@ -150,7 +150,7 @@ public class ByteMachineTest {
         // first: less than
         for (int i = 1; i < data.length; i++) {
             ByteMachine cut = new ByteMachine();
-            cut.addPattern(Range.lessThan(data[i]));
+            cut.addPattern(Range.lessThan(Double.toString(data[i])));
             for (double aData : data) {
                 String num = String.format("%f", aData);
                 Set<NameStateWithPattern> matched = cut.transitionOn(num);
@@ -160,14 +160,14 @@ public class ByteMachineTest {
                     assertEquals(num + " should not match <" + data[i], 0, matched.size());
                 }
             }
-            cut.deletePattern(Range.lessThan(data[i]));
+            cut.deletePattern(Range.lessThan(Double.toString(data[i])));
             assertTrue("byteMachine must be empty after delete pattern", cut.isEmpty());
         }
 
         // <=
         for (int i = 1; i < data.length; i++) {
             ByteMachine cut = new ByteMachine();
-            cut.addPattern(Range.lessThanOrEqualTo(data[i]));
+            cut.addPattern(Range.lessThanOrEqualTo(Double.toString(data[i])));
             for (double aData : data) {
                 String num = String.format("%f", aData);
                 Set<NameStateWithPattern> matched = cut.transitionOn(num);
@@ -177,14 +177,14 @@ public class ByteMachineTest {
                     assertEquals(num + " should not match <=" + data[i], 0, matched.size());
                 }
             }
-            cut.deletePattern(Range.lessThanOrEqualTo(data[i]));
+            cut.deletePattern(Range.lessThanOrEqualTo(Double.toString(data[i])));
             assertTrue("byteMachine must be empty after delete pattern", cut.isEmpty());
         }
 
         // >
         for (int i = 0; i < (data.length - 1); i++) {
             ByteMachine cut = new ByteMachine();
-            cut.addPattern(Range.greaterThan(data[i]));
+            cut.addPattern(Range.greaterThan(Double.toString(data[i])));
             for (double aData : data) {
                 String num = String.format("%f", aData);
                 Set<NameStateWithPattern> matched = cut.transitionOn(num);
@@ -194,14 +194,14 @@ public class ByteMachineTest {
                     assertEquals(num + " should not match >" + data[i], 0, matched.size());
                 }
             }
-            cut.deletePattern(Range.greaterThan(data[i]));
+            cut.deletePattern(Range.greaterThan(Double.toString(data[i])));
             assertTrue("byteMachine must be empty after delete pattern", cut.isEmpty());
         }
 
         // >=
         for (int i = 0; i < (data.length - 1); i++) {
             ByteMachine cut = new ByteMachine();
-            Range nr = Range.greaterThanOrEqualTo(data[i]);
+            Range nr = Range.greaterThanOrEqualTo(Double.toString(data[i]));
             cut.addPattern(nr);
             for (double aData : data) {
                 String num = String.format("%f", aData);
@@ -212,7 +212,7 @@ public class ByteMachineTest {
                     assertEquals(num + " should not match >" + data[i], 0, matched.size());
                 }
             }
-            cut.deletePattern(Range.greaterThanOrEqualTo(data[i]));
+            cut.deletePattern(Range.greaterThanOrEqualTo(Double.toString(data[i])));
             assertTrue("byteMachine must be empty after delete pattern", cut.isEmpty());
         }
 
@@ -220,7 +220,7 @@ public class ByteMachineTest {
         for (int i = 0; i < (data.length - 2); i++) {
             for (int j = i + 2; j < data.length; j++) {
                 ByteMachine cut = new ByteMachine();
-                Range r = Range.between(data[i], true, data[j], true);
+                Range r = Range.between(Double.toString(data[i]), true, Double.toString(data[j]), true);
                 cut.addPattern(r);
                 for (double aData : data) {
                     String num = String.format("%f", aData);
@@ -240,7 +240,7 @@ public class ByteMachineTest {
         for (int i = 0; i < (data.length - 2); i++) {
             for (int j = i + 2; j < data.length; j++) {
                 ByteMachine cut = new ByteMachine();
-                Range r = Range.between(data[i], true, data[j], false);
+                Range r = Range.between(Double.toString(data[i]), true, Double.toString(data[j]), false);
                 cut.addPattern(r);
                 for (double aData : data) {
                     String num = String.format("%f", aData);
@@ -260,7 +260,7 @@ public class ByteMachineTest {
         for (int i = 0; i < (data.length - 2); i++) {
             for (int j = i + 2; j < data.length; j++) {
                 ByteMachine cut = new ByteMachine();
-                Range r = Range.between(data[i], false, data[j], true);
+                Range r = Range.between(Double.toString(data[i]), false, Double.toString(data[j]), true);
                 cut.addPattern(r);
                 for (double aData : data) {
                     String num = String.format("%f", aData);
@@ -279,7 +279,7 @@ public class ByteMachineTest {
         for (int i = 0; i < (data.length - 2); i++) {
             for (int j = i + 2; j < data.length; j++) {
                 ByteMachine cut = new ByteMachine();
-                Range r = Range.between(data[i], false, data[j], false);
+                Range r = Range.between(Double.toString(data[i]), false, Double.toString(data[j]), false);
                 cut.addPattern(r);
                 for (double aData : data) {
                     String num = String.format("%f", aData);
@@ -300,7 +300,7 @@ public class ByteMachineTest {
         ByteMachine cut = new ByteMachine();
         for (int i = 0; i < (data.length - 2); i++) {
             for (int j = i + 2; j < data.length; j++) {
-                Range r = Range.between(data[i], false, data[j], false);
+                Range r = Range.between(Double.toString(data[i]), false, Double.toString(data[j]), false);
                 cut.addPattern(r);
                 for (int k = 0; k < data.length; k++) {
                     if (data[k] >= data[i] && data[k] <= data[j]) {
@@ -317,7 +317,7 @@ public class ByteMachineTest {
         // delete the range
         for (int i = 0; i < (data.length - 2); i++) {
             for (int j = i + 2; j < data.length; j++) {
-                Range r = Range.between(data[i], false, data[j], false);
+                Range r = Range.between(Double.toString(data[i]), false, Double.toString(data[j]), false);
                 cut.deletePattern(r);
                 for (int k = 0; k < data.length; k++) {
                     if (data[k] >= data[i] && data[k] <= data[j]) {
@@ -340,7 +340,7 @@ public class ByteMachineTest {
         cut = new ByteMachine();
         for (int i = 0; i < (data.length - 2); i++) {
             for (int j = i + 2; j < data.length; j++) {
-                Range r = Range.between(data[i], true, data[j], true);
+                Range r = Range.between(Double.toString(data[i]), true, Double.toString(data[j]), true);
                 cut.addPattern(r);
                 for (int k = 0; k < data.length; k++) {
                     if (data[k] > data[i] && data[k] < data[j]) {
@@ -357,7 +357,7 @@ public class ByteMachineTest {
 
         for (int i = 0; i < (data.length - 2); i++) {
             for (int j = i + 2; j < data.length; j++) {
-                Range r = Range.between(data[i], true, data[j], true);
+                Range r = Range.between(Double.toString(data[i]), true, Double.toString(data[j]), true);
                 cut.deletePattern(r);
                 for (int k = 0; k < data.length; k++) {
                     if (data[k] > data[i] && data[k] < data[j]) {
@@ -424,10 +424,10 @@ public class ByteMachineTest {
     public void WHEN_AnyThingButNumberListPatternsAreAdded_THEN_TheyWork() {
 
         ByteMachine cut = new ByteMachine();
-        cut.addPattern(Patterns.anythingButNumberMatch(
-                new HashSet<>(Arrays.asList(1.11, 2d))));
-        cut.addPattern(Patterns.anythingButNumberMatch(
-                new HashSet<>(Arrays.asList(3.33, 2d))));
+        cut.addPattern(Patterns.anythingButNumbersMatch(
+                new HashSet<>(Arrays.asList("1.11", "2.0"))));
+        cut.addPattern(Patterns.anythingButNumbersMatch(
+                new HashSet<>(Arrays.asList("3.33", "2.0"))));
         String[] notFoos = { "0", "1.1", "5", "9", "112", "fo", "foobar" };
         for (String notFoo : notFoos) {
             assertEquals(2, cut.transitionOn(notFoo).size());
@@ -438,8 +438,8 @@ public class ByteMachineTest {
         assertEquals(2, cut.transitionOn("1").size());
         assertEquals(0, cut.transitionOn("2").size());
 
-        cut.deletePattern(Patterns.anythingButNumberMatch(
-                new HashSet<>(Arrays.asList(1.11, 2d))));
+        cut.deletePattern(Patterns.anythingButNumbersMatch(
+                new HashSet<>(Arrays.asList("1.11", "2.0"))));
         for (String notFoo : notFoos) {
             assertEquals(1, cut.transitionOn(notFoo).size());
         }
@@ -449,8 +449,8 @@ public class ByteMachineTest {
         assertEquals(0, cut.transitionOn("2").size());
         assertFalse(cut.isEmpty());
 
-        cut.deletePattern(Patterns.anythingButNumberMatch(
-                new HashSet<>(Arrays.asList(3.33, 2d))));
+        cut.deletePattern(Patterns.anythingButNumbersMatch(
+                new HashSet<>(Arrays.asList("3.33", "2.0"))));
         for (String notFoo : notFoos) {
             assertEquals(0, cut.transitionOn(notFoo).size());
         }
@@ -460,8 +460,8 @@ public class ByteMachineTest {
         assertEquals(0, cut.transitionOn("2").size());
         assertTrue(cut.isEmpty());
 
-        cut.addPattern(Patterns.anythingButNumberMatch(
-                new HashSet<>(Arrays.asList(3.33, 2d))));
+        cut.addPattern(Patterns.anythingButNumbersMatch(
+                new HashSet<>(Arrays.asList("3.33", "2.0"))));
         assertEquals(0, cut.transitionOn("2").size());
         assertEquals(0, cut.transitionOn("3.33").size());
         assertEquals(1, cut.transitionOn("2022").size());
@@ -481,19 +481,19 @@ public class ByteMachineTest {
         p = Patterns.anythingButMatch("foo");
         cut.addPattern(p);
 
-        p = Patterns.numericEquals(3);
+        p = Patterns.numericEquals("3");
         cut.addPattern(p);
-        p = Range.lessThan(3);
+        p = Range.lessThan("3");
         cut.addPattern(p);
-        p = Range.greaterThan(3);
+        p = Range.greaterThan("3");
         cut.addPattern(p);
-        p = Range.lessThanOrEqualTo(3);
+        p = Range.lessThanOrEqualTo("3");
         cut.addPattern(p);
-        p = Range.greaterThanOrEqualTo(3);
+        p = Range.greaterThanOrEqualTo("3");
         cut.addPattern(p);
-        p = Range.between(0, false, 8, false);
+        p = Range.between("0", false, "8", false);
         cut.addPattern(p);
-        p = Range.between(0, true, 8, true);
+        p = Range.between("0", true, "8", true);
         cut.addPattern(p);
 
         String[] notFoos =    { "bar", "baz", "for", "too", "fro", "fo", "foobar" };
@@ -524,7 +524,7 @@ public class ByteMachineTest {
     @Test
     public void WHEN_NumericEQIsRequested_THEN_DifferentNumberSyntaxesMatch() {
         ByteMachine cut = new ByteMachine();
-        cut.addPattern(Patterns.numericEquals(300.0));
+        cut.addPattern(Patterns.numericEquals("300.0"));
         assertEquals(1, cut.transitionOn("300").size());
         assertEquals(1, cut.transitionOn("300.0000").size());
         assertEquals(1, cut.transitionOn("3.0e+2").size());
@@ -532,8 +532,8 @@ public class ByteMachineTest {
 
     @Test
     public void RangePatternEqual() {
-        double[] data = {
-                1234, 5678.1234, 7890
+        String[] data = {
+                "1234", "5678.1234", "7890"
         };
 
         NameState ns = new NameState();
@@ -558,8 +558,8 @@ public class ByteMachineTest {
     public void WHEN_NumericRangesAdded_THEN_TheyWorkCorrectly_THEN_MatchNothing_AFTER_Removed() {
 
         ByteMachine cut = new ByteMachine();
-        Range r = Range.between(0, true, 4, false);
-        Range r1 = Range.between(1, true, 3, false);
+        Range r = Range.between("0", true, "4", false);
+        Range r1 = Range.between("1", true, "3", false);
         cut.addPattern(r);
         cut.addPattern(r1);
 
@@ -577,7 +577,7 @@ public class ByteMachineTest {
     public void WHEN_NumericRangesAddedMultipleTime_BecomeEmptyWithOneDelete() {
         ByteMachine cut = new ByteMachine();
         String num = String.format("%f", 2.0);
-        Range r = Range.between(0, true, 4, false);
+        Range r = Range.between("0", true, "4", false);
         Range r1 = (Range) r.clone();
         Range r2 = (Range) r1.clone();
         Range r3 = (Range) r2.clone();
@@ -611,7 +611,7 @@ public class ByteMachineTest {
         };
 
         ByteMachine cut = new ByteMachine();
-        Range r = Range.between(0, true, 4, false);
+        Range r = Range.between("0", true, "4", false);
         assertNull("must NOT find the range pattern", cut.findPattern(r));
         cut.addPattern(r);
         assertNotNull("must find the range pattern", cut.findPattern(r));
@@ -619,39 +619,39 @@ public class ByteMachineTest {
         for (int i = 0; i < 1000; i++) {
             for (int j = i + 1; j < 1001; j++) {
                 if (i == 0 && j == 4) {
-                    assertNotNull("must find the range pattern", cut.findPattern(Range.between(i, true, j, false)));
+                    assertNotNull("must find the range pattern", cut.findPattern(Range.between(Double.toString(i), true, Double.toString(j), false)));
                 } else {
-                    assertNull("must NOT find the range pattern", cut.findPattern(Range.between(i, true, j, false)));
+                    assertNull("must NOT find the range pattern", cut.findPattern(Range.between(Double.toString(i), true, Double.toString(j), false)));
                 }
             }
         }
 
         for (int i = 1; i < data.length; i++) {
             // first: <
-            assertNull("must NOT find the range pattern", cut.findPattern(Range.lessThan(data[i])));
+            assertNull("must NOT find the range pattern", cut.findPattern(Range.lessThan(Double.toString(data[i]))));
             // <=
-            assertNull("must NOT find the range pattern", cut.findPattern(Range.lessThanOrEqualTo(data[i])));
+            assertNull("must NOT find the range pattern", cut.findPattern(Range.lessThanOrEqualTo(Double.toString(data[i]))));
         }
         for (int i = 0; i < data.length-1; i++) {
             // >
-            assertNull("must NOT find the range pattern", cut.findPattern(Range.greaterThan(data[i])));
+            assertNull("must NOT find the range pattern", cut.findPattern(Range.greaterThan(Double.toString(data[i]))));
             // >=
-            assertNull("must NOT find the range pattern", cut.findPattern(Range.greaterThanOrEqualTo(data[i])));
+            assertNull("must NOT find the range pattern", cut.findPattern(Range.greaterThanOrEqualTo(Double.toString(data[i]))));
         }
 
         for (int i = 0; i < (data.length - 2); i++) {
             for (int j = i + 2; j < data.length; j++) {
                 // open/open range
-                assertNull("must NOT find the range pattern", cut.findPattern(Range.between(data[i], true, data[j], true)));
+                assertNull("must NOT find the range pattern", cut.findPattern(Range.between(Double.toString(data[i]), true, Double.toString(data[j]), true)));
                 // open/closed range
-                assertNull("must NOT find the range pattern", cut.findPattern(Range.between(data[i], true, data[j], false)));
+                assertNull("must NOT find the range pattern", cut.findPattern(Range.between(Double.toString(data[i]), true, Double.toString(data[j]), false)));
             }
         }
 
         for (int i = 0; i < (data.length - 2); i++) {
             for (int j = i + 2; j < data.length; j++) {
                 // overlap range
-                assertNull("must NOT find the range pattern", cut.findPattern(Range.between(data[i], true, data[j], true)));
+                assertNull("must NOT find the range pattern", cut.findPattern(Range.between(Double.toString(data[i]), true, Double.toString(data[j]), true)));
             }
         }
 
@@ -659,22 +659,22 @@ public class ByteMachineTest {
         cut.addPattern(Patterns.exactMatch("test"));
         cut.addPattern(Patterns.prefixMatch("test"));
         cut.addPattern(Patterns.anythingButMatch("test"));
-        cut.addPattern(Patterns.numericEquals(1.11));
+        cut.addPattern(Patterns.numericEquals("1.11"));
         assertNotNull("must find the pattern", cut.findPattern(Patterns.exactMatch("test")));
         assertNotNull("must find the pattern", cut.findPattern(Patterns.prefixMatch("test")));
         assertNotNull("must find the pattern", cut.findPattern(Patterns.anythingButMatch("test")));
-        assertNotNull("must find the pattern", cut.findPattern(Patterns.numericEquals(1.11)));
+        assertNotNull("must find the pattern", cut.findPattern(Patterns.numericEquals("1.11")));
 
         assertNull("must NOT find the pattern", cut.findPattern(Patterns.exactMatch("test1")));
         assertNull("must NOT find the pattern", cut.findPattern(Patterns.prefixMatch("test1")));
         assertNull("must NOT find the pattern", cut.findPattern(Patterns.anythingButMatch("test1")));
-        assertNull("must NOT find the pattern", cut.findPattern(Patterns.numericEquals(1.111)));
+        assertNull("must NOT find the pattern", cut.findPattern(Patterns.numericEquals("1.111")));
 
         cut.deletePattern(Patterns.exactMatch("test"));
         cut.deletePattern(Patterns.prefixMatch("test"));
         cut.deletePattern(Patterns.anythingButMatch("test"));
-        cut.deletePattern(Patterns.numericEquals(1.11));
-        cut.deletePattern(Range.between(0, true, 4, false));
+        cut.deletePattern(Patterns.numericEquals("1.11"));
+        cut.deletePattern(Range.between("0", true, "4", false));
         assertTrue("cut is empty", cut.isEmpty());
     }
 
@@ -747,7 +747,7 @@ public class ByteMachineTest {
     public void testNonNumericValue_DoesNotMatchNumericPattern() {
         ByteMachine cut = new ByteMachine();
         String val = "0A,";
-        cut.addPattern(Range.greaterThanOrEqualTo(-1e9));
+        cut.addPattern(Range.greaterThanOrEqualTo("-1e9"));
 
         Set<NameStateWithPattern> matches = cut.transitionOn(val);
         assertTrue(matches.isEmpty());
@@ -2649,13 +2649,13 @@ public class ByteMachineTest {
     public void testAddRangePatternGivenNameStateReturned() {
         NameState nameState = new NameState();
         ByteMachine cut = new ByteMachine();
-        assertSame(nameState, cut.addPattern(Range.lessThan(5), nameState));
+        assertSame(nameState, cut.addPattern(Range.lessThan("5"), nameState));
     }
 
     @Test
     public void testAddRangePatternNoNameStateGiven() {
         ByteMachine cut = new ByteMachine();
-        assertNotNull(cut.addPattern(Range.lessThan(5)));
+        assertNotNull(cut.addPattern(Range.lessThan("5")));
     }
 
     private void testPatternPermutations(PatternMatch ... patternMatches) {

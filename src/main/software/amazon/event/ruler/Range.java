@@ -9,6 +9,9 @@ import java.util.Arrays;
  *  implementation, the number of digits in the top and bottom of the range is the same.
  */
 public final class Range extends Patterns {
+    private static final byte[] NEGATIVE_FIVE_BILLION_BYTES = doubleToComparableBytes(-Constants.FIVE_BILLION);
+    private static final byte[] POSITIVE_FIVE_BILLION_BYTES = doubleToComparableBytes(Constants.FIVE_BILLION);
+    private static final int HEX_DIGIT_A_DECIMAL_VALUE = 10;
     /**
      * Bottom and top of the range. openBottom true means we're looking for > bottom, false means >=
      *  Similarly, openTop true means we're looking for < top, false means <= top.
@@ -19,20 +22,6 @@ public final class Range extends Patterns {
     final boolean openTop;
 
     final boolean isCIDR;
-
-    private static final int HEX_DIGIT_A_DECIMAL_VALUE = 10;
-
-    private Range(final double bottom, final boolean openBottom, final double top, final boolean openTop) {
-        super(MatchType.NUMERIC_RANGE);
-        if (bottom >= top) {
-            throw new IllegalArgumentException("Bottom must be less than top");
-        }
-        this.bottom = ComparableNumber.generate(bottom).getBytes(StandardCharsets.UTF_8);
-        this.openBottom = openBottom;
-        this.top = ComparableNumber.generate(top).getBytes(StandardCharsets.UTF_8);
-        this.openTop = openTop;
-        isCIDR = false;
-    }
 
     Range(final byte[] bottom, final boolean openBottom, final byte[] top, final boolean openTop, final boolean isCIDR) {
         super(MatchType.NUMERIC_RANGE);
@@ -52,28 +41,63 @@ public final class Range extends Patterns {
         this.isCIDR = range.isCIDR;
     }
 
-    public static Range lessThan(final double val) {
-        return new Range(-Constants.FIVE_BILLION, false, val, true);
+    public static Range lessThan(final String val) {
+        byte[] byteVal = stringToComparableBytes(val);
+        return between(NEGATIVE_FIVE_BILLION_BYTES, false, byteVal, true);
     }
 
-    public static Range lessThanOrEqualTo(final double val) {
-        return new Range(-Constants.FIVE_BILLION, false, val, false);
+    public static Range lessThanOrEqualTo(final String val) {
+        byte[] byteVal = stringToComparableBytes(val);
+        return between(NEGATIVE_FIVE_BILLION_BYTES, false, byteVal, false);
     }
 
-    public static Range greaterThan(final double val) {
-        return new Range(val, true, Constants.FIVE_BILLION, false);
+    public static Range greaterThan(final String val) {
+        byte[] byteVal = stringToComparableBytes(val);
+        return between(byteVal, true, POSITIVE_FIVE_BILLION_BYTES, false);
     }
 
-    public static Range greaterThanOrEqualTo(final double val) {
-        return new Range(val, false, Constants.FIVE_BILLION, false);
+    public static Range greaterThanOrEqualTo(final String val) {
+        byte[] byteVal = stringToComparableBytes(val);
+        return between(byteVal, false, POSITIVE_FIVE_BILLION_BYTES, false);
     }
 
-    public static Range between(final double bottom, final boolean openBottom, final double top, final boolean openTop) {
-        return new Range(bottom, openBottom, top, openTop);
+    public static Range between(final String bottom, final boolean openBottom, final String top, final boolean openTop) {
+        byte[] byteBottom = stringToComparableBytes(bottom);
+        byte[] byteTops = stringToComparableBytes(top);
+        ensureValidRange(byteBottom, byteTops);
+        return new Range(byteBottom, openBottom, byteTops, openTop, false);
+    }
+
+    public static Range between(final byte[] bottom, final boolean openBottom, final byte[] top, final boolean openTop) {
+        return new Range(bottom, openBottom, top, openTop, false);
     }
 
     private static Range deepCopy(final Range range) {
         return new Range(range);
+    }
+
+    /**
+     * Ensures that the given byte arrays representing the bottom and top of a range
+     * are valid, where the bottom array's hex representation is less than the top array.
+     *
+     * @param byteBottom the byte array representing the bottom of the range
+     * @param byteTops   the byte array representing the top of the range
+     * @throws IllegalArgumentException if the bottom array is not lexicographically less than the top array
+     */
+    private static void ensureValidRange(byte[] byteBottom, byte[] byteTops) {
+        int equals = 0;
+        for(int i = 0; i < byteBottom.length; i++) {
+            if(byteBottom[i] == byteTops[i]) {
+                equals += 1;
+            } else if(byteBottom[i] > byteTops[i]) {
+                throw new IllegalArgumentException("Bottom must be less than top");
+            } else {
+                break; // found one to be bigger than the other
+            }
+        }
+        if(equals == byteBottom.length) {
+            throw new IllegalArgumentException("Bottom must be less than top");
+        }
     }
 
     /**
@@ -155,5 +179,13 @@ public final class Range extends Patterns {
     public String toString() {
         return (new String(bottom, StandardCharsets.UTF_8)) + '/' + (new String(top, StandardCharsets.UTF_8))
                        + ':' + openBottom + '/' + openTop + " (" + super.toString() + ")";
+    }
+
+    private static byte[] doubleToComparableBytes(double d) {
+        return stringToComparableBytes(Double.toString(d));
+    }
+
+    private static byte[] stringToComparableBytes(String string) {
+        return ComparableNumber.generate(string).getBytes(StandardCharsets.UTF_8);
     }
 }

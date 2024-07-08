@@ -17,6 +17,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
 import static org.junit.Assert.assertEquals;
@@ -32,7 +34,6 @@ import static org.junit.Assert.assertNull;
  *  There are two slightly varying versions, citylots.json.gz and citylots2.json.gz.  Between the two of them they
  *  total ~400Mbytes, which makes Ruler a little slow to check out from git.
  */
-
 public class Benchmarks {
 
     // original citylots
@@ -249,7 +250,7 @@ public class Benchmarks {
               "  \"geometry\": {\n" +
               "    \"type\": [ \"Polygon\" ],\n" +
               "    \"coordinates\": {\n" +
-              "      \"x\": [ { \"numeric\": [ \"=\", -122.42916360922355 ] } ]\n" +
+              "      \"x\": [ { \"numeric\": [ \"=\", -122.429163 ] } ]\n" +
               "    }\n" +
               "  }\n" +
               "}",
@@ -257,40 +258,40 @@ public class Benchmarks {
               "  \"geometry\": {\n" +
               "    \"type\": [ \"MultiPolygon\" ],\n" +
               "    \"coordinates\": {\n" +
-              "      \"y\": [ { \"numeric\": [ \"=\", 37.729900216217324 ] } ]\n" +
+              "      \"y\": [ { \"numeric\": [ \"=\", 37.729900 ] } ]\n" +
               "    }\n" +
               "  }\n" +
               "}",
       "{\n" +
               "  \"geometry\": {\n" +
               "    \"coordinates\": {\n" +
-              "      \"x\": [ { \"numeric\": [ \"<\", -122.41600944012424 ] } ]\n" +
+              "      \"x\": [ { \"numeric\": [ \"<\", -122.416009 ] } ]\n" +
               "    }\n" +
               "  }\n" +
               "}",
       "{\n" +
               "  \"geometry\": {\n" +
               "    \"coordinates\": {\n" +
-              "      \"x\": [ { \"numeric\": [ \">\", -122.41600944012424 ] } ]\n" +
+              "      \"x\": [ { \"numeric\": [ \">\", -122.416009 ] } ]\n" +
               "    }\n" +
               "  }\n" +
               "}",
       "{\n" +
               "  \"geometry\": {\n" +
               "    \"coordinates\": {\n" +
-              "      \"x\": [ { \"numeric\": [ \">\",  -122.46471267081272, \"<\", -122.4063085128395 ] } ]\n" +
+              "      \"x\": [ { \"numeric\": [ \">\",  -122.464712, \"<\", -122.406308 ] } ]\n" +
               "    }\n" +
               "  }\n" +
               "}"
     };
-    private final int[] COMPLEX_ARRAYS_MATCHES = { 227, 2, 149444, 64368, 127485 };
+    private final int[] COMPLEX_ARRAYS_MATCHES = { 229, 2, 149444, 64368, 127484 };
 
     private final String[] NUMERIC_RULES = {
             "{\n" +
                     "  \"geometry\": {\n" +
                     "    \"type\": [ \"Polygon\" ],\n" +
                     "    \"firstCoordinates\": {\n" +
-                    "      \"x\": [ { \"numeric\": [ \"=\", -122.42916360922355 ] } ]\n" +
+                    "      \"x\": [ { \"numeric\": [ \"=\", -122.429163 ] } ]\n" +
                     "    }\n" +
                     "  }\n" +
                     "}",
@@ -305,26 +306,26 @@ public class Benchmarks {
             "{\n" +
                     "  \"geometry\": {\n" +
                     "    \"firstCoordinates\": {\n" +
-                    "      \"x\": [ { \"numeric\": [ \"<\", -122.41600944012424 ] } ]\n" +
+                    "      \"x\": [ { \"numeric\": [ \"<\", -122.416009 ] } ]\n" +
                     "    }\n" +
                     "  }\n" +
                     "}",
             "{\n" +
                     "  \"geometry\": {\n" +
                     "    \"firstCoordinates\": {\n" +
-                    "      \"x\": [ { \"numeric\": [ \">\", -122.41600944012424 ] } ]\n" +
+                    "      \"x\": [ { \"numeric\": [ \">\", -122.416009 ] } ]\n" +
                     "    }\n" +
                     "  }\n" +
                     "}",
             "{\n" +
                     "  \"geometry\": {\n" +
                     "    \"firstCoordinates\": {\n" +
-                    "      \"x\": [ { \"numeric\": [ \">\",  -122.46471267081272, \"<\", -122.4063085128395 ] } ]\n" +
+                    "      \"x\": [ { \"numeric\": [ \">\",  -122.464712, \"<\", -122.406308 ] } ]\n" +
                     "    }\n" +
                     "  }\n" +
                     "}"
     };
-    private final int[] NUMERIC_MATCHES = { 8, 120, 148943, 64120, 127053 };
+    private final int[] NUMERIC_MATCHES = { 7, 120, 148946, 64120, 127052 };
 
     private final String[] ANYTHING_BUT_RULES = {
       "{\n" +
@@ -942,7 +943,8 @@ public class Benchmarks {
             BufferedReader cl2Reader = new BufferedReader(new InputStreamReader(gzipInputStream));
             String line = cl2Reader.readLine();
             while (line != null) {
-                citylots2.add(line);
+                String fixedLine = removeDigitsAfterSixthDecimal(line);
+                citylots2.add(fixedLine);
                 line = cl2Reader.readLine();
             }
             cl2Reader.close();
@@ -1134,9 +1136,36 @@ public class Benchmarks {
         String line;
         List<String> lines = new ArrayList<>();
         while ((line = cityLotsReader.readLine()) != null) {
-            lines.add(line);
+            String fixedLine = removeDigitsAfterSixthDecimal(line);
+            lines.add(fixedLine);
         }
         return lines;
+    }
+
+    /**
+     * Removes digits after the {@code ComparableNumber.MAX_DECIMAL_PRECISON} decimal place from all decimal numbers
+     * in the given input string. Numbers wth more decimals numbers are ignored for numeric / range comparisons by ruler
+     */
+    public static String removeDigitsAfterSixthDecimal(String input) {
+        StringBuilder result = new StringBuilder();
+        Pattern pattern = Pattern.compile("\\d+\\.\\d*");
+        Matcher matcher = pattern.matcher(input);
+        int lastEnd = 0;
+
+        while (matcher.find()) {
+            String match = matcher.group();
+            int dotIndex = match.indexOf(".");
+            if (match.length() - dotIndex <= ComparableNumber.MAX_DECIMAL_PRECISON) {
+                result.append(input, lastEnd, matcher.start()).append(match);
+            } else {
+                result.append(input, lastEnd, matcher.start())
+                        .append(match, 0, dotIndex + ComparableNumber.MAX_DECIMAL_PRECISON + 1);
+            }
+            lastEnd = matcher.end();
+        }
+
+        result.append(input.substring(lastEnd));
+        return result.toString();
     }
 
     private List<String[]> readAndParseLines() throws Exception {

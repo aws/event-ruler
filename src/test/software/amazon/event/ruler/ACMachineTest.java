@@ -1208,7 +1208,7 @@ public class ACMachineTest {
 
         // add the rule, ensure it matches
         cut.addRule("r1", rule);
-        String event = "{\"x\": 111111111.111111111}";
+        String event = "{\"x\": 111111111.111111}";
         String event1 = "{\"x\": 1000000000}";
         assertEquals(1, cut.rulesForJSONEvent(event).size());
         assertEquals(0, cut.rulesForJSONEvent(event1).size());

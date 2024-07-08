@@ -25,14 +25,14 @@ public class PatternsTest {
         patternsList.add(Patterns.absencePatterns());
         patternsList.add(Patterns.existencePatterns());
         patternsList.add(Patterns.anythingButMatch(Stream.of("a", "b").collect(Collectors.toSet())));
-        patternsList.add(Patterns.anythingButMatch(1.23));
+        patternsList.add(Patterns.anythingButMatch("1.23"));
         patternsList.add(Patterns.exactMatch("ab"));
-        patternsList.add(Patterns.numericEquals(1.23));
+        patternsList.add(Patterns.numericEquals("1.23"));
         patternsList.add(Patterns.prefixMatch("abc"));
         patternsList.add(Patterns.suffixMatch("zyx"));
         patternsList.add(Patterns.equalsIgnoreCaseMatch("hElLo"));
         patternsList.add(Patterns.wildcardMatch("wild*card"));
-        patternsList.add(Range.between(1.1, true, 2.2, false));
+        patternsList.add(Range.between("1.1", true, "2.2", false));
 
         String [] expect = {
                 null,
