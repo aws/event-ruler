@@ -11,16 +11,17 @@ import java.nio.charset.StandardCharsets;
  * Represents a number as a comparable string.
  * <br/>
  * Numbers are allowed in the range -5,000,000,000 to +5,000,000,000 (inclusive).
- * Comparisons are precise to 6 decimal places.
+ * Comparisons are precise to 15 decimal places, with six to the right of the decimal.
  * Numbers are treated as floating-point values.
  * <br>
  * Numbers are converted to strings by:
- * 1. Multiplying by 1,000,000 to remove the decimal point and then adding 5,000,000,000 (to remove negatives), then m
+ * 1. Multiplying by 1,000,000 to remove the decimal point and then adding 5,000,000,000 (to remove negatives), then
  * 2. Formatting to a 14-character hexadecimal string left-padded with zeros, because the hexadecimal string
  *     converted from 5,000,000,000 * 1,000,000 = 5,000,000,000,000,000 has 14 characters.
  * <br/>
  * Hexadecimal representation is used because:
  * 1. It saves 3 bytes of memory per number compared to decimal representation.
+ * 2. It is lexicographically comparable, which is useful for maintaining sorted order of numbers.
  * 2. It aligns with the radix used for IP addresses.
  * If needed, a radix of 32 or 64 can be used to save more memory (e.g., the string length will be 10 for radix 32,
  * and 9 for radix 64).
@@ -32,7 +33,7 @@ import java.nio.charset.StandardCharsets;
  * results show that only 5 decimal places of precision can be guaranteed when using doubles.
  * <br/>
  * CAVEAT:
- * The current maximum number of 5,000,000,000 is selected as a balance between maintaining the committed 6
+ * The current range of +/- 5,000,000,000 is selected as a balance between maintaining the committed 6
  * decimal places of precision and memory cost (each number is parsed into a 14-character hexadecimal string).
  * When trying to increase the maximum number, PLEASE BE VERY CAREFUL TO PRESERVE THE NUMBER PRECISION AND
  * CONSIDER THE MEMORY COST.
