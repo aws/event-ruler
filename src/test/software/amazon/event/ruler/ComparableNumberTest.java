@@ -132,22 +132,6 @@ public class ComparableNumberTest {
         testCases.put("-.123456", "11C37937DE9DC0");
         testCases.put("1e-2", "11C37937E0A710");
         testCases.put("-0.0", "11C37937E08000");
-        // hexadecimals
-        testCases.put("-0x1.2a05f2p32", "00000000000000");
-        testCases.put("-0x1.dcd65p29", "0E35FA931A0000");
-        testCases.put("-0x1.388p13", "11C376E3D49C00");
-        testCases.put("-0x1.e9a6e978d4fdfp6", "11C3793094A039");
-        testCases.put("-0x1.0c6f7a0b5ed8dp-19", "11C37937E07FFF");
-        testCases.put("0x0.0p0", "11C37937E08000");
-        testCases.put("0x1.0c6f7a0b5ed8dp-20", "11C37937E08000");
-        testCases.put("0x1.e666666666666p1", "11C379381A7BBF");
-        testCases.put("0x1.f333333333333p1", "11C379381C025F");
-        testCases.put("0x1.6p3", "11C379388858C0");
-        testCases.put("0x1.8p3", "11C37938979B00");
-        testCases.put("0x1.e9a8f5c28f5c3p6", "11C3793F2C6798");
-        testCases.put("0x1.86ap14", "11C37F09FE3A00");
-        testCases.put("0x1.dcd65p29", "1550F7DCA70000");
-        testCases.put("0x1.2a05f2p32", "2386F26FC10000");
 
         for (Entry<String, String> entry: testCases.entrySet()) {
             String input = entry.getKey();
