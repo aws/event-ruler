@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -511,8 +512,8 @@ public class JsonRuleCompilerTest {
         assertTrue(rules.isArray());
         assertTrue(machine.isEmpty());
 
-        final int expectedSubRuleSize [] = {2, 4, 3, 4, 2};
-        final String expectedCompiledRules [] = {
+        final int[] expectedSubRuleSize = {2, 4, 3, 4, 2};
+        final String[] expectedCompiledRules = {
                 "[{metricName=[VP:\"CPUUtilization\" (T:EXACT), VP:\"ReadLatency\" (T:EXACT)]}, {namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)]}]",
                 "[{detail.source=[VP:\"aws.cloudwatch\" (T:EXACT)], metricName=[VP:\"CPUUtilization\" (T:EXACT), VP:\"ReadLatency\" (T:EXACT)]}, {namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)], detail.source=[VP:\"aws.cloudwatch\" (T:EXACT)]}, {detail.detail-type=[VP:\"CloudWatch Alarm State Change\" (T:EXACT)], metricName=[VP:\"CPUUtilization\" (T:EXACT), VP:\"ReadLatency\" (T:EXACT)]}, {namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)], detail.detail-type=[VP:\"CloudWatch Alarm State Change\" (T:EXACT)]}]",
                 "[{source=[VP:\"aws.cloudwatch\" (T:EXACT)], metricName=[VP:\"CPUUtilization\" (T:EXACT), VP:\"ReadLatency\" (T:EXACT)]}, {namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)], metricType=[VP:\"MetricType\" (T:EXACT)], source=[VP:\"aws.cloudwatch\" (T:EXACT)]}, {source=[VP:\"aws.cloudwatch\" (T:EXACT)], scope=[VP:\"Service\" (T:EXACT)]}]",
@@ -530,7 +531,7 @@ public class JsonRuleCompilerTest {
             machine.addRule("rule-" + i, ruleStr);
             i++;
         }
-        assertTrue(!machine.isEmpty());
+        assertFalse(machine.isEmpty());
 
         // after delete the rule, verify the machine become empty again.
         i = 0;
@@ -571,7 +572,7 @@ public class JsonRuleCompilerTest {
         assertTrue(rules.isArray());
         assertTrue(machine.isEmpty());
 
-        final String expectedCompiledRules [] = {
+        final String[] expectedCompiledRules = {
                 "{$or=[0A000000/0A0000FF:false/false (T:NUMERIC_RANGE)]}",
                 "{$or.namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)], source=[VP:\"aws.cloudwatch\" (T:EXACT)], $or.metricType=[VP:\"MetricType\" (T:EXACT)]}",
                 "{detail.$or=[11C37937E08000/11C379382CCB40:true/false (T:NUMERIC_RANGE), 0A000000/0AFFFFFF:false/false (T:NUMERIC_RANGE)], time=[VP:\"2017-10-02 (T:PREFIX)]}",
@@ -590,7 +591,7 @@ public class JsonRuleCompilerTest {
 
         // verify each rule had thrown JsonParseException.
         assertEquals(rules.size(), i);
-        assertTrue(!machine.isEmpty());
+        assertFalse(machine.isEmpty());
 
         // verify the legacy rules with using "$or" as normal field can not work with the new JsonRuleCompiler
         i = 0;

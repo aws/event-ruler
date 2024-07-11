@@ -82,7 +82,7 @@ final class CompositeByteTransition extends SingleByteTransition {
 
     @Override
     boolean hasIndeterminatePrefix() {
-        return nextState == null ? false : nextState.hasIndeterminatePrefix();
+        return nextState != null && nextState.hasIndeterminatePrefix();
     }
 
     @Override

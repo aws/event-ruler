@@ -4,6 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -312,7 +313,7 @@ public class ByteMapTest {
     public void testGetTransitionForAllBytesAllOneTransitionExceptOneWithTwo() {
         map.addTransitionForAllBytes(trans1);
         map.addTransition((byte) 'a', trans2);
-        assertEquals(coalesce(new HashSet<>(Arrays.asList(trans1))), map.getTransitionForAllBytes());
+        assertEquals(coalesce(new HashSet<>(Collections.singletonList(trans1))), map.getTransitionForAllBytes());
     }
 
     @Test
@@ -320,7 +321,7 @@ public class ByteMapTest {
         map.addTransitionForAllBytes(trans1);
         map.addTransitionForAllBytes(trans2);
         map.removeTransition((byte) 'a', trans2);
-        assertEquals(coalesce(new HashSet<>(Arrays.asList(trans1))), map.getTransitionForAllBytes());
+        assertEquals(coalesce(new HashSet<>(Collections.singletonList(trans1))), map.getTransitionForAllBytes());
     }
 
     @Test

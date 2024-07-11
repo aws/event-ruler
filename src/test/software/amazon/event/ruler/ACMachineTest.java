@@ -32,12 +32,11 @@ import static org.junit.Assert.fail;
 public class ACMachineTest {
 
     private String toIP(int ip) {
-        StringBuilder sb = new StringBuilder();
-        sb.append((ip >> 24) & 0xFF).append('.');
-        sb.append((ip >> 16) & 0xFF).append('.');
-        sb.append((ip >> 8) & 0xFF).append('.');
-        sb.append(ip & 0xFF);
-        return sb.toString();
+        String sb = String.valueOf((ip >> 24) & 0xFF) + '.' +
+                ((ip >> 16) & 0xFF) + '.' +
+                ((ip >> 8) & 0xFF) + '.' +
+                (ip & 0xFF);
+        return sb;
     }
 
     @Test

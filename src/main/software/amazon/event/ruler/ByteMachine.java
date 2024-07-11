@@ -11,7 +11,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,7 +46,7 @@ class ByteMachine {
 
     // Only these match types support shortcuts during traversal.
     private static final Set<MatchType> SHORTCUT_MATCH_TYPES = Collections.unmodifiableSet(
-            new HashSet<>(Arrays.asList(EXACT)));
+            new HashSet<>(Collections.singletonList(EXACT)));
 
     private final ByteState startState = new ByteState();
     // For wildcard rule "*", the start state is a match.
@@ -2103,5 +2102,5 @@ class ByteMachine {
         NUMERIC,
         CIDR,
         STRING
-    };
+    }
 }

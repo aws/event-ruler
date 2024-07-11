@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -32,12 +31,12 @@ public class SubRuleContextTest {
         double expected3 = Math.nextUp(expected2);
         assertTrue(expected1 < expected2);
         assertTrue(expected2 < expected3);
-        assertTrue(expected1 == contextA1.getId());
-        assertTrue(expected1 == contextB1.getId());
-        assertTrue(expected2 == contextA2.getId());
-        assertTrue(expected2 == contextB2.getId());
-        assertTrue(expected3 == contextA3.getId());
-        assertTrue(expected3 == contextB3.getId());
+        assertEquals(expected1, contextA1.getId(), 0.0);
+        assertEquals(expected1, contextB1.getId(), 0.0);
+        assertEquals(expected2, contextA2.getId(), 0.0);
+        assertEquals(expected2, contextB2.getId(), 0.0);
+        assertEquals(expected3, contextA3.getId(), 0.0);
+        assertEquals(expected3, contextB3.getId(), 0.0);
     }
 
     @Test
@@ -59,8 +58,8 @@ public class SubRuleContextTest {
         SubRuleContext.Generator generatorB = new SubRuleContext.Generator();
         SubRuleContext contextB1 = generatorB.generate(NAME);
 
-        assertTrue(contextA1.equals(contextB1));
-        assertFalse(contextA2.equals(contextB1));
+        assertEquals(contextA1, contextB1);
+        assertNotEquals(contextA2, contextB1);
     }
 
     @Test

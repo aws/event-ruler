@@ -512,7 +512,7 @@ public class GenericMachine<T> {
                          final Map<String, List<Patterns>> patterns,
                          final T ruleName) {
         List<String> addedKeys = new ArrayList<>();
-        Set<NameState> nameStates[] = new Set[keys.size()];
+        Set<NameState>[] nameStates = new Set[keys.size()];
         if (addStep(getStartState(), keys, 0, patterns, ruleName, addedKeys, nameStates).isEmpty()) {
             SubRuleContext context = subRuleContextGenerator.generate(ruleName);
             for (int i = 0; i < keys.size(); i++) {

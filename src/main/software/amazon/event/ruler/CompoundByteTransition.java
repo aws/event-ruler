@@ -22,17 +22,17 @@ public final class CompoundByteTransition extends ByteTransition {
     /**
      * A view of byteTransitions containing just the shortcuts.
      */
-    private Set<ShortcutTransition> shortcutTransitions;
+    private final Set<ShortcutTransition> shortcutTransitions;
 
     /**
      * A view of byteTransitions containing just the ones that can contain matches.
      */
-    private Set<SingleByteTransition> matchableTransitions;
+    private final Set<SingleByteTransition> matchableTransitions;
 
     /**
      * A ByteTransition representing all nextByteStates from byteTransitions.
      */
-    private ByteTransition transitionForNextByteState;
+    private final ByteTransition transitionForNextByteState;
 
     private CompoundByteTransition(Set<SingleByteTransition> byteTransitions) {
         this.byteTransitions = Collections.unmodifiableSet(byteTransitions);

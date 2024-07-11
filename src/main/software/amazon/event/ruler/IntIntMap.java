@@ -12,7 +12,7 @@ final class IntIntMap implements Cloneable {
     // taken from FastUtil
     private static final int INT_PHI = 0x9E3779B9;
 
-    private static long KEY_MASK = 0xFFFFFFFFL;
+    private static final long KEY_MASK = 0xFFFFFFFFL;
     private static final long EMPTY_CELL = -1 & KEY_MASK;
 
     public static final int NO_VALUE = -1;

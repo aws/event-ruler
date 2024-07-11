@@ -7,7 +7,7 @@ package software.amazon.event.ruler;
 class ArrayMembership {
     private static final IntIntMap EMPTY = new IntIntMap();
 
-    private IntIntMap membership;
+    private final IntIntMap membership;
 
     ArrayMembership() {
         membership = new IntIntMap();
