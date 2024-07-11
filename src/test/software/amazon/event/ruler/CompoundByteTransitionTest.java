@@ -3,10 +3,10 @@ package software.amazon.event.ruler;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
@@ -17,13 +17,13 @@ public class CompoundByteTransitionTest {
 
     @Test
     public void testCoalesceEmptyList() {
-        assertNull(coalesce(new HashSet<>(Arrays.asList())));
+        assertNull(coalesce(new HashSet<>(Collections.emptyList())));
     }
 
     @Test
     public void testCoalesceOneElement() {
         ByteState state = new ByteState();
-        assertEquals(state, coalesce(new HashSet<>(Arrays.asList(state))));
+        assertEquals(state, coalesce(new HashSet<>(Collections.singletonList(state))));
     }
 
     @Test
@@ -137,7 +137,7 @@ public class CompoundByteTransitionTest {
     public void testGetShortcuts() {
         ByteState state = new ByteState();
         ShortcutTransition shortcut = new ShortcutTransition();
-        assertEquals(new HashSet<>(Arrays.asList(shortcut)),
+        assertEquals(new HashSet<>(Collections.singletonList(shortcut)),
                 coalesce(new HashSet<>(Arrays.asList(state, shortcut))).getShortcuts());
     }
 
@@ -204,19 +204,11 @@ public class CompoundByteTransitionTest {
         SingleByteTransition state1 = new ByteState();
         SingleByteTransition state2 = new ByteState();
         SingleByteTransition state3 = new ByteState();
-        assertTrue(coalesce(new HashSet<>(Arrays.asList(state1, state2))).equals(
-                coalesce(new HashSet<>(Arrays.asList(state1, state2)))
-        ));
-        assertFalse(coalesce(new HashSet<>(Arrays.asList(state1, state2))).equals(
-                coalesce(new HashSet<>(Arrays.asList(state1, state3)))
-        ));
-        assertFalse(coalesce(new HashSet<>(Arrays.asList(state1, state2))).equals(
-                coalesce(new HashSet<>(Arrays.asList(state1, state2, state3)))
-        ));
-        assertFalse(coalesce(new HashSet<>(Arrays.asList(state1, state2))).equals(
-                coalesce(new HashSet<>(Arrays.asList(state1)))
-        ));
-        assertFalse(coalesce(new HashSet<>(Arrays.asList(state1, state2))).equals(new Object()));
+        assertEquals(coalesce(new HashSet<>(Arrays.asList(state1, state2))), coalesce(new HashSet<>(Arrays.asList(state1, state2))));
+        assertNotEquals(coalesce(new HashSet<>(Arrays.asList(state1, state2))), coalesce(new HashSet<>(Arrays.asList(state1, state3))));
+        assertNotEquals(coalesce(new HashSet<>(Arrays.asList(state1, state2))), coalesce(new HashSet<>(Arrays.asList(state1, state2, state3))));
+        assertNotEquals(coalesce(new HashSet<>(Arrays.asList(state1, state2))), coalesce(new HashSet<>(Collections.singletonList(state1))));
+        assertNotEquals(coalesce(new HashSet<>(Arrays.asList(state1, state2))), new Object());
     }
 
     @Test
@@ -227,7 +219,7 @@ public class CompoundByteTransitionTest {
                 coalesce(new HashSet<>(Arrays.asList(state1, state2))).hashCode()
         );
         assertNotEquals(coalesce(new HashSet<>(Arrays.asList(state1, state2))).hashCode(),
-                coalesce(new HashSet<>(Arrays.asList(state1))).hashCode()
+                coalesce(new HashSet<>(Collections.singletonList(state1))).hashCode()
         );
     }
 }

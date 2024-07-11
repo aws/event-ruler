@@ -109,12 +109,12 @@ public class MultiByteTest {
 
     @Test
     public void testEquals() {
-        assertTrue(new MultiByte((byte) 'a', (byte) 'b').equals(new MultiByte((byte) 'a', (byte) 'b')));
-        assertFalse(new MultiByte((byte) 'a', (byte) 'b').equals(new MultiByte((byte) 'b', (byte) 'a')));
-        assertFalse(new MultiByte((byte) 'a', (byte) 'b').equals(new MultiByte((byte) 'a', (byte) 'c')));
-        assertFalse(new MultiByte((byte) 'a', (byte) 'b').equals(new MultiByte((byte) 'a')));
-        assertFalse(new MultiByte((byte) 'a', (byte) 'b').equals(new MultiByte((byte) 'a', (byte) 'b', (byte) 'c')));
-        assertFalse(new MultiByte((byte) 'a', (byte) 'b').equals(new Object()));
+        assertEquals(new MultiByte((byte) 'a', (byte) 'b'), new MultiByte((byte) 'a', (byte) 'b'));
+        assertNotEquals(new MultiByte((byte) 'a', (byte) 'b'), new MultiByte((byte) 'b', (byte) 'a'));
+        assertNotEquals(new MultiByte((byte) 'a', (byte) 'b'), new MultiByte((byte) 'a', (byte) 'c'));
+        assertNotEquals(new MultiByte((byte) 'a', (byte) 'b'), new MultiByte((byte) 'a'));
+        assertNotEquals(new MultiByte((byte) 'a', (byte) 'b'), new MultiByte((byte) 'a', (byte) 'b', (byte) 'c'));
+        assertNotEquals(new MultiByte((byte) 'a', (byte) 'b'), new Object());
     }
 
     @Test

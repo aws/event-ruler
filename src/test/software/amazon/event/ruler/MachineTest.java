@@ -35,12 +35,11 @@ import static org.junit.Assert.fail;
 public class MachineTest {
 
     private String toIP(int ip) {
-        StringBuilder sb = new StringBuilder();
-        sb.append((ip >> 24) & 0xFF).append('.');
-        sb.append((ip >> 16) & 0xFF).append('.');
-        sb.append((ip >> 8) & 0xFF).append('.');
-        sb.append(ip & 0xFF);
-        return sb.toString();
+        String sb = String.valueOf((ip >> 24) & 0xFF) + '.' +
+                ((ip >> 16) & 0xFF) + '.' +
+                ((ip >> 8) & 0xFF) + '.' +
+                (ip & 0xFF);
+        return sb;
     }
 
     @Test
@@ -229,16 +228,16 @@ public class MachineTest {
         machine.addRule("r1", rule1);
         machine.addRule("r2", rule2);
         machine.addRule("r3", rule3);
-        assertEquals(Arrays.asList("r1"), machine.rulesForJSONEvent("{\"a\" : \"abc\"}"));
+        assertEquals(Collections.singletonList("r1"), machine.rulesForJSONEvent("{\"a\" : \"abc\"}"));
         assertEquals(new HashSet<>(Arrays.asList("r2", "r3")),
                 new HashSet<>(machine.rulesForJSONEvent("{\"b\" : \"XYZ\"}")));
-        assertEquals(Arrays.asList("r1"), machine.rulesForJSONEvent("{\"a\" : \"AbC\"}"));
+        assertEquals(Collections.singletonList("r1"), machine.rulesForJSONEvent("{\"a\" : \"AbC\"}"));
         assertTrue(machine.rulesForJSONEvent("{\"b\" : \"xyzz\"}").isEmpty());
         assertTrue(machine.rulesForJSONEvent("{\"a\" : \"aabc\"}").isEmpty());
         assertTrue(machine.rulesForJSONEvent("{\"b\" : \"ABCXYZ\"}").isEmpty());
 
         machine.deleteRule("r3", rule3);
-        assertEquals(Arrays.asList("r2"), machine.rulesForJSONEvent("{\"b\" : \"XYZ\"}"));
+        assertEquals(Collections.singletonList("r2"), machine.rulesForJSONEvent("{\"b\" : \"XYZ\"}"));
 
         machine.deleteRule("r1", rule1);
         machine.deleteRule("r2", rule2);
@@ -261,14 +260,14 @@ public class MachineTest {
         machine.addRule("r4", rule4);
         machine.addRule("r5", rule5);
         machine.addRule("r6", rule6);
-        assertEquals(Arrays.asList("r1"), machine.rulesForJSONEvent("{\"a\" : \"bc\"}"));
-        assertEquals(Arrays.asList("r1"), machine.rulesForJSONEvent("{\"a\" : \"abc\"}"));
-        assertEquals(Arrays.asList("r2"), machine.rulesForJSONEvent("{\"b\" : \"dexef\"}"));
+        assertEquals(Collections.singletonList("r1"), machine.rulesForJSONEvent("{\"a\" : \"bc\"}"));
+        assertEquals(Collections.singletonList("r1"), machine.rulesForJSONEvent("{\"a\" : \"abc\"}"));
+        assertEquals(Collections.singletonList("r2"), machine.rulesForJSONEvent("{\"b\" : \"dexef\"}"));
         assertEquals(new HashSet<>(Arrays.asList("r2", "r3")),
                 new HashSet<>(machine.rulesForJSONEvent("{\"b\" : \"dexeff\"}")));
         assertEquals(new HashSet<>(Arrays.asList("r4", "r5")),
                 new HashSet<>(machine.rulesForJSONEvent("{\"c\" : \"xyzzz\"}")));
-        assertEquals(Arrays.asList("r6"), machine.rulesForJSONEvent("{\"d\" : \"12345\"}"));
+        assertEquals(Collections.singletonList("r6"), machine.rulesForJSONEvent("{\"d\" : \"12345\"}"));
         assertTrue(machine.rulesForJSONEvent("{\"c\" : \"abc\"}").isEmpty());
         assertTrue(machine.rulesForJSONEvent("{\"a\" : \"xyz\"}").isEmpty());
         assertTrue(machine.rulesForJSONEvent("{\"c\" : \"abcxyz\"}").isEmpty());
@@ -277,7 +276,7 @@ public class MachineTest {
         assertTrue(machine.rulesForJSONEvent("{\"d\" : \"1235\"}").isEmpty());
 
         machine.deleteRule("r5", rule5);
-        assertEquals(Arrays.asList("r4"), machine.rulesForJSONEvent("{\"c\" : \"xy\"}"));
+        assertEquals(Collections.singletonList("r4"), machine.rulesForJSONEvent("{\"c\" : \"xy\"}"));
 
         machine.deleteRule("r1", rule1);
         machine.deleteRule("r2", rule2);
@@ -755,7 +754,7 @@ public class MachineTest {
 
     private static class TestEvent {
 
-        private String[] mTokens;
+        private final String[] mTokens;
         private final List<String> mExpectedRules = new ArrayList<>();
 
         TestEvent(String... tokens) {

@@ -3,6 +3,7 @@ package software.amazon.event.ruler;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -23,7 +24,7 @@ public class NameStateTest {
 
         assertEquals(new HashSet<>(asList(1.0, 3.0)),
                 nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
-        assertEquals(new HashSet<>(asList(2.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("b")));
+        assertEquals(new HashSet<>(Collections.singletonList(2.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("b")));
         assertNull(nameState.getNonTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
     }
 
@@ -33,19 +34,19 @@ public class NameStateTest {
         nameState.addSubRule("rule1", 1.0, Patterns.exactMatch("a"), true);
         nameState.addSubRule("rule2", 2.0, Patterns.exactMatch("b"), true);
 
-        assertEquals(new HashSet<>(asList(1.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
-        assertEquals(new HashSet<>(asList(2.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("b")));
+        assertEquals(new HashSet<>(Collections.singletonList(1.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
+        assertEquals(new HashSet<>(Collections.singletonList(2.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("b")));
         nameState.deleteSubRule("rule1", 1.0, Patterns.exactMatch("b"), true);
-        assertEquals(new HashSet<>(asList(1.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
-        assertEquals(new HashSet<>(asList(2.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("b")));
+        assertEquals(new HashSet<>(Collections.singletonList(1.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
+        assertEquals(new HashSet<>(Collections.singletonList(2.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("b")));
         nameState.deleteSubRule("rule2", 2.0, Patterns.exactMatch("b"), true);
-        assertEquals(new HashSet<>(asList(1.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
+        assertEquals(new HashSet<>(Collections.singletonList(1.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
         assertNull(nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("b")));
         nameState.deleteSubRule("rule2", 2.0, Patterns.exactMatch("a"), true);
-        assertEquals(new HashSet<>(asList(1.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
+        assertEquals(new HashSet<>(Collections.singletonList(1.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
         assertNull(nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("b")));
         nameState.deleteSubRule("rule1", 1.0, Patterns.exactMatch("a"), false);
-        assertEquals(new HashSet<>(asList(1.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
+        assertEquals(new HashSet<>(Collections.singletonList(1.0)), nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));
         assertNull(nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("b")));
         nameState.deleteSubRule("rule1", 1.0, Patterns.exactMatch("a"), true);
         assertNull(nameState.getTerminalSubRuleIdsForPattern(Patterns.exactMatch("a")));

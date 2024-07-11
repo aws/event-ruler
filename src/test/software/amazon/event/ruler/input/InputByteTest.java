@@ -3,9 +3,7 @@ package software.amazon.event.ruler.input;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
 import static software.amazon.event.ruler.input.DefaultParser.ASTERISK_BYTE;
 import static software.amazon.event.ruler.input.DefaultParser.BACKSLASH_BYTE;
 import static software.amazon.event.ruler.input.InputCharacterType.BYTE;
@@ -24,9 +22,9 @@ public class InputByteTest {
 
     @Test
     public void testEquals() {
-        assertTrue(new InputByte(ASTERISK_BYTE).equals(new InputByte(ASTERISK_BYTE)));
-        assertFalse(new InputByte(ASTERISK_BYTE).equals(new InputByte(BACKSLASH_BYTE)));
-        assertFalse(new InputByte(ASTERISK_BYTE).equals(new InputWildcard()));
+        assertEquals(new InputByte(ASTERISK_BYTE), new InputByte(ASTERISK_BYTE));
+        assertNotEquals(new InputByte(ASTERISK_BYTE), new InputByte(BACKSLASH_BYTE));
+        assertNotEquals(new InputByte(ASTERISK_BYTE), new InputWildcard());
     }
 
     @Test

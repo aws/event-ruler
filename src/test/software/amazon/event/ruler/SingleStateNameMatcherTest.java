@@ -11,7 +11,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class SingleStateNameMatcherTest {
 
-    private SingleStateNameMatcher nameMatcher = new SingleStateNameMatcher();
+    private final SingleStateNameMatcher nameMatcher = new SingleStateNameMatcher();
 
     private final NameState nameState = new NameState();
 

@@ -3,10 +3,8 @@ package software.amazon.event.ruler;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class NameStateWithPatternTest {
@@ -40,12 +38,9 @@ public class NameStateWithPatternTest {
         NameState nameState2 = new NameState();
         Patterns pattern1 = Patterns.exactMatch("abc");
         Patterns pattern2 = Patterns.exactMatch("def");
-        assertTrue(new NameStateWithPattern(nameState1, pattern1).equals(
-                new NameStateWithPattern(nameState1, pattern1)));
-        assertFalse(new NameStateWithPattern(nameState1, pattern1).equals(
-                new NameStateWithPattern(nameState2, pattern1)));
-        assertFalse(new NameStateWithPattern(nameState1, pattern1).equals(
-                new NameStateWithPattern(nameState1, pattern2)));
+        assertEquals(new NameStateWithPattern(nameState1, pattern1), new NameStateWithPattern(nameState1, pattern1));
+        assertNotEquals(new NameStateWithPattern(nameState1, pattern1), new NameStateWithPattern(nameState2, pattern1));
+        assertNotEquals(new NameStateWithPattern(nameState1, pattern1), new NameStateWithPattern(nameState1, pattern2));
     }
 
     @Test

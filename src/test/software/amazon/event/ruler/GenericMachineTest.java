@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -119,7 +118,7 @@ public class GenericMachineTest {
         return new String(Files.readAllBytes(path));
     }
 
-    public static JsonNode readAsTree(String jsonName) throws Exception, IOException {
+    public static JsonNode readAsTree(String jsonName) throws Exception {
         return  new ObjectMapper().readTree(readData(jsonName));
     }
 
@@ -204,10 +203,10 @@ public class GenericMachineTest {
     // create a customized class as T
     // TODO: Figure out what these unused fields are for and either finish what was started here, or discard it
     public static final class SimpleFilter {
-        private String filterId;
-        private String filterExpression;
-        private List<String> downChannels;
-        private long lastUpdatedMs;
+        private final String filterId;
+        private final String filterExpression;
+        private final List<String> downChannels;
+        private final long lastUpdatedMs;
 
         SimpleFilter(String clientId, String filterId, String filterExpression,
                             List<String> downChannels, long lastUpdatedMs) {

@@ -3,12 +3,13 @@ package software.amazon.event.ruler;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -241,7 +242,7 @@ public class CIDRTest {
             tryAddingAsRule(m, c);
             assertEquals(wanted[i], c.toString());
         }
-        assertTrue(!m.isEmpty());
+        assertFalse(m.isEmpty());
         for (int i = addresses.length - 1; i >= 0; i--) {
             String addr = addresses[i];
             Range c = CIDR.ipToRangeIfPossible(addr);
@@ -256,7 +257,7 @@ public class CIDRTest {
         String invalidIpRule = "{ \"a\": [ \"08:23\" ] }";
         Machine machine = new Machine();
         machine.addRule("r1", invalidIpRule);
-        assertEquals(Arrays.asList("r1"), machine.rulesForJSONEvent("{ \"a\": [ \"08:23\" ] }"));
+        assertEquals(Collections.singletonList("r1"), machine.rulesForJSONEvent("{ \"a\": [ \"08:23\" ] }"));
     }
 
     private void tryAddingAsRule(Machine m, Range r) {

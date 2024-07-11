@@ -16,8 +16,7 @@ import static org.junit.Assert.fail;
 
 public class EventTest {
 
-    private
-    String[] catchAllRules = {
+    private final String[] catchAllRules = {
             "{\n" +
                     "  \"Image\": {\n" +
                     "    \"Width\": [ 200 ],\n" +
@@ -34,7 +33,7 @@ public class EventTest {
                     "}"
     };
 
-    private String[] jsonFromRFC = {
+    private final String[] jsonFromRFC = {
             " {\n" +
                     "        \"Image\": {\n" +
                     "            \"Width\":  800,\n" +

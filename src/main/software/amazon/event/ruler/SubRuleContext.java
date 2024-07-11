@@ -44,8 +44,8 @@ public class SubRuleContext {
 
         private double nextId = -Double.MAX_VALUE;
 
-        private Map<Object, Set<Double>> nameToIds = new ConcurrentHashMap<>();
-        private Map<Double, Object> idToName = new ConcurrentHashMap<>();
+        private final Map<Object, Set<Double>> nameToIds = new ConcurrentHashMap<>();
+        private final Map<Double, Object> idToName = new ConcurrentHashMap<>();
 
         public SubRuleContext generate(Object ruleName) {
             assert nextId < Double.MAX_VALUE : "SubRuleContext.Generator's nextId reached Double.MAX_VALUE - " +

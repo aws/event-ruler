@@ -10,6 +10,7 @@ import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -273,7 +274,7 @@ public class RuleCompilerTest {
                 "}}";
 
         Map<List<String>, List<Patterns>> expected = new HashMap<>();
-        expected.put(Arrays.asList("a1"), Arrays.asList(
+        expected.put(Collections.singletonList("a1"), Arrays.asList(
                 Patterns.numericEquals("123"),
                 Patterns.exactMatch("123"),
                 Patterns.exactMatch("\"child\""),
