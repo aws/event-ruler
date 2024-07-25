@@ -2,6 +2,8 @@ package software.amazon.event.ruler;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -150,6 +152,10 @@ public class Patterns implements Cloneable  {
 
     public static ValuePatterns wildcardMatch(final String value) {
         return new ValuePatterns(MatchType.WILDCARD, value);
+    }
+
+    public static Patterns andMatch(final List<Map<String, List<Patterns>>> values) {
+        return new AndPattern(MatchType.AND, values);
     }
 
     @Override

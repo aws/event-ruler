@@ -156,6 +156,14 @@ public class JsonRuleCompiler {
                 continue;
             }
 
+            // If it is "$and" primitive, we should bypass that primitive itself in the path as it is not
+            // a real field name, it is just used to describe the "$and" relationship among object in the followed array.
+            if (stepName.equals(Constants.AND_RELATIONSHIP_KEYWORD)) {
+                parseIntoAndRelationship(rules, path, parser, withQuotes);
+                // all Objects in $and array have been handled in above function, just bypass below logic.
+                continue;
+            }
+
             switch (parser.nextToken()) {
             case START_OBJECT:
                 path.push(stepName);
@@ -195,7 +203,14 @@ public class JsonRuleCompiler {
                 continue;
             }
 
-            if (Constants.RESERVED_FIELD_NAMES_IN_OR_RELATIONSHIP.contains(stepName)) {
+            // If it is "$and" primitive, we should bypass the "$and" primitive itself in the path as it is not
+            // a real step name, it is just used to describe the "$and" relationship among object in the followed Array.
+            if (stepName.equals(Constants.AND_RELATIONSHIP_KEYWORD)) {
+                parseIntoAndRelationship(rules, path, parser, withQuotes);
+                continue;
+            }
+
+            if (Constants.RESERVED_FIELD_NAMES_IN_OR_AND_RELATIONSHIP.contains(stepName)) {
                 barf(parser, stepName +
                         " is Ruler reserved fieldName which cannot be used inside "
                         + Constants.OR_RELATIONSHIP_KEYWORD + ".");
@@ -274,6 +289,115 @@ public class JsonRuleCompiler {
         }
         if (loopCnt < 2) {
             barf(parser, "There must have at least 2 Objects in " + Constants.OR_RELATIONSHIP_KEYWORD + " relationship.");
+        }
+    }
+
+    // FIXME docs
+    private static void parseObjectInsideAndRelationship(final List<Map<String, List<Patterns>>> rules,
+                                                        final Path path,
+                                                        final JsonParser parser,
+                                                        final boolean withQuotes) throws IOException {
+
+        boolean fieldsPresent = false;
+        while (parser.nextToken() != JsonToken.END_OBJECT) {
+            fieldsPresent = true;
+
+            // field name
+            final String stepName = parser.getCurrentName();
+
+            // If it is "$or" primitive, we should bypass the "$or" primitive itself in the path as it is not
+            // a real step name, it is just used to describe the "$or" relationship among object in the followed Array.
+            if (stepName.equals(Constants.OR_RELATIONSHIP_KEYWORD)) {
+                parseIntoOrRelationship(rules, path, parser, withQuotes);
+                continue;
+            }
+
+            // If it is "$and" primitive, we should bypass the "$and" primitive itself in the path as it is not
+            // a real step name, it is just used to describe the "$and" relationship among object in the followed Array.
+            if (stepName.equals(Constants.AND_RELATIONSHIP_KEYWORD)) {
+                parseIntoAndRelationship(rules, path, parser, withQuotes);
+                continue;
+            }
+
+            if (Constants.RESERVED_FIELD_NAMES_IN_OR_AND_RELATIONSHIP.contains(stepName)) {
+                barf(parser, stepName +
+                        " is Ruler reserved fieldName which cannot be used inside "
+                        + Constants.AND_RELATIONSHIP_KEYWORD + ".");
+            }
+
+            switch (parser.nextToken()) {
+                case START_OBJECT:
+                    path.push(stepName);
+                    parseObjectInsideOrRelationship(rules, path, parser, withQuotes);
+                    path.pop();
+                    break;
+
+                case START_ARRAY:
+                    writeRules(rules, path.extendedName(stepName), parser, withQuotes);
+                    break;
+
+                default:
+                    barf(parser, String.format("\"%s\" must be an object or an array", stepName));
+            }
+        }
+        if (!fieldsPresent) {
+            barf(parser, "Empty objects are not allowed");
+        }
+    }
+
+    /** FIXME doc
+     * This function is to parse the "$or" relationship described as an array, each object in the array will be
+     * interpreted as "$or" relationship, for example:
+     * {
+     *     "detail": {
+     *         "$or" : [
+     *             {"c-count": [ { "numeric": [ ">", 0, "<=", 5 ] } ]},
+     *             {"d-count": [ { "numeric": [ "<", 10 ] } ]},
+     *             {"x-limit": [ { "numeric": [ "=", 3.018e2 ] } ]}
+     *         ]
+     *     }
+     * }
+     * above rule will be interpreted as or effect: ("detail.c-count" || "detail.d-count" || detail.x-limit"),
+     * The result will be described as the list of Map, each Map represents a sub rule composed of fields of patterns in
+     * that or condition path, for example:
+     * [
+     *   {detail.c-count=[38D7EA4C68000/38D7EA512CB40:true/false]},
+     *   {detail.d-count=[0000000000000/38D7EA55F1680:false/true]},
+     *   {detail.x-limit=[VP:38D7EB6C39A40]}
+     * ]
+     * This List will be added into Ruler with the same rule name to demonstrate the "or" effects inside Ruler state
+     * machine.
+     */
+    private static void parseIntoAndRelationship(final List<Map<String, List<Patterns>>> rules,
+                                                final Path path,
+                                                final JsonParser parser,
+                                                final boolean withQuotes) throws IOException {
+
+        final List<Map<String, List<Patterns>>> currentRules = deepCopyRules(rules);
+        rules.clear();
+
+        JsonToken token = parser.nextToken();
+        if (token != JsonToken.START_ARRAY) {
+            barf(parser, "It must be an Array followed with " + Constants.AND_RELATIONSHIP_KEYWORD + ".");
+        }
+
+        int loopCnt = 0;
+        while ((token = parser.nextToken()) != JsonToken.END_ARRAY) {
+            loopCnt++;
+            if (token == JsonToken.START_OBJECT) {
+                final List<Map<String, List<Patterns>>> newRules = deepCopyRules(currentRules);
+                if (newRules.isEmpty()) {
+                    newRules.add(new HashMap<>());
+                }
+                parseObjectInsideAndRelationship(newRules, path, parser, withQuotes);
+                rules.addAll(newRules); // FIXME these probably should be individual rules but one joint one
+            } else {
+                barf(parser,
+                        "Only JSON object is allowed in array of " + Constants.AND_RELATIONSHIP_KEYWORD + " relationship.");
+            }
+        }
+        if (loopCnt < 2) {
+            barf(parser, "There must have at least 2 Objects in " + Constants.AND_RELATIONSHIP_KEYWORD + " relationship.");
         }
     }
 

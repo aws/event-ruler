@@ -22,6 +22,8 @@ final class Constants {
 
   // This is Ruler reserved words to represent the $or relationship among the fields.
   final static String OR_RELATIONSHIP_KEYWORD = "$or";
+  // This is Ruler reserved words to represent the $and relationship among the fields.
+  final static String AND_RELATIONSHIP_KEYWORD = "$and";
 
   final static String EQ = "=";
   final static String LT = "<";
@@ -49,7 +51,7 @@ final class Constants {
   final static byte MAX_NUM_DIGIT = BASE128_DIGITS[BASE128_DIGITS.length - 1];
   final static byte MIN_NUM_DIGIT = BASE128_DIGITS[0];
 
-  final static List<String> RESERVED_FIELD_NAMES_IN_OR_RELATIONSHIP = Arrays.asList(
+  final static List<String> RESERVED_FIELD_NAMES_IN_OR_AND_RELATIONSHIP = Arrays.asList(
       EXACT_MATCH,
       EQUALS_IGNORE_CASE,
       PREFIX_MATCH,

@@ -20,4 +20,5 @@ public enum MatchType {
     ANYTHING_BUT_WILDCARD, // anything that doesn't match the wildcard pattern
     EQUALS_IGNORE_CASE,  // case-insensitive string match
     WILDCARD,             // string match using one or more non-consecutive '*' wildcard characters
+    AND,                    // match one or more conditions
 }
