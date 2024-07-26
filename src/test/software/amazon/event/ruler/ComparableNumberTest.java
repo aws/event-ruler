@@ -29,7 +29,6 @@ public class ComparableNumberTest {
         for (int i = 1; i < data.length; i++) { // -122.415028278886751
             String s0 = ComparableNumber.generate(Double.toString(data[i-1]));
             String s1 = ComparableNumber.generate(Double.toString(data[i]));
-            System.out.println(data[i-1] + " vs " + data[i]);
             assertGreater(s0, s1);
         }
     }

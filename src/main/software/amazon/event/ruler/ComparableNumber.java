@@ -41,12 +41,13 @@ import static software.amazon.event.ruler.Constants.MIN_NUM_DIGIT;
  * This will need to be modified if we ever need to support larger numbers.
  */
 class ComparableNumber {
+    // Use scientific notation to define the double number directly to avoid losing Precision by calculation
+    // for example 5000 * 1000 *1000 will be wrongly parsed as 7.05032704E8 by computer.
+    static final double HALF_TRILLION = 5E11;
+
     static final int MAX_LENGTH_IN_BYTES = 16;
     static final int MAX_DECIMAL_PRECISON = 6;
 
-    // Use scientific notation to define the double number directly to avoid losing Precision by calculation
-    // for example 5000 * 1000 *1000 will be wrongly parsed as 7.05032704E8 by computer.
-    final static double HALF_TRILLION = 5E11;
     public static final BigDecimal TEN_E_SIX = new BigDecimal("1E6"); // to remove decimals
     public static final long HALF_TRILLION_TEN_E_SIX = new BigDecimal(ComparableNumber.HALF_TRILLION).multiply(TEN_E_SIX).longValueExact();
 
