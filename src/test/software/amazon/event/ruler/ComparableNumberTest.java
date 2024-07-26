@@ -1,13 +1,10 @@
 package software.amazon.event.ruler;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -22,12 +19,12 @@ public class ComparableNumberTest {
     @Test
     public void WHEN_WildlyVaryingNumberFormsAreProvided_THEN_TheGeneratedStringsAreSortable() {
         double[] data = {
-                -Constants.HALF_TRILLION, -499_999_999_999.99999, -499_999_999_999.99998, -499_999_999_999.99997,
+                -ComparableNumber.HALF_TRILLION, -499_999_999_999.99999, -499_999_999_999.99998, -499_999_999_999.99997,
                 -5_000_000_000.0, -4_999_999_999.99999, -4_999_999_999.99998, -4_999_999_999.99997,
                 -999999999.99999, -999999999.99, -10000, -122.413496, -0.000002,
                 0, 0.000001, 3.8, 3.9, 11, 12, 122.415028, 2.5e4, 999999999.999998, 999999999.999999,
                 4_999_999_999.99997, 4_999_999_999.99998, 4_999_999_999.99999, 5_000_000_000.0,
-                499_999_999_999.99997, 499_999_999_999.99998, 499_999_999_999.99999, Constants.HALF_TRILLION
+                499_999_999_999.99997, 499_999_999_999.99998, 499_999_999_999.99999, ComparableNumber.HALF_TRILLION
         };
         for (int i = 1; i < data.length; i++) { // -122.415028278886751
             String s0 = ComparableNumber.generate(Double.toString(data[i-1]));
@@ -138,7 +135,7 @@ public class ComparableNumberTest {
         double[] doubles = new double[numberOfDoubles];
 
         for (int i = 0; i < numberOfDoubles; i++) { // Generate large doubles with at most 6 decimals
-            double randomDouble = random.nextDouble() * Constants.HALF_TRILLION;
+            double randomDouble = random.nextDouble() * ComparableNumber.HALF_TRILLION;
             randomDouble = Math.round(randomDouble * 1e6) / 1e6;
             randomDouble = i % 2 == 0 ? randomDouble : randomDouble * -1;
             doubles[i] = randomDouble;

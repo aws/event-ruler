@@ -121,10 +121,10 @@ public class ByteMachineTest {
     @Test
     public void WHEN_NumericRangesAreAdded_THEN_TheyWorkCorrectly() {
         double[] data = {
-                -Constants.HALF_TRILLION, -4_999_999_999.99999, -4_999_999_999.99998, -4_999_999_999.99997,
+                -ComparableNumber.HALF_TRILLION, -4_999_999_999.99999, -4_999_999_999.99998, -4_999_999_999.99997,
                 -999999999.99999, -999999999.99, -10000, -0.000002,
                 0, 0.000001, 3.8, 2.5e4, 999999999.999998, 999999999.999999, 1628955663d, 3206792463d, 4784629263d,
-                4_999_999_999.99997, 4_999_999_999.99998, 4_999_999_999.99999, Constants.HALF_TRILLION
+                4_999_999_999.99997, 4_999_999_999.99998, 4_999_999_999.99999, ComparableNumber.HALF_TRILLION
         };
 
         // Orderly add rule and random delete rules
@@ -604,10 +604,10 @@ public class ByteMachineTest {
 
         // Range pattern
         double[] data = {
-                -Constants.HALF_TRILLION, -4_999_999_999.99999, -4_999_999_999.99998, -4_999_999_999.99997,
+                -ComparableNumber.HALF_TRILLION, -4_999_999_999.99999, -4_999_999_999.99998, -4_999_999_999.99997,
                 -999999999.99999, -999999999.99, -10000, -0.000002,
                 0, 0.000001, 3.8, 2.5e4, 999999999.999998, 999999999.999999,
-                4_999_999_999.99997, 4_999_999_999.99998, 4_999_999_999.99999, Constants.HALF_TRILLION
+                4_999_999_999.99997, 4_999_999_999.99998, 4_999_999_999.99999, ComparableNumber.HALF_TRILLION
         };
 
         ByteMachine cut = new ByteMachine();

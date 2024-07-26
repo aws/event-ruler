@@ -1,7 +1,6 @@
 package software.amazon.event.ruler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.BufferedReader;
@@ -35,7 +34,6 @@ import static org.junit.Assert.assertNull;
  *  There are two slightly varying versions, citylots.json.gz and citylots2.json.gz.  Between the two of them they
  *  total ~400Mbytes, which makes Ruler a little slow to check out from git.
  */
-@Ignore
 public class Benchmarks {
 
     // original citylots

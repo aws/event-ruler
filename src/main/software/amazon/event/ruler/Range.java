@@ -2,8 +2,10 @@ package software.amazon.event.ruler;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.function.Function;
 
 import static software.amazon.event.ruler.Constants.BASE64_DIGITS;
+import static software.amazon.event.ruler.Constants.HEX_DIGITS;
 import static software.amazon.event.ruler.Constants.MAX_HEX_DIGIT;
 import static software.amazon.event.ruler.Constants.MAX_NUM_DIGIT;
 import static software.amazon.event.ruler.Constants.MIN_HEX_DIGIT;
@@ -15,8 +17,8 @@ import static software.amazon.event.ruler.Constants.MIN_NUM_DIGIT;
  *  implementation, the number of digits in the top and bottom of the range is the same.
  */
 public final class Range extends Patterns {
-    private static final byte[] NEGATIVE_HALF_TRILLION_BYTES = doubleToComparableBytes(-Constants.HALF_TRILLION);
-    private static final byte[] POSITIVE_HALF_TRILLION_BYTES = doubleToComparableBytes(Constants.HALF_TRILLION);
+    private static final byte[] NEGATIVE_HALF_TRILLION_BYTES = doubleToComparableBytes(-ComparableNumber.HALF_TRILLION);
+    private static final byte[] POSITIVE_HALF_TRILLION_BYTES = doubleToComparableBytes(ComparableNumber.HALF_TRILLION);
     private static final int HEX_DIGIT_A_DECIMAL_VALUE = 10;
     /**
      * Bottom and top of the range. openBottom true means we're looking for > bottom, false means >=
@@ -124,21 +126,23 @@ public final class Range extends Patterns {
      * @return The digit list, for example [ '4', '5', '6', '7', '8', '9', '9', 'A' ] (with 'B' for longDigitSequence)
      */
     static byte[] digitSequence(byte first, byte last, boolean includeFirst, boolean includeLast, boolean isCIDR) {
-        if(isCIDR) {
-            return digitSequenceForCidr(first, last, includeFirst, includeLast);
-        } else {
-            return digitSequenceForNumbers(first, last, includeFirst, includeLast);
-        }
+        return isCIDR ?
+                digitSequence(first, last, includeFirst, includeLast, HEX_DIGITS, Range::getHexByteIndex) :
+                digitSequence(first, last, includeFirst, includeLast, BASE64_DIGITS, Range::getNumByteIndex);
     }
 
-    private static byte[] digitSequenceForCidr(byte first, byte last, boolean includeFirst, boolean includeLast) {
-        assert first <= last && first <= 'F' && first >= '0' && last <= 'F';
+    private static byte[] digitSequence(byte first, byte last, boolean includeFirst, boolean includeLast,
+                                        byte[] digits, Function<Byte, Integer> byteIndexFunc) {
+        final byte maxPossibleDigit = digits[digits.length - 1];
+        final byte minPossibleDigit = digits[0];
+
+        assert first <= last && first <= maxPossibleDigit && first >= minPossibleDigit && last <= maxPossibleDigit;
         assert !((first == last) && !includeFirst && !includeLast);
 
-        int i = getHexByteIndex(first);
-        int j = getHexByteIndex(last);
+        int i = byteIndexFunc.apply(first);
+        int j = byteIndexFunc.apply(last);
 
-        if ((!includeFirst) && (i < (Constants.HEX_DIGITS.length - 1))) {
+        if ((!includeFirst) && (i < (digits.length - 1))) {
             i++;
         }
 
@@ -148,38 +152,7 @@ public final class Range extends Patterns {
 
         byte[] bytes = new byte[j - i];
 
-        System.arraycopy(Constants.HEX_DIGITS, i, bytes, 0, j - i);
-
-        return bytes;
-    }
-
-    private static int getHexByteIndex(byte value) {
-        // ['0'-'9'] maps to [0-9] indexes
-        if (value >= '0' && value <= '9') {
-            return value - '0';
-        }
-        // ['A'-'F'] maps to [10-15] indexes
-        return (value - 'A') + HEX_DIGIT_A_DECIMAL_VALUE;
-    }
-
-    private static byte[] digitSequenceForNumbers(byte first, byte last, boolean includeFirst, boolean includeLast) {
-        assert first <= last && first <= 'z' && first >= '+' && last <= 'z';
-        assert !((first == last) && !includeFirst && !includeLast);
-
-        int i = getNumByteIndex(first);
-        int j = getNumByteIndex(last);
-
-        if ((!includeFirst) && (i < (BASE64_DIGITS.length - 1))) {
-            i++;
-        }
-
-        if (includeLast) {
-            j++;
-        }
-
-        byte[] bytes = new byte[j - i];
-
-        System.arraycopy(BASE64_DIGITS, i, bytes, 0, j - i);
+        System.arraycopy(digits, i, bytes, 0, j - i);
 
         return bytes;
     }
@@ -203,11 +176,17 @@ public final class Range extends Patterns {
         }
 
         // ['a'-'z'] maps to [38-64] indexes
-        if (value >= 'a' && value <= 'z') {
-            return (value - 'a') + 38;
-        }
+        return (value - 'a') + 38;
+    }
 
-        throw new IllegalArgumentException("No way to map " + value + " to a char within " + BASE64_DIGITS);
+    // quickly find the index of chars within Constants.HEX_DIGITS
+    private static int getHexByteIndex(byte value) {
+        // ['0'-'9'] maps to [0-9] indexes
+        if (value >= '0' && value <= '9') {
+            return value - '0';
+        }
+        // ['A'-'F'] maps to [10-15] indexes
+        return (value - 'A') + HEX_DIGIT_A_DECIMAL_VALUE;
     }
 
     @Override

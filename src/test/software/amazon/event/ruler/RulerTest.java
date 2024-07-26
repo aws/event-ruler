@@ -249,8 +249,8 @@ public class RulerTest {
     @Test
     public void WHEN_CompareIsPassedComparableNumbers_THEN_ItOrdersThemCorrectly() {
         double[] data = {
-                -Constants.HALF_TRILLION, -999999999.99999, -999999999.99, -10000, -0.000002,
-                0, 0.000001, 3.8, 3.9, 11, 12, 2.5e4, 999999999.999998, 999999999.999999, Constants.HALF_TRILLION
+                -ComparableNumber.HALF_TRILLION, -999999999.99999, -999999999.99, -10000, -0.000002,
+                0, 0.000001, 3.8, 3.9, 11, 12, 2.5e4, 999999999.999998, 999999999.999999, ComparableNumber.HALF_TRILLION
         };
         for (double d1 : data) {
             for (double d2 : data) {

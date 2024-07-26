@@ -29,10 +29,6 @@ final class Constants {
   final static String GT = ">";
   final static String GE = ">=";
 
-  // Use scientific notation to define the double number directly to avoid losing Precision by calculation
-  // for example 5000 * 1000 *1000 will be wrongly parsed as 7.05032704E8 by computer.
-  final static double HALF_TRILLION = 5E11;
-
   final static Pattern IPv4_REGEX = Pattern.compile("[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+");
   final static Pattern IPv6_REGEX = Pattern.compile("[0-9a-fA-F:]*:[0-9a-fA-F:]*");
   final static byte[] HEX_DIGITS = {
@@ -43,12 +39,13 @@ final class Constants {
   final static byte MIN_HEX_DIGIT = HEX_DIGITS[0]; // 0
 
   static final byte[] BASE64_DIGITS = {
+          // numbers are ordered intentionally to based on ascii table value
           '+', '/',
           '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
           'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
           'W', 'X', 'Y', 'Z',
           'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
-          'w', 'x', 'y', 'z'
+          'w', 'x', 'y', 'z',
   };
 
   final static byte MAX_NUM_DIGIT = BASE64_DIGITS[BASE64_DIGITS.length - 1]; // z
