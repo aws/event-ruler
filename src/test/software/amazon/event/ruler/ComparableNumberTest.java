@@ -22,10 +22,12 @@ public class ComparableNumberTest {
     @Test
     public void WHEN_WildlyVaryingNumberFormsAreProvided_THEN_TheGeneratedStringsAreSortable() {
         double[] data = {
-                -Constants.FIVE_BILLION, -4_999_999_999.99999, -4_999_999_999.99998, -4_999_999_999.99997,
+                -Constants.HALF_TRILLION, -499_999_999_999.99999, -499_999_999_999.99998, -499_999_999_999.99997,
+                -5_000_000_000.0, -4_999_999_999.99999, -4_999_999_999.99998, -4_999_999_999.99997,
                 -999999999.99999, -999999999.99, -10000, -122.413496, -0.000002,
                 0, 0.000001, 3.8, 3.9, 11, 12, 122.415028, 2.5e4, 999999999.999998, 999999999.999999,
-                4_999_999_999.99997, 4_999_999_999.99998, 4_999_999_999.99999, Constants.FIVE_BILLION
+                4_999_999_999.99997, 4_999_999_999.99998, 4_999_999_999.99999, 5_000_000_000.0,
+                499_999_999_999.99997, 499_999_999_999.99998, 499_999_999_999.99999, Constants.HALF_TRILLION
         };
         for (int i = 1; i < data.length; i++) { // -122.415028278886751
             String s0 = ComparableNumber.generate(Double.toString(data[i-1]));
@@ -94,32 +96,31 @@ public class ComparableNumberTest {
     @Test
     public void WHEN_NumbersWithDifferentFormat_THEN_allCanBeParsed() {
         Map<String, String> testCases = new HashMap<>();
-        testCases.put("01", "++rUhfCbQo7+");
-        testCases.put("-0777", "++rUhfBt2yj+");
-        testCases.put("-12345600", "++rUerYsGQ++");
-        testCases.put("010", "++rUhfCbz7O+");
-        testCases.put("011", "++rUhfCc0xX+");
-        testCases.put("0000123456", "++rUhh/ZwF++");
-        testCases.put("-123.456", "++rUhfCU01M+");
-        testCases.put("123.456", "++rUhfCijwc+");
-        testCases.put("0123", "++rUhfCiiBH+");
-        testCases.put("123456", "++rUhh/ZwF++");
-        testCases.put("-011", "++rUhfCaj0R+");
-        testCases.put("-010", "++rUhfCamqa+");
-        testCases.put("1e2", "++rUhfChKS2+");
-        testCases.put("-0", "++rUhfCbN+++");
-        testCases.put("-.123456", "++rUhfCbMVr+");
-        testCases.put("12345600", "++rUkSsKTY++");
-        testCases.put("-01", "++rUhfCbJ9r+");
-        testCases.put("1e-2", "++rUhfCbN0QE");
-        testCases.put("0", "++rUhfCbN+++");
-        testCases.put("-0.0", "++rUhfCbN+++");
-        testCases.put("0777", "++rUhfDJh/F+");
-        testCases.put("0.0", "++rUhfCbN+++");
-        testCases.put("-0000123456", "++rUhdPcpj++");
-        testCases.put("-123456", "++rUhdPcpj++");
-        testCases.put("-0123", "++rUhfCU1mh+");
-
+        testCases.put("01", "++PkKpbHkI7+");
+        testCases.put("-0777", "++PkKpaZMSj+");
+        testCases.put("-12345600", "++PkI/xYZw++");
+        testCases.put("010", "++PkKpbIGdO+");
+        testCases.put("011", "++PkKpbIKRX+");
+        testCases.put("0000123456", "++PkKrOGDl++");
+        testCases.put("-123.456", "++PkKpbAJXM+");
+        testCases.put("123.456", "++PkKpbP1Qc+");
+        testCases.put("0123", "++PkKpbP/hH+");
+        testCases.put("123456", "++PkKrOGDl++");
+        testCases.put("-011", "++PkKpbH0WR+");
+        testCases.put("-010", "++PkKpbH4Ka+");
+        testCases.put("1e2", "++PkKpbNdy2+");
+        testCases.put("-0", "++PkKpbHgU++");
+        testCases.put("-.123456", "++PkKpbHg/r+");
+        testCases.put("12345600", "++PkNdF0n2++");
+        testCases.put("-01", "++PkKpbHcfr+");
+        testCases.put("1e-2", "++PkKpbHgWQE");
+        testCases.put("0", "++PkKpbHgU++");
+        testCases.put("-0.0", "++PkKpbHgU++");
+        testCases.put("0777", "++PkKpc0+VF+");
+        testCases.put("0.0", "++PkKpbHgU++");
+        testCases.put("-0000123456", "++PkKnoJ7D++");
+        testCases.put("-123456", "++PkKnoJ7D++");
+        testCases.put("-0123", "++PkKpbALGh+");
 
         for (Entry<String, String> entry: testCases.entrySet()) {
             String input = entry.getKey();
@@ -137,7 +138,7 @@ public class ComparableNumberTest {
         double[] doubles = new double[numberOfDoubles];
 
         for (int i = 0; i < numberOfDoubles; i++) { // Generate large doubles with at most 6 decimals
-            double randomDouble = random.nextDouble() * Constants.FIVE_BILLION;
+            double randomDouble = random.nextDouble() * Constants.HALF_TRILLION;
             randomDouble = Math.round(randomDouble * 1e6) / 1e6;
             randomDouble = i % 2 == 0 ? randomDouble : randomDouble * -1;
             doubles[i] = randomDouble;

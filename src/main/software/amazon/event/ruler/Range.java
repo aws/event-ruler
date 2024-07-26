@@ -15,8 +15,8 @@ import static software.amazon.event.ruler.Constants.MIN_NUM_DIGIT;
  *  implementation, the number of digits in the top and bottom of the range is the same.
  */
 public final class Range extends Patterns {
-    private static final byte[] NEGATIVE_FIVE_BILLION_BYTES = doubleToComparableBytes(-Constants.FIVE_BILLION);
-    private static final byte[] POSITIVE_FIVE_BILLION_BYTES = doubleToComparableBytes(Constants.FIVE_BILLION);
+    private static final byte[] NEGATIVE_HALF_TRILLION_BYTES = doubleToComparableBytes(-Constants.HALF_TRILLION);
+    private static final byte[] POSITIVE_HALF_TRILLION_BYTES = doubleToComparableBytes(Constants.HALF_TRILLION);
     private static final int HEX_DIGIT_A_DECIMAL_VALUE = 10;
     /**
      * Bottom and top of the range. openBottom true means we're looking for > bottom, false means >=
@@ -49,22 +49,22 @@ public final class Range extends Patterns {
 
     public static Range lessThan(final String val) {
         byte[] byteVal = stringToComparableBytes(val);
-        return between(NEGATIVE_FIVE_BILLION_BYTES, false, byteVal, true);
+        return between(NEGATIVE_HALF_TRILLION_BYTES, false, byteVal, true);
     }
 
     public static Range lessThanOrEqualTo(final String val) {
         byte[] byteVal = stringToComparableBytes(val);
-        return between(NEGATIVE_FIVE_BILLION_BYTES, false, byteVal, false);
+        return between(NEGATIVE_HALF_TRILLION_BYTES, false, byteVal, false);
     }
 
     public static Range greaterThan(final String val) {
         byte[] byteVal = stringToComparableBytes(val);
-        return between(byteVal, true, POSITIVE_FIVE_BILLION_BYTES, false);
+        return between(byteVal, true, POSITIVE_HALF_TRILLION_BYTES, false);
     }
 
     public static Range greaterThanOrEqualTo(final String val) {
         byte[] byteVal = stringToComparableBytes(val);
-        return between(byteVal, false, POSITIVE_FIVE_BILLION_BYTES, false);
+        return between(byteVal, false, POSITIVE_HALF_TRILLION_BYTES, false);
     }
 
     public static Range between(final String bottom, final boolean openBottom, final String top, final boolean openTop) {

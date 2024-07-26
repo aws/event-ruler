@@ -35,7 +35,7 @@ import static org.junit.Assert.assertNull;
  *  There are two slightly varying versions, citylots.json.gz and citylots2.json.gz.  Between the two of them they
  *  total ~400Mbytes, which makes Ruler a little slow to check out from git.
  */
-//@Ignore
+@Ignore
 public class Benchmarks {
 
     // original citylots

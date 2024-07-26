@@ -2334,13 +2334,13 @@ public class MachineTest {
 
         Machine machine = new Machine();
         machine.addRule("r1", rule1);
-        assertEquals(66, machine.approximateObjectCount(10000));
+        assertEquals(67, machine.approximateObjectCount(10000));
 
         // Adding the same rule multiple times should not increase object count
         for (int i = 0; i < 100; i++) {
             machine.addRule("r1", rule1);
         }
-        assertEquals(66, machine.approximateObjectCount(10000));
+        assertEquals(67, machine.approximateObjectCount(10000));
     }
 
     @Test
@@ -2350,11 +2350,11 @@ public class MachineTest {
 
         Machine machine = new Machine();
         machine.addRule("r1", rule1a);
-        assertEquals(66, machine.approximateObjectCount(10000));
+        assertEquals(67, machine.approximateObjectCount(10000));
 
         // Adding rule with terminal key having subset of values will be treated as same rule and thus increase size
         machine.addRule("r1", rule1b);
-        assertEquals(66, machine.approximateObjectCount(10000));
+        assertEquals(67, machine.approximateObjectCount(10000));
     }
 
     @Test
@@ -2364,11 +2364,11 @@ public class MachineTest {
 
         Machine machine = new Machine();
         machine.addRule("r1", rule1a);
-        assertEquals(66, machine.approximateObjectCount(10000));
+        assertEquals(67, machine.approximateObjectCount(10000));
 
         // Adding rule with non-terminal key having subset of values will be treated as same rule and not affect count
         machine.addRule("r1", rule1b);
-        assertEquals(66, machine.approximateObjectCount(10000));
+        assertEquals(67, machine.approximateObjectCount(10000));
     }
 
     @Test
@@ -2378,11 +2378,11 @@ public class MachineTest {
 
         Machine machine = new Machine();
         machine.addRule("r1", rule1a);
-        assertEquals(66, machine.approximateObjectCount(10000));
+        assertEquals(67, machine.approximateObjectCount(10000));
 
         // Adding rule with terminal key having superset of values will be treated as new rule and increase count
         machine.addRule("r1", rule1b);
-        assertEquals(71, machine.approximateObjectCount(10000));
+        assertEquals(72, machine.approximateObjectCount(10000));
     }
 
     @Test
@@ -2392,11 +2392,11 @@ public class MachineTest {
 
         Machine machine = new Machine();
         machine.addRule("r1", rule1a);
-        assertEquals(66, machine.approximateObjectCount(10000));
+        assertEquals(67, machine.approximateObjectCount(10000));
 
         // Adding rule with non-terminal key having superset of values will be treated as new rule and increase count
         machine.addRule("r1", rule1b);
-        assertEquals(71, machine.approximateObjectCount(10000));
+        assertEquals(73, machine.approximateObjectCount(10000));
     }
 
     @Test
@@ -2428,7 +2428,7 @@ public class MachineTest {
                         "    \"c\": [{ \"numeric\": [\">\", 50] }]\n" +
                         "}");
 
-        assertEquals(1402, machine.approximateObjectCount(10000));
+        assertEquals(1464, machine.approximateObjectCount(10000));
     }
 
     @Test

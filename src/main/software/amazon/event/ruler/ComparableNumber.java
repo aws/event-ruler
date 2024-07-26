@@ -46,7 +46,7 @@ class ComparableNumber {
     static final int MAX_DECIMAL_PRECISON = 6;
 
     public static final BigDecimal TEN_E_SIX = new BigDecimal("1E6");
-    public static final long FIVE_BILLION_TEN_E_SIX = new BigDecimal(Constants.FIVE_BILLION).multiply(TEN_E_SIX).longValueExact();
+    public static final long HALF_TRILLION_TEN_E_SIX = new BigDecimal(Constants.HALF_TRILLION).multiply(TEN_E_SIX).longValueExact();
 
     private ComparableNumber() {
     }
@@ -70,12 +70,13 @@ class ComparableNumber {
         final long shiftedBySixDecimals = number.multiply(TEN_E_SIX).longValueExact();
 
         // faster than doing bigDecimal comparisons
-        if (shiftedBySixDecimals < -FIVE_BILLION_TEN_E_SIX || shiftedBySixDecimals > FIVE_BILLION_TEN_E_SIX) {
-            throw new IllegalArgumentException("Value must be between " + -Constants.FIVE_BILLION +
-                    " and " + Constants.FIVE_BILLION + ", inclusive");
+        if (shiftedBySixDecimals < -HALF_TRILLION_TEN_E_SIX || shiftedBySixDecimals > HALF_TRILLION_TEN_E_SIX) {
+            throw new IllegalArgumentException("Value must be between " + -Constants.HALF_TRILLION +
+                    " and " + Constants.HALF_TRILLION + ", inclusive");
         }
 
-        final long value = shiftedBySixDecimals + FIVE_BILLION_TEN_E_SIX;
+        final long value = shiftedBySixDecimals + HALF_TRILLION_TEN_E_SIX;
+
         return longToBase64Bytes(value);
     }
 
