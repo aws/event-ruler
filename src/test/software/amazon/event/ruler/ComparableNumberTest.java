@@ -4,6 +4,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -14,22 +15,9 @@ import java.util.Random;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static software.amazon.event.ruler.Constants.BASE64_DIGITS;
 
 public class ComparableNumberTest {
-
-    @Test
-    public void WHEN_BytesAreProvided_THEN_HexCharsAreReturned() {
-
-        for (int input = 0; input < 256; input++) {
-
-            char[] result = ComparableNumber.byteToHexChars((byte) input);
-
-            char[] expectedResult = String.format("%02x", input).toUpperCase(Locale.ROOT).toCharArray();
-
-            Assert.assertArrayEquals("byte to hex should match", expectedResult, result);
-
-        }
-    }
 
     @Test
     public void WHEN_WildlyVaryingNumberFormsAreProvided_THEN_TheGeneratedStringsAreSortable() {
@@ -42,6 +30,7 @@ public class ComparableNumberTest {
         for (int i = 1; i < data.length; i++) { // -122.415028278886751
             String s0 = ComparableNumber.generate(Double.toString(data[i-1]));
             String s1 = ComparableNumber.generate(Double.toString(data[i]));
+            System.out.println(data[i-1] + " vs " + data[i]);
             assertGreater(s0, s1);
         }
     }
@@ -105,33 +94,32 @@ public class ComparableNumberTest {
     @Test
     public void WHEN_NumbersWithDifferentFormat_THEN_allCanBeParsed() {
         Map<String, String> testCases = new HashMap<>();
-        // integers
-        testCases.put("-0", "11C37937E08000");
-        testCases.put("01", "11C37937EFC240");
-        testCases.put("-0777", "11C37909906BC0");
-        testCases.put("-12345600", "11B83EC8C64000");
-        testCases.put("010", "11C37938791680");
-        testCases.put("-010", "11C3793747E980");
-        testCases.put("12345600", "11CEB3A6FAC000");
-        testCases.put("011", "11C379388858C0");
-        testCases.put("-011", "11C3793738A740");
-        testCases.put("0123", "11C3793F3554C0");
-        testCases.put("-01", "11C37937D13DC0");
-        testCases.put("0", "11C37937E08000");
-        testCases.put("0000123456", "11C395F66D9000");
-        testCases.put("-0000123456", "11C35C79537000");
-        testCases.put("123456", "11C395F66D9000");
-        testCases.put("-123456", "11C35C79537000");
-        testCases.put("-0123", "11C379308BAB40");
-        testCases.put("0777", "11C37966309440");
-        // floats
-        testCases.put("0.0", "11C37937E08000");
-        testCases.put("-123.456", "11C3793084B600");
-        testCases.put("123.456", "11C3793F3C4A00");
-        testCases.put("1e2", "11C3793DD66100");
-        testCases.put("-.123456", "11C37937DE9DC0");
-        testCases.put("1e-2", "11C37937E0A710");
-        testCases.put("-0.0", "11C37937E08000");
+        testCases.put("01", "++rUhfCbQo7+");
+        testCases.put("-0777", "++rUhfBt2yj+");
+        testCases.put("-12345600", "++rUerYsGQ++");
+        testCases.put("010", "++rUhfCbz7O+");
+        testCases.put("011", "++rUhfCc0xX+");
+        testCases.put("0000123456", "++rUhh/ZwF++");
+        testCases.put("-123.456", "++rUhfCU01M+");
+        testCases.put("123.456", "++rUhfCijwc+");
+        testCases.put("0123", "++rUhfCiiBH+");
+        testCases.put("123456", "++rUhh/ZwF++");
+        testCases.put("-011", "++rUhfCaj0R+");
+        testCases.put("-010", "++rUhfCamqa+");
+        testCases.put("1e2", "++rUhfChKS2+");
+        testCases.put("-0", "++rUhfCbN+++");
+        testCases.put("-.123456", "++rUhfCbMVr+");
+        testCases.put("12345600", "++rUkSsKTY++");
+        testCases.put("-01", "++rUhfCbJ9r+");
+        testCases.put("1e-2", "++rUhfCbN0QE");
+        testCases.put("0", "++rUhfCbN+++");
+        testCases.put("-0.0", "++rUhfCbN+++");
+        testCases.put("0777", "++rUhfDJh/F+");
+        testCases.put("0.0", "++rUhfCbN+++");
+        testCases.put("-0000123456", "++rUhdPcpj++");
+        testCases.put("-123456", "++rUhdPcpj++");
+        testCases.put("-0123", "++rUhfCU1mh+");
+
 
         for (Entry<String, String> entry: testCases.entrySet()) {
             String input = entry.getKey();
@@ -312,14 +300,27 @@ public class ComparableNumberTest {
     private static void assertGreater(String less, String big) {
         final char[] smallArr = less.toCharArray();
         final char[] bigArr = big.toCharArray();
+
         for (int j = 0; j < smallArr.length; j++) { // quick check
-            if (smallArr[j] == bigArr[j]) {
+            if (findIndex(smallArr[j]) == findIndex(bigArr[j])) {
                 continue;
             }
-            if (smallArr[j] < bigArr[j]) {
+            if (findIndex(smallArr[j]) < findIndex(bigArr[j])) {
                 break;
             }
+
             fail("failed: " + big + " vs " + less);
         }
     }
+
+    private static int findIndex(char c) {
+        for(int i=0; i<BASE64_DIGITS.length; i++) {
+            if(c == BASE64_DIGITS[i]) {
+                return i;
+            }
+        }
+        fail("failed to find " + c + " in " + BASE64_DIGITS);
+        return -1; // never gets called
+    }
+
 }

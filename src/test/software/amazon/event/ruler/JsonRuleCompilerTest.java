@@ -517,7 +517,7 @@ public class JsonRuleCompilerTest {
                 "[{metricName=[VP:\"CPUUtilization\" (T:EXACT), VP:\"ReadLatency\" (T:EXACT)]}, {namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)]}]",
                 "[{detail.source=[VP:\"aws.cloudwatch\" (T:EXACT)], metricName=[VP:\"CPUUtilization\" (T:EXACT), VP:\"ReadLatency\" (T:EXACT)]}, {namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)], detail.source=[VP:\"aws.cloudwatch\" (T:EXACT)]}, {detail.detail-type=[VP:\"CloudWatch Alarm State Change\" (T:EXACT)], metricName=[VP:\"CPUUtilization\" (T:EXACT), VP:\"ReadLatency\" (T:EXACT)]}, {namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)], detail.detail-type=[VP:\"CloudWatch Alarm State Change\" (T:EXACT)]}]",
                 "[{source=[VP:\"aws.cloudwatch\" (T:EXACT)], metricName=[VP:\"CPUUtilization\" (T:EXACT), VP:\"ReadLatency\" (T:EXACT)]}, {namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)], metricType=[VP:\"MetricType\" (T:EXACT)], source=[VP:\"aws.cloudwatch\" (T:EXACT)]}, {source=[VP:\"aws.cloudwatch\" (T:EXACT)], scope=[VP:\"Service\" (T:EXACT)]}]",
-                "[{source=[VP:\"aws.cloudwatch\" (T:EXACT)], metricName=[VP:\"CPUUtilization\" (T:EXACT), VP:\"ReadLatency\" (T:EXACT)]}, {namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)], metricType=[VP:\"MetricType\" (T:EXACT)], source=[VP:\"aws.cloudwatch\" (T:EXACT)], metricId=[VP:11C379816DD880 (T:NUMERIC_EQ), VP:1234 (T:EXACT)]}, {namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)], metricType=[VP:\"MetricType\" (T:EXACT)], spaceId=[VP:11C379737B4A00 (T:NUMERIC_EQ), VP:1000 (T:EXACT)], source=[VP:\"aws.cloudwatch\" (T:EXACT)]}, {source=[VP:\"aws.cloudwatch\" (T:EXACT)], scope=[VP:\"Service\" (T:EXACT)]}]",
+                "[{source=[VP:\"aws.cloudwatch\" (T:EXACT)], metricName=[VP:\"CPUUtilization\" (T:EXACT), VP:\"ReadLatency\" (T:EXACT)]}, {namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)], metricType=[VP:\"MetricType\" (T:EXACT)], source=[VP:\"aws.cloudwatch\" (T:EXACT)], metricId=[VP:++rUhfDkwJW+ (T:NUMERIC_EQ), VP:1234 (T:EXACT)]}, {namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)], metricType=[VP:\"MetricType\" (T:EXACT)], spaceId=[VP:++rUhfDWzgc+ (T:NUMERIC_EQ), VP:1000 (T:EXACT)], source=[VP:\"aws.cloudwatch\" (T:EXACT)]}, {source=[VP:\"aws.cloudwatch\" (T:EXACT)], scope=[VP:\"Service\" (T:EXACT)]}]",
                 "[{detail.state.value=[VP:\"ALARM\" (T:EXACT)], source=[VP:\"aws.cloudwatch\" (T:EXACT)], withConfiguration.metrics.metricStat.metric.namespace=[VP:\"AWS/EC2\" (T:EXACT)]}, {detail.state.value=[VP:\"ALARM\" (T:EXACT)], source=[VP:\"aws.cloudwatch\" (T:EXACT)], withoutConfiguration.metric.name=[VP:\"AWS/Default\" (T:EXACT)]}]"
         };
         int i = 0;
@@ -573,10 +573,10 @@ public class JsonRuleCompilerTest {
         assertTrue(machine.isEmpty());
 
         final String[] expectedCompiledRules = {
-                "{$or=[0A000000/0A0000FF:false/false (T:NUMERIC_RANGE)]}",
+                "{$or=[0A000000/0A0000FF:false/false:true (T:NUMERIC_RANGE)]}",
                 "{$or.namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)], source=[VP:\"aws.cloudwatch\" (T:EXACT)], $or.metricType=[VP:\"MetricType\" (T:EXACT)]}",
-                "{detail.$or=[11C37937E08000/11C379382CCB40:true/false (T:NUMERIC_RANGE), 0A000000/0AFFFFFF:false/false (T:NUMERIC_RANGE)], time=[VP:\"2017-10-02 (T:PREFIX)]}",
-                "{detail.$or=[11C37937E08000/11C379382CCB40:true/false (T:NUMERIC_RANGE), 11C37938791680/2386F26FC10000:true/false (T:NUMERIC_RANGE)]}"
+                "{detail.$or=[++rUhfCbN+++/++rUhfCbg2h+:true/false:false (T:NUMERIC_RANGE), 0A000000/0AFFFFFF:false/false:true (T:NUMERIC_RANGE)], time=[VP:\"2017-10-02 (T:PREFIX)]}",
+                "{detail.$or=[++rUhfCbN+++/++rUhfCbg2h+:true/false:false (T:NUMERIC_RANGE), ++rUhfCbz7O+/+/j/PKRCm+++:true/false:false (T:NUMERIC_RANGE)]}"
         };
 
         int i = 0;

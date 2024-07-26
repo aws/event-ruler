@@ -3,8 +3,8 @@ package software.amazon.event.ruler;
 import com.fasterxml.jackson.core.io.doubleparser.JavaBigDecimalParser;
 
 import java.math.BigDecimal;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
+
+import static software.amazon.event.ruler.Constants.BASE64_DIGITS;
 
 /**
  * Represents a number as a comparable string.
@@ -46,12 +46,7 @@ class ComparableNumber {
     static final int MAX_DECIMAL_PRECISON = 6;
 
     public static final BigDecimal TEN_E_SIX = new BigDecimal("1E6");
-    public static final long FIV_BILL_TEN_E_SIX = new BigDecimal(Constants.FIVE_BILLION).multiply(TEN_E_SIX).longValueExact();
-
-    private static final String HEXES = new String(Constants.HEX_DIGITS, StandardCharsets.US_ASCII);
-    public static final int NIBBLE_SIZE = 4;
-    private static final int UPPER_NIBBLE_MASK = 0xF0; // 1111 0000
-    private static final int LOWER_NIBBLE_MASK = 0x0F; // 0000 1111
+    public static final long FIVE_BILLION_TEN_E_SIX = new BigDecimal(Constants.FIVE_BILLION).multiply(TEN_E_SIX).longValueExact();
 
     private ComparableNumber() {
     }
@@ -75,49 +70,34 @@ class ComparableNumber {
         final long shiftedBySixDecimals = number.multiply(TEN_E_SIX).longValueExact();
 
         // faster than doing bigDecimal comparisons
-        if (shiftedBySixDecimals < -FIV_BILL_TEN_E_SIX || shiftedBySixDecimals > FIV_BILL_TEN_E_SIX) {
+        if (shiftedBySixDecimals < -FIVE_BILLION_TEN_E_SIX || shiftedBySixDecimals > FIVE_BILLION_TEN_E_SIX) {
             throw new IllegalArgumentException("Value must be between " + -Constants.FIVE_BILLION +
                     " and " + Constants.FIVE_BILLION + ", inclusive");
         }
 
-        return toHexStringSkippingFirstByte(shiftedBySixDecimals + FIV_BILL_TEN_E_SIX);
+        final long value = shiftedBySixDecimals + FIVE_BILLION_TEN_E_SIX;
+        return longToBase64Bytes(value);
     }
 
-    /**
-     * converts a single byte to its two hexadecimal character representation
-     * @param value the byte we want to convert to hex string
-     * @return a 2 digit char array with the equivalent hex representation
-     */
-    static char[] byteToHexChars(byte value) {
-
-        char[] result = new char[2];
-
-        int upperNibbleIndex = (value & UPPER_NIBBLE_MASK) >> NIBBLE_SIZE;
-        int lowerNibbleIndex = value & LOWER_NIBBLE_MASK;
-
-        result[0] = HEXES.charAt(upperNibbleIndex);
-        result[1] = HEXES.charAt(lowerNibbleIndex);
-
-        return result;
-
-    }
-
-    private static byte[] longToByteBuffer(long value) {
-        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-        buffer.putLong(value);
-        return buffer.array();
-    }
-
-    static String toHexStringSkippingFirstByte(long value) {
-        byte[] raw = longToByteBuffer(value);
-        char[] outputChars = new char[14];
-        for (int i = 1; i < raw.length; i++) {
-            int pos = (i - 1) * 2;
-            char[] currentByteChars = byteToHexChars(raw[i]);
-            outputChars[pos] = currentByteChars[0];
-            outputChars[pos + 1] = currentByteChars[1];
+    public static String longToBase64Bytes(long value) {
+        if (value < 0) {
+            throw new IllegalArgumentException("Input value must be non-negative");
         }
-        return new String(outputChars);
+
+        char[] bytes = new char[12]; // Maximum length of base-64 encoded long is 12 bytes
+        int index = 11;
+
+        while (value > 0) {
+            int digit = (int) (value & 0x3F); // Get the lowest 6 bits
+            bytes[index--] = (char) BASE64_DIGITS[digit];
+            value >>= 6; // Shift the value right by 6 bits
+        }
+
+        while(index >= 0) {
+            bytes[index--] = (char) BASE64_DIGITS[0];
+        }
+
+        return new String(bytes);
     }
 
 }

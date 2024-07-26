@@ -3,6 +3,12 @@ package software.amazon.event.ruler;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+import static software.amazon.event.ruler.Constants.BASE64_DIGITS;
+import static software.amazon.event.ruler.Constants.MAX_HEX_DIGIT;
+import static software.amazon.event.ruler.Constants.MAX_NUM_DIGIT;
+import static software.amazon.event.ruler.Constants.MIN_HEX_DIGIT;
+import static software.amazon.event.ruler.Constants.MIN_NUM_DIGIT;
+
 /**
  * Represents a range of numeric values to match against.
  * "Numeric" means that the character repertoire is "digits"; initially, either 0-9 or 0-9a-f. In the current
@@ -100,6 +106,14 @@ public final class Range extends Patterns {
         }
     }
 
+    public byte maxDigit() {
+        return isCIDR ? MAX_HEX_DIGIT : MAX_NUM_DIGIT;
+    }
+
+    public byte minDigit() {
+        return isCIDR ? MIN_HEX_DIGIT : MIN_NUM_DIGIT;
+    }
+
     /**
      * This is necessitated by the fact that we do range comparisons of numbers, fixed-length strings of digits, and
      *  in the case where the numbers represent IP addresses, they are hex digits.  So we need to be able to say
@@ -109,7 +123,15 @@ public final class Range extends Patterns {
      * @param last Stop one digit lower than this, for example 'B'
      * @return The digit list, for example [ '4', '5', '6', '7', '8', '9', '9', 'A' ] (with 'B' for longDigitSequence)
      */
-    static byte[] digitSequence(byte first, byte last, boolean includeFirst, boolean includeLast) {
+    static byte[] digitSequence(byte first, byte last, boolean includeFirst, boolean includeLast, boolean isCIDR) {
+        if(isCIDR) {
+            return digitSequenceForCidr(first, last, includeFirst, includeLast);
+        } else {
+            return digitSequenceForNumbers(first, last, includeFirst, includeLast);
+        }
+    }
+
+    private static byte[] digitSequenceForCidr(byte first, byte last, boolean includeFirst, boolean includeLast) {
         assert first <= last && first <= 'F' && first >= '0' && last <= 'F';
         assert !((first == last) && !includeFirst && !includeLast);
 
@@ -138,6 +160,54 @@ public final class Range extends Patterns {
         }
         // ['A'-'F'] maps to [10-15] indexes
         return (value - 'A') + HEX_DIGIT_A_DECIMAL_VALUE;
+    }
+
+    private static byte[] digitSequenceForNumbers(byte first, byte last, boolean includeFirst, boolean includeLast) {
+        assert first <= last && first <= 'z' && first >= '+' && last <= 'z';
+        assert !((first == last) && !includeFirst && !includeLast);
+
+        int i = getNumByteIndex(first);
+        int j = getNumByteIndex(last);
+
+        if ((!includeFirst) && (i < (BASE64_DIGITS.length - 1))) {
+            i++;
+        }
+
+        if (includeLast) {
+            j++;
+        }
+
+        byte[] bytes = new byte[j - i];
+
+        System.arraycopy(BASE64_DIGITS, i, bytes, 0, j - i);
+
+        return bytes;
+    }
+
+    // quickly find the index of chars within Constants.BASE64_DIGITS
+    private static int getNumByteIndex(byte value) {
+        if(value == '+') {
+            return 0;
+        }
+        if (value == '/') {
+            return 1;
+        }
+        // ['0'-'9'] maps to [2 - 11] indexes
+        if (value >= '0' && value <= '9') {
+            return value - '0' + 2;
+        }
+
+        // ['A'-'Z'] maps to [12-37] indexes
+        if (value >= 'A' && value <= 'Z') {
+            return (value - 'A') + 12;
+        }
+
+        // ['a'-'z'] maps to [38-64] indexes
+        if (value >= 'a' && value <= 'z') {
+            return (value - 'a') + 38;
+        }
+
+        throw new IllegalArgumentException("No way to map " + value + " to a char within " + BASE64_DIGITS);
     }
 
     @Override
@@ -178,7 +248,7 @@ public final class Range extends Patterns {
 
     public String toString() {
         return (new String(bottom, StandardCharsets.UTF_8)) + '/' + (new String(top, StandardCharsets.UTF_8))
-                       + ':' + openBottom + '/' + openTop + " (" + super.toString() + ")";
+                       + ':' + openBottom + '/' + openTop + ':' + isCIDR +" (" + super.toString() + ")";
     }
 
     private static byte[] doubleToComparableBytes(double d) {

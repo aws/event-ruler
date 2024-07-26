@@ -40,7 +40,7 @@ public class PatternsTest {
                 null,
                 null,
                 "ab",
-                "11C37937F344B0",
+                "++rUhfCbRgGk",
                 "abc",
                 "xyz",
                 "hElLo",
