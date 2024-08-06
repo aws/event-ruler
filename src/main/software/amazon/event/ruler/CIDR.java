@@ -4,7 +4,6 @@ import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 
 import static software.amazon.event.ruler.Constants.HEX_DIGITS;
-import static software.amazon.event.ruler.Constants.MAX_DIGIT;
 
 /**
  * Supports matching on IPv4 and IPv6 CIDR patterns, as compressed into a string range match.
@@ -92,12 +91,12 @@ public class CIDR {
             boolean openTop;
             byte lastByte = top[top.length - 1];
 
-            if (lastByte == MAX_DIGIT) {
+            if (lastByte == Constants.MAX_HEX_DIGIT) {
                 bottom[top.length - 1] = (byte) (lastByte - 1);
                 openBottom = true;
                 openTop = false;
             } else {
-                if (lastByte != HEX_DIGITS[9]) {
+                if (lastByte != HEX_DIGITS[9]) { // 9
                     top[top.length - 1] = (byte) (lastByte + 1);
                 } else {
                     top[top.length - 1] = HEX_DIGITS[10];

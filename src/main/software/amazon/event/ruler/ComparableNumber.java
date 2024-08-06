@@ -3,55 +3,53 @@ package software.amazon.event.ruler;
 import com.fasterxml.jackson.core.io.doubleparser.JavaBigDecimalParser;
 
 import java.math.BigDecimal;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
+
+import static software.amazon.event.ruler.Constants.BASE64_DIGITS;
+import static software.amazon.event.ruler.Constants.MIN_NUM_DIGIT;
 
 /**
  * Represents a number as a comparable string.
  * <br/>
- * Numbers are allowed in the range -5,000,000,000 to +5,000,000,000 (inclusive).
- * Comparisons are precise to 15 decimal places, with six to the right of the decimal.
+ * Numbers are allowed in the range -500,000,000,000 to +500,000,000,000 (inclusive).
+ * Comparisons are precise to 17 decimal places, with six to the right of the decimal.
  * Numbers are treated as floating-point values.
  * <br>
  * Numbers are converted to strings by:
- * 1. Multiplying by 1,000,000 to remove the decimal point and then adding 5,000,000,000 (to remove negatives), then
- * 2. Formatting to a 14-character hexadecimal string left-padded with zeros, because the hexadecimal string
- *     converted from 5,000,000,000 * 1,000,000 = 5,000,000,000,000,000 has 14 characters.
+ * 1. Multiplying by 1,000,000 to remove the decimal point and then adding 500,000,000,000 (to remove negatives), then
+ * 2. Formatting to a 12-character to base64 string with padding, because the base64 string
+ *     converted from 500,000,000,000 * 1,000,000 = 500,000,000,000,000,000 has 12 characters.
  * <br/>
  * Hexadecimal representation is used because:
  * 1. It saves 3 bytes of memory per number compared to decimal representation.
  * 2. It is lexicographically comparable, which is useful for maintaining sorted order of numbers.
  * 2. It aligns with the radix used for IP addresses.
- * If needed, a radix of 32 or 64 can be used to save more memory (e.g., the string length will be 10 for radix 32,
- * and 9 for radix 64).
  * <br/>
  * The number is parsed as a Java {@code BigDecimal} to support decimal fractions. We're avoiding double as
  * there is a well-known issue that double numbers can lose precision when performing calculations involving
  * other data types. The higher the number, the lower the accuracy that can be maintained. For example,
- * {@code 0.30d - 0.10d = 0.19999999999999998} instead of {@code 0.2d}. If extended to {@code 1e10}, the test
+ * {@code 0.30d - 0.10d = 0.19999999999999998} instead of {@code 0.2d}. When extended to {@code 1e10}, the test
  * results show that only 5 decimal places of precision can be guaranteed when using doubles.
  * <br/>
  * CAVEAT:
- * The current range of +/- 5,000,000,000 is selected as a balance between maintaining the committed 6
- * decimal places of precision and memory cost (each number is parsed into a 14-character hexadecimal string).
+ * The current range of +/- 500,000,000,000 is selected as a balance between maintaining the committed 6
+ * decimal places of precision and memory cost (each number is parsed into a 12-character hexadecimal string).
  * When trying to increase the maximum number, PLEASE BE VERY CAREFUL TO PRESERVE THE NUMBER PRECISION AND
  * CONSIDER THE MEMORY COST.
  * <br/>
- * Also, while {@code BigDecimal} can ensure the precision of double
- * calculations, it has been shown to be 2-4 times slower for basic mathematical and comparison operations, so.
- * we turn to long integer arithmetic.
+ * Also, while {@code BigDecimal} can ensure the precision of double calculations, it has been shown to be
+ * 2-4 times slower for basic mathematical and comparison operations, so we turn to long integer arithmetic.
+ * This will need to be modified if we ever need to support larger numbers.
  */
 class ComparableNumber {
+    // Use scientific notation to define the double number directly to avoid losing Precision by calculation
+    // for example 5000 * 1000 *1000 will be wrongly parsed as 7.05032704E8 by computer.
+    static final double HALF_TRILLION = 5E11;
+
     static final int MAX_LENGTH_IN_BYTES = 16;
     static final int MAX_DECIMAL_PRECISON = 6;
 
-    public static final BigDecimal TEN_E_SIX = new BigDecimal("1E6");
-    public static final long FIV_BILL_TEN_E_SIX = new BigDecimal(Constants.FIVE_BILLION).multiply(TEN_E_SIX).longValueExact();
-
-    private static final String HEXES = new String(Constants.HEX_DIGITS, StandardCharsets.US_ASCII);
-    public static final int NIBBLE_SIZE = 4;
-    private static final int UPPER_NIBBLE_MASK = 0xF0; // 1111 0000
-    private static final int LOWER_NIBBLE_MASK = 0x0F; // 0000 1111
+    public static final BigDecimal TEN_E_SIX = new BigDecimal("1E6"); // to remove decimals
+    public static final long HALF_TRILLION_TEN_E_SIX = new BigDecimal(ComparableNumber.HALF_TRILLION).multiply(TEN_E_SIX).longValueExact();
 
     private ComparableNumber() {
     }
@@ -75,49 +73,33 @@ class ComparableNumber {
         final long shiftedBySixDecimals = number.multiply(TEN_E_SIX).longValueExact();
 
         // faster than doing bigDecimal comparisons
-        if (shiftedBySixDecimals < -FIV_BILL_TEN_E_SIX || shiftedBySixDecimals > FIV_BILL_TEN_E_SIX) {
-            throw new IllegalArgumentException("Value must be between " + -Constants.FIVE_BILLION +
-                    " and " + Constants.FIVE_BILLION + ", inclusive");
+        if (shiftedBySixDecimals < -HALF_TRILLION_TEN_E_SIX || shiftedBySixDecimals > HALF_TRILLION_TEN_E_SIX) {
+            throw new IllegalArgumentException("Value must be between " + -ComparableNumber.HALF_TRILLION +
+                    " and " + ComparableNumber.HALF_TRILLION + ", inclusive");
         }
 
-        return toHexStringSkippingFirstByte(shiftedBySixDecimals + FIV_BILL_TEN_E_SIX);
+        return longToBase64Bytes(shiftedBySixDecimals + HALF_TRILLION_TEN_E_SIX);
     }
 
-    /**
-     * converts a single byte to its two hexadecimal character representation
-     * @param value the byte we want to convert to hex string
-     * @return a 2 digit char array with the equivalent hex representation
-     */
-    static char[] byteToHexChars(byte value) {
-
-        char[] result = new char[2];
-
-        int upperNibbleIndex = (value & UPPER_NIBBLE_MASK) >> NIBBLE_SIZE;
-        int lowerNibbleIndex = value & LOWER_NIBBLE_MASK;
-
-        result[0] = HEXES.charAt(upperNibbleIndex);
-        result[1] = HEXES.charAt(lowerNibbleIndex);
-
-        return result;
-
-    }
-
-    private static byte[] longToByteBuffer(long value) {
-        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-        buffer.putLong(value);
-        return buffer.array();
-    }
-
-    static String toHexStringSkippingFirstByte(long value) {
-        byte[] raw = longToByteBuffer(value);
-        char[] outputChars = new char[14];
-        for (int i = 1; i < raw.length; i++) {
-            int pos = (i - 1) * 2;
-            char[] currentByteChars = byteToHexChars(raw[i]);
-            outputChars[pos] = currentByteChars[0];
-            outputChars[pos + 1] = currentByteChars[1];
+    public static String longToBase64Bytes(long value) {
+        if (value < 0) {
+            throw new IllegalArgumentException("Input value must be non-negative");
         }
-        return new String(outputChars);
+
+        char[] bytes = new char[12]; // Maximum length of base-64 encoded long is 12 bytes
+        int index = 11;
+
+        while (value > 0) {
+            int digit = (int) (value & 0x3F); // Get the lowest 6 bits
+            bytes[index--] = (char) BASE64_DIGITS[digit];
+            value >>= 6; // Shift the value right by 6 bits
+        }
+
+        while(index >= 0) { // left padding
+            bytes[index--] = (char) MIN_NUM_DIGIT;
+        }
+
+        return new String(bytes);
     }
 
 }

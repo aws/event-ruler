@@ -2,6 +2,14 @@ package software.amazon.event.ruler;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.function.Function;
+
+import static software.amazon.event.ruler.Constants.BASE64_DIGITS;
+import static software.amazon.event.ruler.Constants.HEX_DIGITS;
+import static software.amazon.event.ruler.Constants.MAX_HEX_DIGIT;
+import static software.amazon.event.ruler.Constants.MAX_NUM_DIGIT;
+import static software.amazon.event.ruler.Constants.MIN_HEX_DIGIT;
+import static software.amazon.event.ruler.Constants.MIN_NUM_DIGIT;
 
 /**
  * Represents a range of numeric values to match against.
@@ -9,8 +17,8 @@ import java.util.Arrays;
  *  implementation, the number of digits in the top and bottom of the range is the same.
  */
 public final class Range extends Patterns {
-    private static final byte[] NEGATIVE_FIVE_BILLION_BYTES = doubleToComparableBytes(-Constants.FIVE_BILLION);
-    private static final byte[] POSITIVE_FIVE_BILLION_BYTES = doubleToComparableBytes(Constants.FIVE_BILLION);
+    private static final byte[] NEGATIVE_HALF_TRILLION_BYTES = doubleToComparableBytes(-ComparableNumber.HALF_TRILLION);
+    private static final byte[] POSITIVE_HALF_TRILLION_BYTES = doubleToComparableBytes(ComparableNumber.HALF_TRILLION);
     private static final int HEX_DIGIT_A_DECIMAL_VALUE = 10;
     /**
      * Bottom and top of the range. openBottom true means we're looking for > bottom, false means >=
@@ -43,22 +51,22 @@ public final class Range extends Patterns {
 
     public static Range lessThan(final String val) {
         byte[] byteVal = stringToComparableBytes(val);
-        return between(NEGATIVE_FIVE_BILLION_BYTES, false, byteVal, true);
+        return between(NEGATIVE_HALF_TRILLION_BYTES, false, byteVal, true);
     }
 
     public static Range lessThanOrEqualTo(final String val) {
         byte[] byteVal = stringToComparableBytes(val);
-        return between(NEGATIVE_FIVE_BILLION_BYTES, false, byteVal, false);
+        return between(NEGATIVE_HALF_TRILLION_BYTES, false, byteVal, false);
     }
 
     public static Range greaterThan(final String val) {
         byte[] byteVal = stringToComparableBytes(val);
-        return between(byteVal, true, POSITIVE_FIVE_BILLION_BYTES, false);
+        return between(byteVal, true, POSITIVE_HALF_TRILLION_BYTES, false);
     }
 
     public static Range greaterThanOrEqualTo(final String val) {
         byte[] byteVal = stringToComparableBytes(val);
-        return between(byteVal, false, POSITIVE_FIVE_BILLION_BYTES, false);
+        return between(byteVal, false, POSITIVE_HALF_TRILLION_BYTES, false);
     }
 
     public static Range between(final String bottom, final boolean openBottom, final String top, final boolean openTop) {
@@ -100,6 +108,14 @@ public final class Range extends Patterns {
         }
     }
 
+    public byte maxDigit() {
+        return isCIDR ? MAX_HEX_DIGIT : MAX_NUM_DIGIT;
+    }
+
+    public byte minDigit() {
+        return isCIDR ? MIN_HEX_DIGIT : MIN_NUM_DIGIT;
+    }
+
     /**
      * This is necessitated by the fact that we do range comparisons of numbers, fixed-length strings of digits, and
      *  in the case where the numbers represent IP addresses, they are hex digits.  So we need to be able to say
@@ -109,14 +125,24 @@ public final class Range extends Patterns {
      * @param last Stop one digit lower than this, for example 'B'
      * @return The digit list, for example [ '4', '5', '6', '7', '8', '9', '9', 'A' ] (with 'B' for longDigitSequence)
      */
-    static byte[] digitSequence(byte first, byte last, boolean includeFirst, boolean includeLast) {
-        assert first <= last && first <= 'F' && first >= '0' && last <= 'F';
+    static byte[] digitSequence(byte first, byte last, boolean includeFirst, boolean includeLast, boolean isCIDR) {
+        return isCIDR ?
+                digitSequence(first, last, includeFirst, includeLast, HEX_DIGITS, Range::getHexByteIndex) :
+                digitSequence(first, last, includeFirst, includeLast, BASE64_DIGITS, Range::getNumByteIndex);
+    }
+
+    private static byte[] digitSequence(byte first, byte last, boolean includeFirst, boolean includeLast,
+                                        byte[] digits, Function<Byte, Integer> byteIndexFunc) {
+        final byte maxPossibleDigit = digits[digits.length - 1];
+        final byte minPossibleDigit = digits[0];
+
+        assert first <= last && first <= maxPossibleDigit && first >= minPossibleDigit && last <= maxPossibleDigit;
         assert !((first == last) && !includeFirst && !includeLast);
 
-        int i = getHexByteIndex(first);
-        int j = getHexByteIndex(last);
+        int i = byteIndexFunc.apply(first);
+        int j = byteIndexFunc.apply(last);
 
-        if ((!includeFirst) && (i < (Constants.HEX_DIGITS.length - 1))) {
+        if ((!includeFirst) && (i < (digits.length - 1))) {
             i++;
         }
 
@@ -126,11 +152,34 @@ public final class Range extends Patterns {
 
         byte[] bytes = new byte[j - i];
 
-        System.arraycopy(Constants.HEX_DIGITS, i, bytes, 0, j - i);
+        System.arraycopy(digits, i, bytes, 0, j - i);
 
         return bytes;
     }
 
+    // quickly find the index of chars within Constants.BASE64_DIGITS
+    private static int getNumByteIndex(byte value) {
+        if(value == '+') {
+            return 0;
+        }
+        if (value == '/') {
+            return 1;
+        }
+        // ['0'-'9'] maps to [2 - 11] indexes
+        if (value >= '0' && value <= '9') {
+            return value - '0' + 2;
+        }
+
+        // ['A'-'Z'] maps to [12-37] indexes
+        if (value >= 'A' && value <= 'Z') {
+            return (value - 'A') + 12;
+        }
+
+        // ['a'-'z'] maps to [38-64] indexes
+        return (value - 'a') + 38;
+    }
+
+    // quickly find the index of chars within Constants.HEX_DIGITS
     private static int getHexByteIndex(byte value) {
         // ['0'-'9'] maps to [0-9] indexes
         if (value >= '0' && value <= '9') {
@@ -178,7 +227,7 @@ public final class Range extends Patterns {
 
     public String toString() {
         return (new String(bottom, StandardCharsets.UTF_8)) + '/' + (new String(top, StandardCharsets.UTF_8))
-                       + ':' + openBottom + '/' + openTop + " (" + super.toString() + ")";
+                       + ':' + openBottom + '/' + openTop + ':' + isCIDR +" (" + super.toString() + ")";
     }
 
     private static byte[] doubleToComparableBytes(double d) {

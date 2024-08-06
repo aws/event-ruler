@@ -325,7 +325,7 @@ class ByteMachine {
 
         // when bottom byte on forkOffset position < top byte in same position, there must be matches existing
         // in this state, go ahead to delete matches in the fork state.
-        for (byte bb : Range.digitSequence(range.bottom[forkOffset], range.top[forkOffset], false, false)) {
+        for (byte bb : Range.digitSequence(range.bottom[forkOffset], range.top[forkOffset], false, false, range.isCIDR)) {
             deleteMatches(getParser().parse(bb), forkState, range);
         }
 
@@ -336,7 +336,7 @@ class ByteMachine {
         // see explanation in addRangePattern(), we need delete state and match accordingly.
         for (int offsetB = forkOffset + 1; offsetB < (range.bottom.length - 1); offsetB++) {
             byte b = range.bottom[offsetB];
-            if (b < Constants.MAX_DIGIT) {
+            if (b < range.maxDigit()) {
                 while (lastMatchOffset < offsetB) {
                     state = findNextByteStateForRangePattern(state, range.bottom[lastMatchOffset]);
                     assert state != null : "state must be existing for this pattern";
@@ -345,7 +345,7 @@ class ByteMachine {
                     lastMatchOffset++;
                 }
                 assert lastMatchOffset == offsetB : "lastMatchOffset == offsetB";
-                for (byte bb : Range.digitSequence(b, Constants.MAX_DIGIT, false, true)) {
+                for (byte bb : Range.digitSequence(b, range.maxDigit(), false, true, range.isCIDR)) {
                     deleteMatches(getParser().parse(bb), state, range);
                 }
             }
@@ -355,7 +355,7 @@ class ByteMachine {
         // see explanation in addRangePattern(), we need to delete states and matches accordingly.
         final byte lastBottom = range.bottom[range.bottom.length - 1];
         final byte lastTop = range.top[range.top.length - 1];
-        if ((lastBottom < Constants.MAX_DIGIT) || !range.openBottom) {
+        if ((lastBottom < range.maxDigit()) || !range.openBottom) {
             while (lastMatchOffset < range.bottom.length - 1) {
                 state = findNextByteStateForRangePattern(state, range.bottom[lastMatchOffset]);
                 assert state != null : "state != null";
@@ -369,7 +369,7 @@ class ByteMachine {
             // unless the last digit is also at the fork position, fill in the extra matches due to
             //  the strictly-less-than condition (see discussion above)
             if (forkOffset < (range.bottom.length - 1)) {
-                for (byte bb : Range.digitSequence(lastBottom, Constants.MAX_DIGIT, false, true)) {
+                for (byte bb : Range.digitSequence(lastBottom, range.maxDigit(), false, true, range.isCIDR)) {
                     deleteMatches(getParser().parse(bb), state, range);
                 }
             }
@@ -381,7 +381,7 @@ class ByteMachine {
         lastMatchOffset = forkOffset;
         for (int offsetT = forkOffset + 1; offsetT < (range.top.length - 1); offsetT++) {
             byte b = range.top[offsetT];
-            if (b > '0') {
+            if (b > range.minDigit()) {
                 while (lastMatchOffset < offsetT) {
                     state = findNextByteStateForRangePattern(state, range.top[lastMatchOffset]);
                     assert state != null : "state must be existing for this pattern";
@@ -390,7 +390,7 @@ class ByteMachine {
                 }
                 assert lastMatchOffset == offsetT : "lastMatchOffset == offsetT";
 
-                for (byte bb : Range.digitSequence((byte) '0', range.top[offsetT], true, false)) {
+                for (byte bb : Range.digitSequence((byte) range.minDigit(), range.top[offsetT], true, false, range.isCIDR)) {
                     deleteMatches(getParser().parse(bb), state, range);
                 }
             }
@@ -398,7 +398,7 @@ class ByteMachine {
 
         // now for last "top" digit.
         // see explanation in addRangePattern(), we need to delete states and matches accordingly.
-        if ((lastTop > '0') || !range.openTop) {
+        if ((lastTop > range.minDigit()) || !range.openTop) {
             while (lastMatchOffset < range.top.length - 1) {
                 state = findNextByteStateForRangePattern(state, range.top[lastMatchOffset]);
                 assert state != null : "state != null";
@@ -413,7 +413,7 @@ class ByteMachine {
             // unless the last digit is also at the fork position, fill in the extra matches due to
             //  the strictly-less-than condition (see discussion above)
             if (forkOffset < (range.top.length - 1)) {
-                for (byte bb : Range.digitSequence((byte) '0', lastTop, true, false)) {
+                for (byte bb : Range.digitSequence((byte) range.minDigit(), lastTop, true, false, range.isCIDR)) {
                     deleteMatches(getParser().parse(bb), state, range);
                 }
             }
@@ -1067,7 +1067,7 @@ class ByteMachine {
         }
 
         // fill in matches in the fork state
-        for (byte bb : Range.digitSequence(range.bottom[forkOffset], range.top[forkOffset], false, false)) {
+        for (byte bb : Range.digitSequence(range.bottom[forkOffset], range.top[forkOffset], false, false, range.isCIDR)) {
             nextNameState = findMatchForRangePattern(bb, forkTrans, range);
             if (nextNameState == null) {
                 return null;
@@ -1080,7 +1080,7 @@ class ByteMachine {
         int lastMatchOffset = forkOffset;
         for (int offsetB = forkOffset + 1; offsetB < (range.bottom.length - 1); offsetB++) {
             byte b = range.bottom[offsetB];
-            if (b < Constants.MAX_DIGIT) {
+            if (b < range.maxDigit()) {
                 while (lastMatchOffset < offsetB) {
                     trans = findNextByteStateForRangePattern(trans, range.bottom[lastMatchOffset++]);
                     if (trans == null) {
@@ -1088,7 +1088,7 @@ class ByteMachine {
                     }
                 }
                 assert lastMatchOffset == offsetB : "lastMatchOffset == offsetB";
-                for (byte bb : Range.digitSequence(b, Constants.MAX_DIGIT, false, true)) {
+                for (byte bb : Range.digitSequence(b, range.maxDigit(), false, true, range.isCIDR)) {
                     nextNameState = findMatchForRangePattern(bb, trans, range);
                     if (nextNameState == null) {
                         return null;
@@ -1101,7 +1101,7 @@ class ByteMachine {
         // now for last "bottom" digit
         final byte lastBottom = range.bottom[range.bottom.length - 1];
         final byte lastTop = range.top[range.top.length - 1];
-        if ((lastBottom < Constants.MAX_DIGIT) || !range.openBottom) {
+        if ((lastBottom < range.maxDigit()) || !range.openBottom) {
             while (lastMatchOffset < range.bottom.length - 1) {
                 trans = findNextByteStateForRangePattern(trans, range.bottom[lastMatchOffset++]);
                 if (trans == null) {
@@ -1120,7 +1120,7 @@ class ByteMachine {
             // unless the last digit is also at the fork position, fill in the extra matches due to
             //  the strictly-less-than condition (see discussion above)
             if (forkOffset < (range.bottom.length - 1)) {
-                for (byte bb : Range.digitSequence(lastBottom, Constants.MAX_DIGIT, false, true)) {
+                for (byte bb : Range.digitSequence(lastBottom, range.maxDigit(), false, true, range.isCIDR)) {
                     nextNameState = findMatchForRangePattern(bb, trans, range);
                     if (nextNameState == null) {
                         return null;
@@ -1135,7 +1135,7 @@ class ByteMachine {
         lastMatchOffset = forkOffset;
         for (int offsetT = forkOffset + 1; offsetT < (range.top.length - 1); offsetT++) {
             byte b = range.top[offsetT];
-            if (b > '0') {
+            if (b > range.minDigit()) {
                 while (lastMatchOffset < offsetT) {
                     trans = findNextByteStateForRangePattern(trans, range.top[lastMatchOffset++]);
                     if (trans == null) {
@@ -1144,7 +1144,7 @@ class ByteMachine {
                 }
                 assert lastMatchOffset == offsetT : "lastMatchOffset == offsetT";
 
-                for (byte bb : Range.digitSequence((byte) '0', range.top[offsetT], true, false)) {
+                for (byte bb : Range.digitSequence(range.minDigit(), range.top[offsetT], true, false, range.isCIDR)) {
                     nextNameState = findMatchForRangePattern(bb, trans, range);
                     if (nextNameState == null) {
                         return null;
@@ -1155,7 +1155,7 @@ class ByteMachine {
         }
 
         // now for last "top" digit
-        if ((lastTop > '0') || !range.openTop) {
+        if ((lastTop > range.minDigit()) || !range.openTop) {
             while (lastMatchOffset < range.top.length - 1) {
                 trans = findNextByteStateForRangePattern(trans, range.top[lastMatchOffset++]);
                 if (trans == null) {
@@ -1173,7 +1173,7 @@ class ByteMachine {
             // unless the last digit is also at the fork position, fill in the extra matches due to
             //  the strictly-less-than condition (see discussion above)
             if (forkOffset < (range.top.length - 1)) {
-                for (byte bb : Range.digitSequence((byte) '0', lastTop, true, false)) {
+                for (byte bb : Range.digitSequence(range.minDigit(), lastTop, true, false, range.isCIDR)) {
                     nextNameState = findMatchForRangePattern(bb, trans, range);
                     if (nextNameState == null) {
                         return null;
@@ -1233,7 +1233,7 @@ class ByteMachine {
         // What could be simpler?
 
         // fill in matches in the fork state
-        for (byte bb : Range.digitSequence(range.bottom[forkOffset], range.top[forkOffset], false, false)) {
+        for (byte bb : Range.digitSequence(range.bottom[forkOffset], range.top[forkOffset], false, false, range.isCIDR)) {
             nextNameState = insertMatchForRangePattern(bb, forkState, nextNameState, range);
         }
 
@@ -1248,7 +1248,7 @@ class ByteMachine {
             // if b is Constants.MAX_DIGIT, then we should hold off adding transitions until we see a non-maxDigit digit
             //  because of the special case described above.
             byte b = range.bottom[offsetB];
-            if (b < Constants.MAX_DIGIT) {
+            if (b < range.maxDigit()) {
                 // add transitions for any 9's we bypassed
                 while (lastMatchOffset < offsetB) {
                     state = findOrMakeNextByteStateForRangePattern(state, range.bottom, lastMatchOffset++);
@@ -1258,7 +1258,7 @@ class ByteMachine {
                 assert state != null : "state != null";
 
                 // now add transitions for values greater than this non-9 digit
-                for (byte bb : Range.digitSequence(b, Constants.MAX_DIGIT, false, true)) {
+                for (byte bb : Range.digitSequence(b, range.maxDigit(), false, true, range.isCIDR)) {
                     nextNameState = insertMatchForRangePattern(bb, state, nextNameState, range);
                 }
             }
@@ -1269,7 +1269,7 @@ class ByteMachine {
         final byte lastTop = range.top[range.top.length - 1];
 
         // similarly, if the last digit is 9 and we have openBottom, there can be no matches so we're done.
-        if ((lastBottom < Constants.MAX_DIGIT) || !range.openBottom) {
+        if ((lastBottom < range.maxDigit()) || !range.openBottom) {
 
             // add transitions for any 9's we bypassed
             while (lastMatchOffset < range.bottom.length - 1) {
@@ -1286,7 +1286,7 @@ class ByteMachine {
             // unless the last digit is also at the fork position, fill in the extra matches due to
             //  the strictly-less-than condition (see discussion above)
             if (forkOffset < (range.bottom.length - 1)) {
-                for (byte bb : Range.digitSequence(lastBottom, Constants.MAX_DIGIT, false, true)) {
+                for (byte bb : Range.digitSequence(lastBottom, range.maxDigit(), false, true, range.isCIDR)) {
                     nextNameState = insertMatchForRangePattern(bb, state, nextNameState, range);
                 }
             }
@@ -1302,7 +1302,7 @@ class ByteMachine {
             byte b = range.top[offsetT];
 
             // if need to add transition
-            if (b > '0') {
+            if (b > range.minDigit()) {
                 while (lastMatchOffset < offsetT) {
                     state = findOrMakeNextByteStateForRangePattern(state, range.top, lastMatchOffset++);
                 }
@@ -1310,7 +1310,7 @@ class ByteMachine {
                 assert state != null : "state != null";
 
                 // now add transitions for values less than this non-0 digit
-                for (byte bb : Range.digitSequence((byte) '0', range.top[offsetT], true, false)) {
+                for (byte bb : Range.digitSequence((byte) range.minDigit(), range.top[offsetT], true, false, range.isCIDR)) {
                     nextNameState = insertMatchForRangePattern(bb, state, nextNameState, range);
                 }
             }
@@ -1319,7 +1319,7 @@ class ByteMachine {
         // now for last "top" digit
 
         // similarly, if the last digit is 0 and we have openTop, there can be no matches so we're done.
-        if ((lastTop > '0') || !range.openTop) {
+        if ((lastTop > range.minDigit()) || !range.openTop) {
 
             // add transitions for any 0's we bypassed
             while (lastMatchOffset < range.top.length - 1) {
@@ -1336,7 +1336,7 @@ class ByteMachine {
             // unless the last digit is also at the fork position, fill in the extra matches due to
             //  the strictly-less-than condition (see discussion above)
             if (forkOffset < (range.top.length - 1)) {
-                for (byte bb : Range.digitSequence((byte) '0', lastTop, true, false)) {
+                for (byte bb : Range.digitSequence((byte) range.minDigit(), lastTop, true, false, range.isCIDR)) {
                     nextNameState = insertMatchForRangePattern(bb, state, nextNameState, range);
                 }
             }

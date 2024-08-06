@@ -63,22 +63,22 @@ public class CIDRTest {
     @Test
     public void TestDigitSequence() {
 
-        byte[] l = Range.digitSequence((byte) '4', (byte) 'C', false, false);
+        byte[] l = Range.digitSequence((byte) '4', (byte) 'C', false, false, true);
         byte[] wanted = {'5', '6', '7', '8', '9', 'A', 'B'};
         for (int i = 0; i < wanted.length; i++) {
             assertEquals(wanted[i], l[i]);
         }
-        l = Range.digitSequence((byte) '4', (byte) 'C', true, false);
+        l = Range.digitSequence((byte) '4', (byte) 'C', true, false, true);
         byte[] wanted2 = {'4', '5', '6', '7', '8', '9', 'A', 'B'};
         for (int i = 0; i < wanted2.length; i++) {
             assertEquals(wanted2[i], l[i]);
         }
-        l = Range.digitSequence((byte) '4', (byte) 'C', false, true);
+        l = Range.digitSequence((byte) '4', (byte) 'C', false, true, true);
         byte[] wanted3 = {'5', '6', '7', '8', '9', 'A', 'B', 'C'};
         for (int i = 0; i < wanted3.length; i++) {
             assertEquals(wanted3[i], l[i]);
         }
-        l = Range.digitSequence((byte) '4', (byte) 'C', true, true);
+        l = Range.digitSequence((byte) '4', (byte) 'C', true, true, true);
         byte[] wanted4 = {'4', '5', '6', '7', '8', '9', 'A', 'B', 'C'};
         for (int i = 0; i < wanted4.length; i++) {
             assertEquals(wanted4[i], l[i]);
@@ -87,10 +87,10 @@ public class CIDRTest {
         byte F = (byte) 'F';
         try {
             byte[] got;
-            got = Range.digitSequence((byte) 'F', (byte) 'F', false, true);
+            got = Range.digitSequence((byte) 'F', (byte) 'F', false, true, true);
             assertEquals(1, got.length);
             assertEquals(F, got[0]);
-            Range.digitSequence((byte) 'F', (byte) 'F', true, false);
+            Range.digitSequence((byte) 'F', (byte) 'F', true, false, true);
             assertEquals(1, got.length);
             assertEquals(F, got[0]);
         } catch (RuntimeException e) {
@@ -162,20 +162,20 @@ public class CIDRTest {
                 "2600:1F14::/35"
         };
         String[] wanted = {
-                "00112200000000000000000000000000/001122FFFFFFFFFFFFFFFFFFFFFFFFFF:false/false (T:NUMERIC_RANGE)",
-                "20010D00000000000000000000000000/20010DFFFFFFFFFFFFFFFFFFFFFFFFFF:false/false (T:NUMERIC_RANGE)",
-                "00000000000000000000000000000000/000000FFFFFFFFFFFFFFFFFFFFFFFFFF:false/false (T:NUMERIC_RANGE)",
-                "0A000000/0A0000FF:false/false (T:NUMERIC_RANGE)",
-                "36F0C400/36F0C4FF:false/false (T:NUMERIC_RANGE)",
-                "C0000200/C00002FF:false/false (T:NUMERIC_RANGE)",
-                "0D200000/0D21FFFF:false/false (T:NUMERIC_RANGE)",
-                "1B000000/1B0003FF:false/false (T:NUMERIC_RANGE)",
-                "344C8000/344CFFFF:false/false (T:NUMERIC_RANGE)",
-                "22C00000/22CFFFFF:false/false (T:NUMERIC_RANGE)",
-                "24006500FF0000000000000036FB1F80/24006500FF0000000000000036FB1FBF:false/false (T:NUMERIC_RANGE)",
-                "26009000000000000000000000000000/2600900FFFFFFFFFFFFFFFFFFFFFFFFF:false/false (T:NUMERIC_RANGE)",
-                "26001F11000000000000000000000000/26001F110FFFFFFFFFFFFFFFFFFFFFFF:false/false (T:NUMERIC_RANGE)",
-                "26001F14000000000000000000000000/26001F141FFFFFFFFFFFFFFFFFFFFFFF:false/false (T:NUMERIC_RANGE)"
+                "00112200000000000000000000000000/001122FFFFFFFFFFFFFFFFFFFFFFFFFF:false/false:true (T:NUMERIC_RANGE)",
+                "20010D00000000000000000000000000/20010DFFFFFFFFFFFFFFFFFFFFFFFFFF:false/false:true (T:NUMERIC_RANGE)",
+                "00000000000000000000000000000000/000000FFFFFFFFFFFFFFFFFFFFFFFFFF:false/false:true (T:NUMERIC_RANGE)",
+                "0A000000/0A0000FF:false/false:true (T:NUMERIC_RANGE)",
+                "36F0C400/36F0C4FF:false/false:true (T:NUMERIC_RANGE)",
+                "C0000200/C00002FF:false/false:true (T:NUMERIC_RANGE)",
+                "0D200000/0D21FFFF:false/false:true (T:NUMERIC_RANGE)",
+                "1B000000/1B0003FF:false/false:true (T:NUMERIC_RANGE)",
+                "344C8000/344CFFFF:false/false:true (T:NUMERIC_RANGE)",
+                "22C00000/22CFFFFF:false/false:true (T:NUMERIC_RANGE)",
+                "24006500FF0000000000000036FB1F80/24006500FF0000000000000036FB1FBF:false/false:true (T:NUMERIC_RANGE)",
+                "26009000000000000000000000000000/2600900FFFFFFFFFFFFFFFFFFFFFFFFF:false/false:true (T:NUMERIC_RANGE)",
+                "26001F11000000000000000000000000/26001F110FFFFFFFFFFFFFFFFFFFFFFF:false/false:true (T:NUMERIC_RANGE)",
+                "26001F14000000000000000000000000/26001F141FFFFFFFFFFFFFFFFFFFFFFF:false/false:true (T:NUMERIC_RANGE)"
         };
 
         Machine m = new Machine();
@@ -213,26 +213,26 @@ public class CIDRTest {
                 "255.255.255.27"
         };
         String[] wanted = {
-                "00112233445566778899AABBCCDDEEFE/00112233445566778899AABBCCDDEEFF:true/false (T:NUMERIC_RANGE)",
-                "20010DB8000000000000FF0000428329/20010DB8000000000000FF000042832A:false/true (T:NUMERIC_RANGE)",
-                "00000000000000000000000000000000/00000000000000000000000000000001:false/true (T:NUMERIC_RANGE)",
-                "00000000000000000000000000000003/00000000000000000000000000000004:false/true (T:NUMERIC_RANGE)",
-                "00000000000000000000000000000009/0000000000000000000000000000000A:false/true (T:NUMERIC_RANGE)",
-                "0000000000000000000000000000000A/0000000000000000000000000000000B:false/true (T:NUMERIC_RANGE)",
-                "0000000000000000000000000000000E/0000000000000000000000000000000F:true/false (T:NUMERIC_RANGE)",
-                "24006500FF0000000000000036FB1F80/24006500FF0000000000000036FB1F81:false/true (T:NUMERIC_RANGE)",
-                "24006500FF0000000000000036FB1F85/24006500FF0000000000000036FB1F86:false/true (T:NUMERIC_RANGE)",
-                "24006500FF0000000000000036FB1F89/24006500FF0000000000000036FB1F8A:false/true (T:NUMERIC_RANGE)",
-                "24006500FF0000000000000036FB1F8C/24006500FF0000000000000036FB1F8D:false/true (T:NUMERIC_RANGE)",
-                "24006500FF0000000000000036FB1F8E/24006500FF0000000000000036FB1F8F:true/false (T:NUMERIC_RANGE)",
-                "36F0C4FE/36F0C4FF:true/false (T:NUMERIC_RANGE)",
-                "FFFFFFFE/FFFFFFFF:true/false (T:NUMERIC_RANGE)",
-                "FFFFFF00/FFFFFF01:false/true (T:NUMERIC_RANGE)",
-                "FFFFFF05/FFFFFF06:false/true (T:NUMERIC_RANGE)",
-                "FFFFFF0A/FFFFFF0B:false/true (T:NUMERIC_RANGE)",
-                "FFFFFF10/FFFFFF11:false/true (T:NUMERIC_RANGE)",
-                "FFFFFF1A/FFFFFF1B:false/true (T:NUMERIC_RANGE)",
-                "FFFFFF1B/FFFFFF1C:false/true (T:NUMERIC_RANGE)"
+                "00112233445566778899AABBCCDDEEFE/00112233445566778899AABBCCDDEEFF:true/false:true (T:NUMERIC_RANGE)",
+                "20010DB8000000000000FF0000428329/20010DB8000000000000FF000042832A:false/true:true (T:NUMERIC_RANGE)",
+                "00000000000000000000000000000000/00000000000000000000000000000001:false/true:true (T:NUMERIC_RANGE)",
+                "00000000000000000000000000000003/00000000000000000000000000000004:false/true:true (T:NUMERIC_RANGE)",
+                "00000000000000000000000000000009/0000000000000000000000000000000A:false/true:true (T:NUMERIC_RANGE)",
+                "0000000000000000000000000000000A/0000000000000000000000000000000B:false/true:true (T:NUMERIC_RANGE)",
+                "0000000000000000000000000000000E/0000000000000000000000000000000F:true/false:true (T:NUMERIC_RANGE)",
+                "24006500FF0000000000000036FB1F80/24006500FF0000000000000036FB1F81:false/true:true (T:NUMERIC_RANGE)",
+                "24006500FF0000000000000036FB1F85/24006500FF0000000000000036FB1F86:false/true:true (T:NUMERIC_RANGE)",
+                "24006500FF0000000000000036FB1F89/24006500FF0000000000000036FB1F8A:false/true:true (T:NUMERIC_RANGE)",
+                "24006500FF0000000000000036FB1F8C/24006500FF0000000000000036FB1F8D:false/true:true (T:NUMERIC_RANGE)",
+                "24006500FF0000000000000036FB1F8E/24006500FF0000000000000036FB1F8F:true/false:true (T:NUMERIC_RANGE)",
+                "36F0C4FE/36F0C4FF:true/false:true (T:NUMERIC_RANGE)",
+                "FFFFFFFE/FFFFFFFF:true/false:true (T:NUMERIC_RANGE)",
+                "FFFFFF00/FFFFFF01:false/true:true (T:NUMERIC_RANGE)",
+                "FFFFFF05/FFFFFF06:false/true:true (T:NUMERIC_RANGE)",
+                "FFFFFF0A/FFFFFF0B:false/true:true (T:NUMERIC_RANGE)",
+                "FFFFFF10/FFFFFF11:false/true:true (T:NUMERIC_RANGE)",
+                "FFFFFF1A/FFFFFF1B:false/true:true (T:NUMERIC_RANGE)",
+                "FFFFFF1B/FFFFFF1C:false/true:true (T:NUMERIC_RANGE)"
         };
 
         Machine m = new Machine();
