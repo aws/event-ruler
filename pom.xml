@@ -20,7 +20,7 @@
   <groupId>software.amazon.event.ruler</groupId>
   <artifactId>event-ruler</artifactId>
   <name>Event Ruler</name>
-  <version>1.7.5</version>
+  <version>1.7.6</version>
   <description>Event Ruler is a Java library that allows matching Rules to Events. An event is a list of fields,
     which may be given as name/value pairs or as a JSON object. A rule associates event field names with lists of
     possible values. There are two reasons to use Ruler: 1/ It's fast; the time it takes to match Events doesn't
@@ -32,6 +32,7 @@
   <properties>
     <jdk.version>1.8</jdk.version>
     <jackson.version>2.17.2</jackson.version>
+    <fastdoubleparser.version>1.0.0</fastdoubleparser.version>
     <jsr.version>3.0.2</jsr.version>
     <junit.version>4.13.2</junit.version>
     <compiler.plugin.version>3.13.0</compiler.plugin.version>
@@ -83,6 +84,12 @@
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
       <version>${jackson.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>ch.randelshofer</groupId>
+      <artifactId>fastdoubleparser</artifactId>
+      <version>${fastdoubleparser.version}</version>
     </dependency>
 
     <dependency>

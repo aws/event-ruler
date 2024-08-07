@@ -1,6 +1,6 @@
 package software.amazon.event.ruler;
 
-import com.fasterxml.jackson.core.io.doubleparser.JavaBigDecimalParser;
+import ch.randelshofer.fastdoubleparser.JavaBigDecimalParser;
 
 import java.math.BigDecimal;
 
