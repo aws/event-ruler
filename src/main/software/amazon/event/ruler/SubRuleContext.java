@@ -11,30 +11,34 @@ import java.util.concurrent.ConcurrentHashMap;
  * A sub-rule refers to name/value pairs, usually represented by Map of String to List of Patterns, that compose a rule.
  * In the case of $or, one rule will have multiple name/value pairs, and this is why we use the "sub-rule" terminology.
  */
-public class SubRuleContext {
+public final class SubRuleContext {
 
-    private final double id;
+    private final long id;
+    private final Object ruleName;
 
-    private SubRuleContext(double id) {
+    SubRuleContext(long id, Object ruleName) {
         this.id = id;
+        this.ruleName = ruleName;
     }
 
-    public double getId() {
-        return id;
+    public Object getRuleName() {
+        return ruleName;
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (o == null || !(o instanceof SubRuleContext)) {
-            return false;
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
         }
-        SubRuleContext otherContext = (SubRuleContext) o;
-        return id == otherContext.id;
+        if (obj instanceof SubRuleContext) {
+            return id == ((SubRuleContext) obj).id;
+        }
+        return false;
     }
 
     @Override
     public int hashCode() {
-        return Double.hashCode(id);
+        return Long.hashCode(id);
     }
 
     /**
@@ -42,32 +46,17 @@ public class SubRuleContext {
      */
     static final class Generator {
 
-        private double nextId = -Double.MAX_VALUE;
-
-        private final Map<Object, Set<Double>> nameToIds = new ConcurrentHashMap<>();
-        private final Map<Double, Object> idToName = new ConcurrentHashMap<>();
+        private final Map<Object, Set<SubRuleContext>> nameToContext = new ConcurrentHashMap<>();
+        private long nextId;
 
         public SubRuleContext generate(Object ruleName) {
-            assert nextId < Double.MAX_VALUE : "SubRuleContext.Generator's nextId reached Double.MAX_VALUE - " +
-                    "this required the equivalent of calling generate() at 6 billion TPS for 100 years";
-
-            SubRuleContext subRuleContext = new SubRuleContext(nextId);
-            if (!nameToIds.containsKey(ruleName)) {
-                nameToIds.put(ruleName, new HashSet<>());
-            }
-            nameToIds.get(ruleName).add(nextId);
-            idToName.put(nextId, ruleName);
-
-            nextId = Math.nextUp(nextId);
+            SubRuleContext subRuleContext = new SubRuleContext(nextId++, ruleName);
+            nameToContext.computeIfAbsent(ruleName, k -> new HashSet<>()).add(subRuleContext);
             return subRuleContext;
         }
 
-        public Set<Double> getIdsGeneratedForName(Object ruleName) {
-            return nameToIds.get(ruleName);
-        }
-
-        public Object getNameForGeneratedId(Double id) {
-            return idToName.get(id);
+        public Set<SubRuleContext> getIdsGeneratedForName(Object ruleName) {
+            return nameToContext.get(ruleName);
         }
     }
 }
