@@ -19,6 +19,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -72,6 +74,43 @@ public class MachineTest {
                 }
             }
             assertEquals(numberThatShouldMatch, matches);
+        }
+    }
+    
+    @Test
+    public void testWildcardLatency() throws Exception {
+        final String collect = IntStream.range(0, 150).mapToObj(i -> "a").collect(Collectors.joining());
+        List<String> events = new ArrayList<>();
+        for (int i = 0; i < 200_000; i++) {
+            events.add("{ \"key\" : \"" + collect + "\", \"id\" : \"" + i + "\" }");
+        }
+
+        for (int i = 1; i < 75; i++) {
+            final String pattern = IntStream.range(0, i).mapToObj(ignore -> "a*").collect(Collectors.joining());
+            String firstRule = "{ \"key\" : [ { \"wildcard\" : \"" + pattern + "\"} ] }";
+            System.out.println(i + " ] checking pattern " + firstRule);
+
+            Machine machine = new Machine();
+            machine.addRule("r", firstRule);
+            for (int j = 0; j < 100; j++) {
+                String rule = "{ \"key\" : [ { \"wildcard\" : \"" + pattern + "\"}], \"id\" : [\""+j+"\"] }";
+                machine.addRule("r" + j, rule);
+            }
+
+            int matchesCnt = 0;
+            long before = System.currentTimeMillis();
+            for (String event : events) {
+                List<String> matches = machine.rulesForJSONEvent(event);
+                matchesCnt += matches.size();
+            }
+
+            long after = System.currentTimeMillis();
+            double eps = (1000.0 / (1.0 * (after - before) / events.size()));
+            String epsStr = String.format("%.02f", eps);
+            MachineComplexityEvaluator evaluator = new MachineComplexityEvaluator(Integer.MAX_VALUE);
+            System.out.println("Ruler took " + epsStr + " events/sec and got " + matchesCnt +
+                    "matches. wildcard complexity is " + machine.evaluateComplexity(evaluator) +
+                    " and ruler size is " + machine.approximateObjectCount(Integer.MAX_VALUE));
         }
     }
 
