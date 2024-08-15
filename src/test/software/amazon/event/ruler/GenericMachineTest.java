@@ -345,4 +345,5 @@ public class GenericMachineTest {
         rules = genericMachine.rulesForEvent(new ArrayList<>());
         assertTrue(rules.contains("rule1"));
     }
+
 }
