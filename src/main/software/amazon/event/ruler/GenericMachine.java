@@ -1,9 +1,9 @@
 package software.amazon.event.ruler;
 
+import static software.amazon.event.ruler.SetOperations.intersection;
+
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
-
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -18,8 +18,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
-import static software.amazon.event.ruler.SetOperations.intersection;
+import javax.annotation.Nonnull;
 
 /**
  *  Represents a state machine used to match name/value patterns to rules.
@@ -747,11 +746,11 @@ public class GenericMachine<T> {
                 '}';
     }
 
-    public static Builder builder() {
-        return new Builder();
+    public static <T> Builder<GenericMachine<T>, T> builder() {
+        return new Builder<>();
     }
 
-    public static class Builder<T extends GenericMachine> {
+    public static class Builder<M extends GenericMachine<T>, T> {
 
         /**
          * Normally, NameStates are re-used for a given key subsequence and pattern if this key subsequence and pattern have
@@ -766,13 +765,13 @@ public class GenericMachine<T> {
 
         Builder() {}
 
-        public Builder<T> withAdditionalNameStateReuse(boolean additionalNameStateReuse) {
+        public Builder<M,T> withAdditionalNameStateReuse(boolean additionalNameStateReuse) {
             this.additionalNameStateReuse = additionalNameStateReuse;
             return this;
         }
 
-        public T build() {
-            return (T) new GenericMachine(buildConfig());
+        public M build() {
+            return (M) new GenericMachine<T>(buildConfig());
         }
 
         protected GenericMachineConfiguration buildConfig() {

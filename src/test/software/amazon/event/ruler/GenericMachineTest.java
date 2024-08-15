@@ -1,9 +1,11 @@
 package software.amazon.event.ruler;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
-
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,10 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import org.junit.Test;
 
 /**
  * Unit testing a state GenericMachine is hard.  Tried hand-computing a few GenericMachines
@@ -346,5 +345,4 @@ public class GenericMachineTest {
         rules = genericMachine.rulesForEvent(new ArrayList<>());
         assertTrue(rules.contains("rule1"));
     }
-
 }
