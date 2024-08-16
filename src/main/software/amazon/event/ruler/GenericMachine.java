@@ -1,9 +1,9 @@
 package software.amazon.event.ruler;
 
-import static software.amazon.event.ruler.SetOperations.intersection;
-
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
+
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -18,7 +18,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
+
+import static software.amazon.event.ruler.SetOperations.intersection;
 
 /**
  *  Represents a state machine used to match name/value patterns to rules.
