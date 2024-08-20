@@ -26,7 +26,7 @@ public class Machine extends GenericMachine<String> {
         return new Builder();
     }
 
-    public static class Builder extends GenericMachine.Builder<Machine> {
+    public static class Builder extends GenericMachine.Builder<Machine, String> {
 
         Builder() {}
 

@@ -200,6 +200,14 @@ public class GenericMachineTest {
         assertEquals(r4, r4AC);
     }
 
+    @Test
+    public void testBuilderNonString() throws Exception {
+      GenericMachine<Integer> machine = GenericMachine.<Integer>builder().build();
+      machine.addRule(100, "{ \"key\" : [ 5 ] }");
+      List<Integer> result = machine.rulesForEvent(new String[]{"key", "5"});
+      assertEquals(result.get(0), (Integer)100);
+    }
+
     // create a customized class as T
     // TODO: Figure out what these unused fields are for and either finish what was started here, or discard it
     public static final class SimpleFilter {

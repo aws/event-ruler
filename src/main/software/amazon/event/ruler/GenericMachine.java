@@ -747,11 +747,11 @@ public class GenericMachine<T> {
                 '}';
     }
 
-    public static Builder builder() {
-        return new Builder();
+    public static <T> Builder<GenericMachine<T>, T> builder() {
+        return new Builder<>();
     }
 
-    public static class Builder<T extends GenericMachine> {
+    public static class Builder<M extends GenericMachine<T>, T> {
 
         /**
          * Normally, NameStates are re-used for a given key subsequence and pattern if this key subsequence and pattern have
@@ -766,13 +766,13 @@ public class GenericMachine<T> {
 
         Builder() {}
 
-        public Builder<T> withAdditionalNameStateReuse(boolean additionalNameStateReuse) {
+        public Builder<M,T> withAdditionalNameStateReuse(boolean additionalNameStateReuse) {
             this.additionalNameStateReuse = additionalNameStateReuse;
             return this;
         }
 
-        public T build() {
-            return (T) new GenericMachine(buildConfig());
+        public M build() {
+            return (M) new GenericMachine<T>(buildConfig());
         }
 
         protected GenericMachineConfiguration buildConfig() {
