@@ -31,3 +31,5 @@ jobs:
         run: mvn --batch-mode --errors --update-snapshots verify
       - name: Run benchmarks
         run: mvn test '-Dtest=Benchmarks#CL2*'
+      - name: Run JMH benchmarks
+        run: mvn exec:exec@run-all-benchmarks

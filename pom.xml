@@ -43,6 +43,8 @@
     <checkstyle.plugin.version>3.4.0</checkstyle.plugin.version>
     <spotbugs.plugin.version>4.8.6.2</spotbugs.plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <jmh.version>1.37</jmh.version>
+    <exec.plugin.version>3.0.0</exec.plugin.version>
   </properties>
 
   <licenses>
@@ -105,6 +107,20 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.openjdk.jmh</groupId>
+      <artifactId>jmh-core</artifactId>
+      <version>${jmh.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.openjdk.jmh</groupId>
+      <artifactId>jmh-generator-annprocess</artifactId>
+      <version>${jmh.version}</version>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -120,7 +136,69 @@
           <source>${jdk.version}</source>
           <target>${jdk.version}</target>
           <encoding>${project.build.sourceEncoding}</encoding>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.openjdk.jmh</groupId>
+              <artifactId>jmh-generator-annprocess</artifactId>
+              <version>${jmh.version}</version>
+            </path>
+          </annotationProcessorPaths>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>${exec.plugin.version}</version>
+        <executions>
+          <execution>
+            <id>run-all-benchmarks</id>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <classpathScope>test</classpathScope>
+              <executable>java</executable>
+              <arguments>
+                <argument>-classpath</argument>
+                <classpath/>
+                <argument>org.openjdk.jmh.Main</argument>
+                <argument>.*</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>run-simple-benchmarks</id>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <classpathScope>test</classpathScope>
+              <executable>java</executable>
+              <arguments>
+                <argument>-classpath</argument>
+                <classpath/>
+                <argument>org.openjdk.jmh.Main</argument>
+                <argument>run01Simple</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>run-combo-benchmarks</id>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <classpathScope>test</classpathScope>
+              <executable>java</executable>
+              <arguments>
+                <argument>-classpath</argument>
+                <classpath/>
+                <argument>org.openjdk.jmh.Main</argument>
+                <argument>run02Combo</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -162,6 +240,7 @@
           <failsOnError>false</failsOnError>
           <linkXRef>false</linkXRef>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
+          <excludeGeneratedSources>true</excludeGeneratedSources>
         </configuration>
         <executions>
           <execution>
