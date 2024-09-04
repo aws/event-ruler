@@ -3,6 +3,7 @@ package software.amazon.event.ruler;
 import org.junit.Test;
 import software.amazon.event.ruler.input.ParseException;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -886,7 +887,7 @@ public class ByteMachineTest {
 
     @Test
     public void testEqualsIgnoreCasePatternWithExactMatchAsPrefix() {
-        String[] noMatches = new String[] { "", "ja", "JA", "JAV", "javax" };
+        String[] noMatches = new String[] { "", "j", "JA", "JAV", "javax" };
         testPatternPermutations(noMatches,
                 new PatternMatch(Patterns.equalsIgnoreCaseMatch("jAVa"),
                         "java", "jAVa", "JavA", "JAVA"),
@@ -1523,7 +1524,7 @@ public class ByteMachineTest {
 
     @Test
     public void testSuffixEqualsIgnoreCaseWithWildcardMatchBeingAddedLater() {
-        String[] noMatches = new String[] { "", "!", "!A", "a", "A", "b", "B" };
+        String[] noMatches = new String[] { "", "!", "!A", "a", "A", "c", "B" };
         testPatternPermutations(noMatches,
                 new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("b!"),
                         "b!", "B!", "cdb!", "CdEB!"),
@@ -1534,7 +1535,7 @@ public class ByteMachineTest {
 
     @Test
     public void testSuffixEqualsIgnoreCaseWithExistingWildcardMatch() {
-        String[] noMatches = new String[] { "", "!", "!A", "a", "A", "b", "B" };
+        String[] noMatches = new String[] { "", "!", "!A", "a", "A", "c", "B" };
         testPatternPermutations(noMatches,
                 new PatternMatch(Patterns.wildcardMatch("*b"),
                         "!b", "b"),
@@ -1724,7 +1725,7 @@ public class ByteMachineTest {
 
     @Test
     public void testWildcardLeadingWildcardCharacterNotUsedByExactMatch() {
-        String[] noMatches = new String[] { "", "hello", "hellox", "blahabc" };
+        String[] noMatches = new String[] { "", "xello", "hellox", "blahabc" };
         testPatternPermutations(noMatches,
                 new PatternMatch(Patterns.wildcardMatch("*hello"),
                         "hello", "xhello", "hehello"),
@@ -1988,7 +1989,7 @@ public class ByteMachineTest {
 
     @Test
     public void testWildcardSecondLastCharWildcardOccursBeforeDivergentFinalCharacterOfExactMatch() {
-        String[] noMatches = new String[] { "", "hel", "hexl", "helo", "helxx" };
+        String[] noMatches = new String[] { "", "hel", "hexl", "xelo", "helxx" };
         testPatternPermutations(noMatches,
                 new PatternMatch(Patterns.wildcardMatch("hel*o"),
                         "helo", "hello", "helxo", "helxxxo"),
@@ -2686,17 +2687,22 @@ public class ByteMachineTest {
         System.out.println("USE ME TO REPRODUCE - ByteMachineTest.testPatternPermutations seeding with " + seed);
         Random r = new Random(seed);
         ByteMachine cut = new ByteMachine();
-        Set<String> matchValues = Stream.of(patternMatches)
+        // Tracks addition and removes across these patterns.
+        Match[] matchValues = Stream.of(patternMatches)
                                         .map(patternMatch -> patternMatch.matches)
                                         .flatMap(set -> set.stream())
-                                        .collect(Collectors.toSet());
-        matchValues.addAll(Arrays.asList(noMatches));
-        Matches matches = new Matches(matchValues.stream()
-                                                 .map(string -> new Match(string))
-                                                 .collect(Collectors.toList())
-                                                 .toArray(new Match[0]));
+                                        .distinct()
+                                        .map(string -> new Match(string))
+                                        .collect(Collectors.toList()).toArray(new Match[0]);
+        // Tracks any unintentional matches for above patterns.
+        final Match[] noMatchValues = Stream.of(noMatches)
+                .map(string -> new Match(string))
+                .collect(Collectors.toList())
+                .toArray(new Match[0]);
+        Matches matches = new Matches(matchValues, noMatchValues);
 
         List<PatternMatch[]> permutations = generateAllPermutations(patternMatches);
+
 
         for (PatternMatch[] additionPermutation : permutations) {
             // Magic number alert: For 5 or less patterns, it is reasonable to test all deletion permutations for each
@@ -2735,9 +2741,11 @@ public class ByteMachineTest {
 
     private static class Matches {
         private final Match[] matches;
+        private final Match[] noMatches;
 
-        public Matches(Match ... matches) {
+        public Matches(Match[] matches, Match[] noMatches) {
             this.matches = matches;
+            this.noMatches = noMatches;
         }
 
         public Match[] get() {
@@ -2748,6 +2756,9 @@ public class ByteMachineTest {
             for (Match match : matches) {
                 match.registerPattern(patternMatch);
             }
+            for (Match match : noMatches) { // record these to trigger failure below
+                match.registerPattern(patternMatch);
+            }
             return patternMatch.pattern;
         }
 
@@ -2755,13 +2766,24 @@ public class ByteMachineTest {
             for (Match match : matches) {
                 match.deregisterPattern(patternMatch);
             }
+            // ignoring noMatches here intentionally
             return patternMatch.pattern;
         }
 
         public void assertNoPatternsRegistered() {
             for (Match match : matches) {
-                assertEquals(0, match.getNumPatternsRegistered());
+                assertEquals("Should be zero " + match, 0, match.getNumPatternsRegistered());
             }
+            for (Match match : noMatches) {
+                assertEquals("Should be zero " + match, 0, match.getNumPatternsRegistered());
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "Matches{" +
+                    "matches=" + Arrays.asList(matches) +
+                    '}';
         }
     }
 
@@ -2788,6 +2810,14 @@ public class ByteMachineTest {
         public int getNumPatternsRegistered() {
             return num;
         }
+
+        @Override
+        public String toString() {
+            return "Match{" +
+                    "value='" + value + '\'' +
+                    ", num=" + num +
+                    '}';
+        }
     }
 
     private static class PatternMatch {
@@ -2797,6 +2827,14 @@ public class ByteMachineTest {
         public PatternMatch(Patterns pattern, String ... matches) {
             this.pattern = pattern;
             this.matches = new HashSet<>(Arrays.asList(matches));
+        }
+
+        @Override
+        public String toString() {
+            return "PatternMatch{" +
+                    "pattern=" + pattern +
+                    ", matches=" + matches +
+                    '}';
         }
     }
 
