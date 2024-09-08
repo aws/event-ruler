@@ -17,7 +17,7 @@ import java.util.List;
 
 
 @BenchmarkMode(Mode.Throughput)
-@Fork(value = 3, jvmArgsAppend = {
+@Fork(value = 2, jvmArgsAppend = {
         "-Xmx2g", "-Xms2g", "-XX:+AlwaysPreTouch", "-XX:+UseTransparentHugePages", "-XX:+UseSerialGC",
         "-XX:-BackgroundCompilation", "-XX:CompileCommand=dontinline,com/fasterxml/*.*",
 })
@@ -26,15 +26,15 @@ import java.util.List;
 public class CityLots2JmhBenchmarks {
 
     @Benchmark
-    @Warmup(iterations = 6, batchSize = 1, time = 10, timeUnit = SECONDS)
-    @Measurement(iterations = 6, batchSize = 1, time = 10, timeUnit = SECONDS)
+    @Warmup(iterations = 4, batchSize = 1, time = 10, timeUnit = SECONDS)
+    @Measurement(iterations = 5, batchSize = 1, time = 10, timeUnit = SECONDS)
     public void group01Simple(MachineStateSimple machineState, CityLots2State cityLots2State, Blackhole blackhole) throws Exception {
         run(machineState, cityLots2State, blackhole);
     }
 
     @Benchmark
     @Warmup(iterations = 2, batchSize = 1, time = 60, timeUnit = SECONDS)
-    @Measurement(iterations = 5, batchSize = 1, time = 60, timeUnit = SECONDS)
+    @Measurement(iterations = 3, batchSize = 1, time = 60, timeUnit = SECONDS)
     public void group02Complex(MachineStateComplex machineState, CityLots2State cityLots2State, Blackhole blackhole) throws Exception {
         run(machineState, cityLots2State, blackhole);
     }
