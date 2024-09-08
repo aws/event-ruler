@@ -20,7 +20,6 @@ public class MachineStateSimple extends MachineState {
             BENCHMARK_ANYTHING_BUT_PREFIX,
             BENCHMARK_ANYTHING_BUT_SUFFIX,
             BENCHMARK_ANYTHING_BUT_WILDCARD,
-            BENCHMARK_COMPLEX_ARRAYS,
     })
     public String benchmark;
 

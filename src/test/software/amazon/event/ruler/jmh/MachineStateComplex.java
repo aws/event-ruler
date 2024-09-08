@@ -5,8 +5,9 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 
 @State(Scope.Benchmark)
-public class MachineStateCombo extends MachineState {
+public class MachineStateComplex extends MachineState {
     @Param({
+            BENCHMARK_COMPLEX_ARRAYS,
             BENCHMARK_PARTIAL_COMBO,
             BENCHMARK_COMBO,
     })

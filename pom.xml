@@ -151,7 +151,7 @@
         <version>${exec.plugin.version}</version>
         <executions>
           <execution>
-            <id>run-all-benchmarks</id>
+            <id>run-jmh-benchmarks</id>
             <goals>
               <goal>exec</goal>
             </goals>
@@ -162,39 +162,9 @@
                 <argument>-classpath</argument>
                 <classpath/>
                 <argument>org.openjdk.jmh.Main</argument>
+                <argument>-gc</argument>
+                <argument>true</argument>
                 <argument>.*</argument>
-              </arguments>
-            </configuration>
-          </execution>
-          <execution>
-            <id>run-simple-benchmarks</id>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-            <configuration>
-              <classpathScope>test</classpathScope>
-              <executable>java</executable>
-              <arguments>
-                <argument>-classpath</argument>
-                <classpath/>
-                <argument>org.openjdk.jmh.Main</argument>
-                <argument>run01Simple</argument>
-              </arguments>
-            </configuration>
-          </execution>
-          <execution>
-            <id>run-combo-benchmarks</id>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-            <configuration>
-              <classpathScope>test</classpathScope>
-              <executable>java</executable>
-              <arguments>
-                <argument>-classpath</argument>
-                <classpath/>
-                <argument>org.openjdk.jmh.Main</argument>
-                <argument>run02Combo</argument>
               </arguments>
             </configuration>
           </execution>
