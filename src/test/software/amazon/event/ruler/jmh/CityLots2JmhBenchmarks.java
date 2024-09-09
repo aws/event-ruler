@@ -1,7 +1,5 @@
 package software.amazon.event.ruler.jmh;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -13,7 +11,9 @@ import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 import software.amazon.event.ruler.Machine;
 
-import java.util.List;
+import java.util.Objects;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 
 @BenchmarkMode(Mode.Throughput)
@@ -22,7 +22,7 @@ import java.util.List;
         "-XX:-BackgroundCompilation", "-XX:CompileCommand=dontinline,com/fasterxml/*.*",
 })
 @Timeout(time = 90, timeUnit = SECONDS)
-@OperationsPerInvocation(213068) // Number of entries in citylots2 dataset.
+@OperationsPerInvocation(CityLots2State.DATASET_SIZE)
 public class CityLots2JmhBenchmarks {
 
     @Benchmark
@@ -40,10 +40,9 @@ public class CityLots2JmhBenchmarks {
     }
 
     private void run(MachineState machineState, CityLots2State cityLots2State, Blackhole blackhole) throws Exception {
-        Machine machine = machineState.machine;
-        List<String> citylots2 = cityLots2State.citylots2;
+        Machine machine = Objects.requireNonNull(machineState.machine);
 
-        for (String event : citylots2) {
+        for (String event : cityLots2State.getCityLots2()) {
             blackhole.consume(machine.rulesForJSONEvent(event));
         }
     }
