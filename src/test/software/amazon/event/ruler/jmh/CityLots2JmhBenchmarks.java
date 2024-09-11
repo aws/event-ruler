@@ -6,6 +6,7 @@ import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OperationsPerInvocation;
+import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Timeout;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
@@ -22,6 +23,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
         "-XX:-BackgroundCompilation", "-XX:CompileCommand=dontinline,com/fasterxml/*.*",
 })
 @Timeout(time = 90, timeUnit = SECONDS)
+@Threads(2)
 @OperationsPerInvocation(CityLots2State.DATASET_SIZE)
 public class CityLots2JmhBenchmarks {
 
