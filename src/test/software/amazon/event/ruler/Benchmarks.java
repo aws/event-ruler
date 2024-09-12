@@ -42,7 +42,7 @@ public class Benchmarks {
     // revised citylots with structured arrays
     private static final String CITYLOTS_2 = "src/test/data/citylots2.json.gz";
 
-    private final String[] EXACT_RULES = {
+    public static final String[] EXACT_RULES = {
             "{\n" +
                     "  \"properties\": {\n" +
                     "    \"MAPBLKLOT\": [ \"1430022\" ]\n" +
@@ -71,7 +71,7 @@ public class Benchmarks {
     };
     private final int[] EXACT_MATCHES = { 1, 101, 35, 655, 1 };
 
-    private final String[] WILDCARD_RULES = {
+    public static final String[] WILDCARD_RULES = {
             "{\n" +
                     "  \"properties\": {\n" +
                     "    \"MAPBLKLOT\": [ { \"wildcard\": \"143*\" } ]\n" +
@@ -100,7 +100,7 @@ public class Benchmarks {
     };
     private final int[] WILDCARD_MATCHES = { 490, 713, 43, 2540, 1 };
 
-    private final String[] PREFIX_RULES = {
+    public static final String[] PREFIX_RULES = {
       "{\n" +
               "  \"properties\": {\n" +
               "    \"STREET\": [ { \"prefix\": \"AC\" } ]\n" +
@@ -129,7 +129,7 @@ public class Benchmarks {
     };
     private final int[] PREFIX_MATCHES = { 24, 442, 38, 2387, 328 };
 
-    private final String[] PREFIX_EQUALS_IGNORE_CASE_RULES = {
+    public static final String[] PREFIX_EQUALS_IGNORE_CASE_RULES = {
             "{\n" +
                     "  \"properties\": {\n" +
                     "    \"STREET\": [ { \"prefix\": { \"equals-ignore-case\": \"Ac\" } } ]\n" +
@@ -158,7 +158,7 @@ public class Benchmarks {
     };
     private final int[] PREFIX_EQUALS_IGNORE_CASE_MATCHES = { 24, 442, 38, 2387, 328 };
 
-    private final String[] SUFFIX_RULES = {
+    public static final String[] SUFFIX_RULES = {
             "{\n" +
                     "  \"properties\": {\n" +
                     "    \"STREET\": [ { \"suffix\": \"ON\" } ]\n" +
@@ -187,7 +187,7 @@ public class Benchmarks {
     };
     private final int[] SUFFIX_MATCHES = { 17921, 871, 13, 1963, 682 };
 
-    private final String[] SUFFIX_EQUALS_IGNORE_CASE_RULES = {
+    public static final String[] SUFFIX_EQUALS_IGNORE_CASE_RULES = {
             "{\n" +
                     "  \"properties\": {\n" +
                     "    \"STREET\": [ { \"suffix\": { \"equals-ignore-case\": \"oN\" } } ]\n" +
@@ -216,7 +216,7 @@ public class Benchmarks {
     };
     private final int[] SUFFIX_EQUALS_IGNORE_CASE_MATCHES = { 17921, 871, 13, 1963, 682 };
 
-    private final String[] EQUALS_IGNORE_CASE_RULES = {
+    public static final String[] EQUALS_IGNORE_CASE_RULES = {
             "{\n" +
                     "  \"properties\": {\n" +
                     "    \"STREET\": [ { \"equals-ignore-case\": \"jefferson\" } ]\n" +
@@ -245,7 +245,7 @@ public class Benchmarks {
     };
     private final int[] EQUALS_IGNORE_CASE_MATCHES = { 131, 211, 1758, 825, 116386 };
 
-    private final String[] COMPLEX_ARRAYS_RULES = {
+    public static final String[] COMPLEX_ARRAYS_RULES = {
       "{\n" +
               "  \"geometry\": {\n" +
               "    \"type\": [ \"Polygon\" ],\n" +
@@ -286,7 +286,7 @@ public class Benchmarks {
     };
     private final int[] COMPLEX_ARRAYS_MATCHES = { 229, 2, 149444, 64368, 127484 };
 
-    private final String[] NUMERIC_RULES = {
+    public static final String[] NUMERIC_RULES = {
             "{\n" +
                     "  \"geometry\": {\n" +
                     "    \"type\": [ \"Polygon\" ],\n" +
@@ -327,7 +327,7 @@ public class Benchmarks {
     };
     private final int[] NUMERIC_MATCHES = { 7, 120, 148946, 64120, 127052 };
 
-    private final String[] ANYTHING_BUT_RULES = {
+    public static final String[] ANYTHING_BUT_RULES = {
       "{\n" +
               "  \"properties\": {\n" +
               "    \"STREET\": [ { \"anything-but\": [ \"FULTON\" ] } ]\n" +
@@ -356,7 +356,7 @@ public class Benchmarks {
     };
     private final int[] ANYTHING_BUT_MATCHES = { 211158, 210411, 96682, 120, 210615 };
 
-    private final String[] ANYTHING_BUT_IGNORE_CASE_RULES = {
+    public static final String[] ANYTHING_BUT_IGNORE_CASE_RULES = {
       "{\n" +
               "  \"properties\": {\n" +
               "    \"STREET\": [ { \"anything-but\": {\"equals-ignore-case\": [ \"Fulton\" ] } } ]\n" +
@@ -386,7 +386,7 @@ public class Benchmarks {
     private final int[] ANYTHING_BUT_IGNORE_CASE_MATCHES = { 211158, 210411, 96682, 120, 210615 };
 
 
-    private final String[] ANYTHING_BUT_PREFIX_RULES = {
+    public static final String[] ANYTHING_BUT_PREFIX_RULES = {
       "{\n" +
               "  \"properties\": {\n" +
               "    \"STREET\": [ { \"anything-but\": {\"prefix\": \"FULTO\" } } ]\n" +
@@ -415,7 +415,7 @@ public class Benchmarks {
     };
     private final int[] ANYTHING_BUT_PREFIX_MATCHES = { 211158, 210118, 96667, 120, 209091 };
 
-    private final String[] ANYTHING_BUT_SUFFIX_RULES = {
+    public static final String[] ANYTHING_BUT_SUFFIX_RULES = {
       "{\n" +
               "  \"properties\": {\n" +
               "    \"STREET\": [ { \"anything-but\": {\"suffix\": \"ULTON\" } } ]\n" +
@@ -444,7 +444,7 @@ public class Benchmarks {
     };
     private final int[] ANYTHING_BUT_SUFFIX_MATCHES = { 211136, 210411, 94908, 0, 209055 };
 
-    private final String[] ANYTHING_BUT_WILDCARD_RULES = {
+    public static final String[] ANYTHING_BUT_WILDCARD_RULES = {
             "{\n" +
                     "  \"properties\": {\n" +
                     "    \"MAPBLKLOT\": [ { \"anything-but\": {\"wildcard\": \"143*\" } } ]\n" +
@@ -936,8 +936,13 @@ public class Benchmarks {
     }
 
     private void readCityLots2() {
+        System.out.println("Reading citylots2");
+        readCityLots2(citylots2);
+        System.out.println("Read " + citylots2.size() + " events");
+    }
+
+    public static void readCityLots2(List<String> citylots2) {
         try {
-            System.out.println("Reading citylots2");
             final FileInputStream fileInputStream = new FileInputStream(CITYLOTS_2);
             final GZIPInputStream gzipInputStream = new GZIPInputStream(fileInputStream);
             BufferedReader cl2Reader = new BufferedReader(new InputStreamReader(gzipInputStream));
@@ -948,9 +953,7 @@ public class Benchmarks {
                 line = cl2Reader.readLine();
             }
             cl2Reader.close();
-            System.out.println("Read " + citylots2.size() + " events");
         } catch (Exception e) {
-            System.out.println("Can't find, current directory " + System.getProperty("user.dir"));
             throw new RuntimeException(e);
         }
     }
