@@ -44,7 +44,7 @@
     <spotbugs.plugin.version>4.8.6.3</spotbugs.plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jmh.version>1.37</jmh.version>
-    <exec.plugin.version>3.0.0</exec.plugin.version>
+    <exec.plugin.version>3.4.1</exec.plugin.version>
   </properties>
 
   <licenses>
