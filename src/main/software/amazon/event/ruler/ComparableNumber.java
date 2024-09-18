@@ -3,104 +3,121 @@ package software.amazon.event.ruler;
 import ch.randelshofer.fastdoubleparser.JavaBigDecimalParser;
 
 import java.math.BigDecimal;
-
-import static software.amazon.event.ruler.Constants.BASE64_DIGITS;
-import static software.amazon.event.ruler.Constants.MIN_NUM_DIGIT;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Represents a number as a comparable string.
  * <br/>
- * Numbers are allowed in the range -500,000,000,000 to +500,000,000,000 (inclusive).
- * Comparisons are precise to 17 decimal places, with six to the right of the decimal.
- * Numbers are treated as floating-point values.
- * <br>
- * Numbers are converted to strings by:
- * 1. Multiplying by 1,000,000 to remove the decimal point and then adding 500,000,000,000 (to remove negatives), then
- * 2. Formatting to a 12-character to base64 string with padding, because the base64 string
- *     converted from 500,000,000,000 * 1,000,000 = 500,000,000,000,000,000 has 12 characters.
+ * All possible double numbers (IEEE-754 binary64 standard) are allowed.
+ * Numbers are first standardized to floating-point values and then converted
+ * to a Base128 encoded string of 10 bytes.
  * <br/>
- * Hexadecimal representation is used because:
- * 1. It saves 3 bytes of memory per number compared to decimal representation.
- * 2. It is lexicographically comparable, which is useful for maintaining sorted order of numbers.
- * 2. It aligns with the radix used for IP addresses.
+ * Base128 encoding offers a compact representation of decimal numbers that preserves
+ * the lexicographical order of the numbers.
  * <br/>
- * The number is parsed as a Java {@code BigDecimal} to support decimal fractions. We're avoiding double as
- * there is a well-known issue that double numbers can lose precision when performing calculations involving
- * other data types. The higher the number, the lower the accuracy that can be maintained. For example,
- * {@code 0.30d - 0.10d = 0.19999999999999998} instead of {@code 0.2d}. When extended to {@code 1e10}, the test
- * results show that only 5 decimal places of precision can be guaranteed when using doubles.
+ * based on https://github.com/timbray/quamina/blob/main/numbits.go .
+ * <br/>
+ * The number is parsed as a Java {@code BigDecimal} to support decimal fractions as there is a
+ * well known issue where its possible to lose precision when parsing doubles. It's probably
+ * possible to support more ranges with our current implementation of parsing strings to
+ * BigDecimal, but it's not worth the effort as JSON supports IEEE-754 numbers at most. In
+ * case this requirement changes, it would be advisable to move away from using {@code Doubles}
+ * and {@code Long} in this class.
  * <br/>
  * CAVEAT:
- * The current range of +/- 500,000,000,000 is selected as a balance between maintaining the committed 6
- * decimal places of precision and memory cost (each number is parsed into a 12-character hexadecimal string).
+ * There are precision and memory implications of the implementation here.
  * When trying to increase the maximum number, PLEASE BE VERY CAREFUL TO PRESERVE THE NUMBER PRECISION AND
  * CONSIDER THE MEMORY COST.
- * <br/>
- * Also, while {@code BigDecimal} can ensure the precision of double calculations, it has been shown to be
- * 2-4 times slower for basic mathematical and comparison operations, so we turn to long integer arithmetic.
- * This will need to be modified if we ever need to support larger numbers.
  */
 class ComparableNumber {
-    // Use scientific notation to define the double number directly to avoid losing Precision by calculation
-    // for example 5000 * 1000 *1000 will be wrongly parsed as 7.05032704E8 by computer.
-    static final double HALF_TRILLION = 5E11;
 
-    static final int MAX_LENGTH_IN_BYTES = 16;
-    static final int MAX_DECIMAL_PRECISON = 6;
+    static final int MAX_LENGTH_IN_BYTES = 10;
+    static final int BASE_128_BITMASK = 0x7f; // 127 or 01111111
 
-    public static final BigDecimal TEN_E_SIX = new BigDecimal("1E6"); // to remove decimals
-    public static final long HALF_TRILLION_TEN_E_SIX = new BigDecimal(ComparableNumber.HALF_TRILLION).multiply(TEN_E_SIX).longValueExact();
+    /**
+     * Generates a comparable number string from a given string representation
+     * using numbits representation.
+     *
+     * @param str the string representation of the number
+     * @return the comparable number string
+     * @throws NumberFormatException if the input isn't a number
+     * @throws IllegalArgumentException if the input isn't a number we can compare
+     */
+    static String generate(final String str) {
+        final BigDecimal bigDecimal = JavaBigDecimalParser.parseBigDecimal(str);
+        final double doubleValue = bigDecimal.doubleValue();
 
-    private ComparableNumber() {
+        // make sure we have the comparable numbers and haven't eaten up decimals values
+        if(Double.isNaN(doubleValue) || Double.isInfinite(doubleValue) ||
+                BigDecimal.valueOf(doubleValue).compareTo(bigDecimal) != 0) {
+            throw new IllegalArgumentException("Cannot compare number : " + str);
+        }
+        final long bits = Double.doubleToRawLongBits(doubleValue);
+
+        // if high bit is 0, we want to xor with sign bit 1 << 63, else negate (xor with ^0). Meaning,
+        // bits >= 0, mask = 1000000000000000000000000000000000000000000000000000000000000000
+        // bits < 0,  mask = 1111111111111111111111111111111111111111111111111111111111111111
+        final  long mask = ((bits >>> 63) * 0xFFFFFFFFFFFFFFFFL) | (1L  << 63);
+        return numbits(bits ^ mask );
     }
 
     /**
-     * Generates a hexadecimal string representation of a given decimal string value,
-     * with a maximum precision of 6 decimal places and a range between -5,000,000,000
-     * and 5,000,000,000 (inclusive).
+     * Converts a long value to a Base128 encoded string representation.
+     * <br/>
+     * The Base128 encoding scheme is a way to represent a long value as a sequence
+     * of bytes, where each byte encodes 7 bits of the original value. This allows for
+     * efficient storage and transmission of large numbers.
+     * <br/>
+     * The method first determines the number of trailing zero bytes in the input
+     * value by iterating over the bytes from the most significant byte to the least
+     * significant byte, and counting the number of consecutive zero bytes at the end.
+     * It then creates a byte array of fixed length {@code MAX_LENGTH_IN_BYTES} and
+     * populates it with the Base128 encoded bytes of the input value, starting from
+     * the least significant byte.
+     * <br/>
+     * As shown in Quamina's numbits.go, it's possible to use variable length encoding
+     * to reduce storage for simple (often common) numbers but it's not done here to
+     * keep range comparisons simple for now.
      *
-     * @param str the decimal string value to be converted
-     * @return the hexadecimal string representation of the input value
-     * @throws IllegalArgumentException if the input value has more than 6 decimal places
-     *                                  or is outside the allowed range
+     * @param value the long value to be converted
+     * @return the Base128 encoded string representation of the input value
      */
-    static String generate(final String str) {
-        final BigDecimal number = JavaBigDecimalParser.parseBigDecimal(str).stripTrailingZeros();
-        if (number.scale() > MAX_DECIMAL_PRECISON) {
-            throw new IllegalArgumentException("Only values upto 6 decimals are supported");
+    public static String numbits(long value) {
+        int trailingZeroes = 0;
+        int index;
+        // Count the number of trailing zero bytes to skip setting them
+        for(index = MAX_LENGTH_IN_BYTES - 1; index >= 0; index--) {
+            if((value & BASE_128_BITMASK) != 0) {
+                break;
+            }
+            trailingZeroes ++;
+            value >>= 7;
         }
 
-        final long shiftedBySixDecimals = number.multiply(TEN_E_SIX).longValueExact();
+        byte[] result = new byte[MAX_LENGTH_IN_BYTES];
 
-        // faster than doing bigDecimal comparisons
-        if (shiftedBySixDecimals < -HALF_TRILLION_TEN_E_SIX || shiftedBySixDecimals > HALF_TRILLION_TEN_E_SIX) {
-            throw new IllegalArgumentException("Value must be between " + -ComparableNumber.HALF_TRILLION +
-                    " and " + ComparableNumber.HALF_TRILLION + ", inclusive");
+        // Populate the byte array with the Base128 encoded bytes of the input value
+        for(; index >= 0; index--) {
+            result[index] = (byte)(value & BASE_128_BITMASK);
+            value >>= 7;
         }
 
-        return longToBase64Bytes(shiftedBySixDecimals + HALF_TRILLION_TEN_E_SIX);
+        return new String(result, StandardCharsets.UTF_8);
     }
 
-    public static String longToBase64Bytes(long value) {
-        if (value < 0) {
-            throw new IllegalArgumentException("Input value must be non-negative");
+    /**
+     * This is a utility function for debugging and tests.
+     * Converts a given string into a list of integers, where each integer represents
+     * the ASCII value of the corresponding character in the string.
+     */
+    static List<Integer> toIntVals(String s) {
+        Integer[] arr = new Integer[s.length()];
+        for (int i=0; i<s.length(); i++) {
+            arr[i] = (int)s.charAt(i);
         }
-
-        char[] bytes = new char[12]; // Maximum length of base-64 encoded long is 12 bytes
-        int index = 11;
-
-        while (value > 0) {
-            int digit = (int) (value & 0x3F); // Get the lowest 6 bits
-            bytes[index--] = (char) BASE64_DIGITS[digit];
-            value >>= 6; // Shift the value right by 6 bits
-        }
-
-        while(index >= 0) { // left padding
-            bytes[index--] = (char) MIN_NUM_DIGIT;
-        }
-
-        return new String(bytes);
+        return Arrays.asList(arr);
     }
-
 }
 

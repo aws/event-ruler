@@ -45,6 +45,10 @@ public class ValuePatterns extends Patterns {
 
     @Override
     public String toString() {
-        return "VP:" + pattern + " (" + super.toString() + ")";
+        if(type() == MatchType.NUMERIC_EQ) {
+            return "VP:" + ComparableNumber.toIntVals(pattern) + " (" + super.toString() + ")";
+        } else {
+            return "VP:" + pattern + " (" + super.toString() + ")";
+        }
     }
 }

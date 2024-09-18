@@ -8,23 +8,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.TreeMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static software.amazon.event.ruler.Constants.BASE64_DIGITS;
 
 public class ComparableNumberTest {
 
     @Test
     public void WHEN_WildlyVaryingNumberFormsAreProvided_THEN_TheGeneratedStringsAreSortable() {
         double[] data = {
-                -ComparableNumber.HALF_TRILLION, -499_999_999_999.99999, -499_999_999_999.99998, -499_999_999_999.99997,
+                -5E11, -499_999_999_999.99999, -499_999_999_999.99998, -499_999_999_999.99997,
                 -5_000_000_000.0, -4_999_999_999.99999, -4_999_999_999.99998, -4_999_999_999.99997,
                 -999999999.99999, -999999999.99, -10000, -122.413496, -0.000002,
                 0, 0.000001, 3.8, 3.9, 11, 12, 122.415028, 2.5e4, 999999999.999998, 999999999.999999,
                 4_999_999_999.99997, 4_999_999_999.99998, 4_999_999_999.99999, 5_000_000_000.0,
-                499_999_999_999.99997, 499_999_999_999.99998, 499_999_999_999.99999, ComparableNumber.HALF_TRILLION
+                499_999_999_999.99997, 499_999_999_999.99998, 499_999_999_999.99999, 5E11
         };
         for (int i = 1; i < data.length; i++) { // -122.415028278886751
             String s0 = ComparableNumber.generate(Double.toString(data[i-1]));
@@ -35,19 +35,19 @@ public class ComparableNumberTest {
 
     @Test
     public void WHEN_EventHasVaryingPrecision_THEN_MatchRuleWithDecimalAsString() throws Exception {
-        String badRule = "{\"x\": [ 37.807807921694092 ] }";
+        String badRule = "{\"x\": [ 27.807807921694092 ] }";
         String[] varying = {
-                "37.807807921694092",
-                "37.80780792169409",
-                "37.8078079216940",
-                "37.807807921694",
-                "37.80780792169",
-                "37.8078079216",
-                "37.807807921",
-                "37.80780792",
-                "37.8078079",
-                "37.807807",
-                "37.80780",
+                "27.807807921694092",
+                "27.80780792169409",
+                "27.8078079216940",
+                "27.807807921694",
+                "27.80780792169",
+                "27.8078079216",
+                "27.807807921",
+                "27.80780792",
+                "27.8078079",
+                "27.807807",
+                "27.80780",
         };
         int[] expected = {
                 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
@@ -57,7 +57,7 @@ public class ComparableNumberTest {
             Machine mm = new Machine();
             mm.addRule("R", badRule);
             List<String> matches = mm.rulesForJSONEvent(event);
-            assertEquals(expected[i], matches.size());
+            assertEquals(i + " : " + varying[i], expected[i], matches.size());
         }
     }
 
@@ -91,37 +91,37 @@ public class ComparableNumberTest {
 
     @Test
     public void WHEN_NumbersWithDifferentFormat_THEN_allCanBeParsed() {
-        Map<String, String> testCases = new HashMap<>();
-        testCases.put("01", "++PkKpbHkI7+");
-        testCases.put("-0777", "++PkKpaZMSj+");
-        testCases.put("-12345600", "++PkI/xYZw++");
-        testCases.put("010", "++PkKpbIGdO+");
-        testCases.put("011", "++PkKpbIKRX+");
-        testCases.put("0000123456", "++PkKrOGDl++");
-        testCases.put("-123.456", "++PkKpbAJXM+");
-        testCases.put("123.456", "++PkKpbP1Qc+");
-        testCases.put("0123", "++PkKpbP/hH+");
-        testCases.put("123456", "++PkKrOGDl++");
-        testCases.put("-011", "++PkKpbH0WR+");
-        testCases.put("-010", "++PkKpbH4Ka+");
-        testCases.put("1e2", "++PkKpbNdy2+");
-        testCases.put("-0", "++PkKpbHgU++");
-        testCases.put("-.123456", "++PkKpbHg/r+");
-        testCases.put("12345600", "++PkNdF0n2++");
-        testCases.put("-01", "++PkKpbHcfr+");
-        testCases.put("1e-2", "++PkKpbHgWQE");
-        testCases.put("0", "++PkKpbHgU++");
-        testCases.put("-0.0", "++PkKpbHgU++");
-        testCases.put("0777", "++PkKpc0+VF+");
-        testCases.put("0.0", "++PkKpbHgU++");
-        testCases.put("-0000123456", "++PkKnoJ7D++");
-        testCases.put("-123456", "++PkKnoJ7D++");
-        testCases.put("-0123", "++PkKpbALGh+");
+        Map<String, List<Integer>> testCases = new TreeMap<>();
+        testCases.put("-.123456", Arrays.asList(0, 64, 32, 25, 38, 0, 44, 5, 18, 64));
+        testCases.put("-0", Arrays.asList(0, 127, 127, 127, 127, 127, 127, 127, 127, 127));
+        testCases.put("-0.0", Arrays.asList(0, 127, 127, 127, 127, 127, 127, 127, 127, 127));
+        testCases.put("-0000123456", Arrays.asList(0, 63, 0, 118, 127, 127, 127, 127, 127, 127));
+        testCases.put("-01", Arrays.asList(0, 64, 7, 127, 127, 127, 127, 127, 127, 127));
+        testCases.put("-010", Arrays.asList(0, 63, 109, 127, 127, 127, 127, 127, 127, 127));
+        testCases.put("-011", Arrays.asList(0, 63, 108, 127, 127, 127, 127, 127, 127, 127));
+        testCases.put("-0123", Arrays.asList(0, 63, 80, 79, 127, 127, 127, 127, 127, 127));
+        testCases.put("-0777", Arrays.asList(0, 63, 59, 109, 127, 127, 127, 127, 127, 127));
+        testCases.put("-123.456", Arrays.asList(0, 63, 80, 72, 90, 14, 43, 1, 3, 8));
+        testCases.put("-123456", Arrays.asList(0, 63, 0, 118, 127, 127, 127, 127, 127, 127));
+        testCases.put("-12345600", Arrays.asList(0, 62, 76, 28, 123, 127, 127, 127, 127, 127));
+        testCases.put("0", Arrays.asList(127, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+        testCases.put("0.0", Arrays.asList(127, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+        testCases.put("0000123456", Arrays.asList(127, 64, 127, 9, 0, 0, 0, 0, 0, 0));
+        testCases.put("01", Arrays.asList(127, 63, 120, 0, 0, 0, 0, 0, 0, 0));
+        testCases.put("010", Arrays.asList(127, 64, 18, 0, 0, 0, 0, 0, 0, 0));
+        testCases.put("011", Arrays.asList(127, 64, 19, 0, 0, 0, 0, 0, 0, 0));
+        testCases.put("0123", Arrays.asList(127, 64, 47, 48, 0, 0, 0, 0, 0, 0));
+        testCases.put("0777", Arrays.asList(127, 64, 68, 18, 0, 0, 0, 0, 0, 0));
+        testCases.put("123.456", Arrays.asList(127, 64, 47, 55, 37, 113, 84, 126, 124, 119));
+        testCases.put("123456", Arrays.asList(127, 64, 127, 9, 0, 0, 0, 0, 0, 0));
+        testCases.put("12345600", Arrays.asList(127, 65, 51, 99, 4, 0, 0, 0, 0, 0));
+        testCases.put("1e-2", Arrays.asList(127, 63, 66, 30, 92, 20, 61, 56, 40, 123));
+        testCases.put("1e2", Arrays.asList(127, 64, 44, 64, 0, 0, 0, 0, 0, 0));
 
-        for (Entry<String, String> entry: testCases.entrySet()) {
+        for (Entry<String, List<Integer>> entry: testCases.entrySet()) {
             String input = entry.getKey();
-            String expected = entry.getValue();
-            String actual = ComparableNumber.generate(input);
+            List<Integer> expected = entry.getValue();
+            List<Integer> actual = ComparableNumber.toIntVals(ComparableNumber.generate(input));
             assertEquals("For " + input + " got " + actual + " but expected " + expected,
                     expected, actual);
         }
@@ -134,7 +134,7 @@ public class ComparableNumberTest {
         double[] doubles = new double[numberOfDoubles];
 
         for (int i = 0; i < numberOfDoubles; i++) { // Generate large doubles with at most 6 decimals
-            double randomDouble = random.nextDouble() * ComparableNumber.HALF_TRILLION;
+            double randomDouble = random.nextDouble() * Double.MAX_VALUE;
             randomDouble = Math.round(randomDouble * 1e6) / 1e6;
             randomDouble = i % 2 == 0 ? randomDouble : randomDouble * -1;
             doubles[i] = randomDouble;
@@ -299,25 +299,17 @@ public class ComparableNumberTest {
         final char[] bigArr = big.toCharArray();
 
         for (int j = 0; j < smallArr.length; j++) { // quick check
-            if (findIndex(smallArr[j]) == findIndex(bigArr[j])) {
+            if (smallArr[j] == bigArr[j]) {
                 continue;
             }
-            if (findIndex(smallArr[j]) < findIndex(bigArr[j])) {
+            if (smallArr[j] < bigArr[j]) {
                 break;
             }
 
-            fail("failed: " + big + " vs " + less);
+            final List<Integer> bigIntArr = ComparableNumber.toIntVals(big);
+            final List<Integer> lessIntArr = ComparableNumber.toIntVals(less);
+            fail("failed: " + lessIntArr + " vs " + bigIntArr);
         }
-    }
-
-    private static int findIndex(char c) {
-        for(int i=0; i<BASE64_DIGITS.length; i++) {
-            if(c == BASE64_DIGITS[i]) {
-                return i;
-            }
-        }
-        fail("failed to find " + c + " in " + BASE64_DIGITS);
-        return -1; // never gets called
     }
 
 }
