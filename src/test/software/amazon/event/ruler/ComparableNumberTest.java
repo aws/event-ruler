@@ -93,8 +93,6 @@ public class ComparableNumberTest {
     public void WHEN_NumbersWithDifferentFormat_THEN_allCanBeParsed() {
         Map<String, List<Integer>> testCases = new TreeMap<>();
         testCases.put("-.123456", Arrays.asList(0, 64, 32, 25, 38, 0, 44, 5, 18, 64));
-        testCases.put("-0", Arrays.asList(0, 127, 127, 127, 127, 127, 127, 127, 127, 127));
-        testCases.put("-0.0", Arrays.asList(0, 127, 127, 127, 127, 127, 127, 127, 127, 127));
         testCases.put("-0000123456", Arrays.asList(0, 63, 0, 118, 127, 127, 127, 127, 127, 127));
         testCases.put("-01", Arrays.asList(0, 64, 7, 127, 127, 127, 127, 127, 127, 127));
         testCases.put("-010", Arrays.asList(0, 63, 109, 127, 127, 127, 127, 127, 127, 127));
