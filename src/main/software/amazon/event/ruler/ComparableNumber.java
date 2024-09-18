@@ -14,15 +14,14 @@ import java.util.List;
  * Numbers are first standardized to floating-point values and then converted
  * to a Base128 encoded string of 10 bytes.
  * <br/>
- * Base128 encoding offers a compact representation of decimal numbers that preserves
- * the lexicographical order of the numbers.
+ * We use Base128 encoding offers a compact representation of decimal numbers
+ * as it preserves the lexicographical order of the numbers. See
+ * https://github.com/aws/event-ruler/issues/179 for more context.
  * <br/>
- * based on https://github.com/timbray/quamina/blob/main/numbits.go .
- * <br/>
- * The number is parsed as a Java {@code BigDecimal} to support decimal fractions as there is a
- * well known issue where its possible to lose precision when parsing doubles. It's probably
- * possible to support more ranges with our current implementation of parsing strings to
- * BigDecimal, but it's not worth the effort as JSON supports IEEE-754 numbers at most. In
+ * The numbers are first parsed as a Java {@code BigDecimal} as there is a well known issue
+ * where parsing directly to {@code Double} can loose precision when parsing doubles. It's
+ * probably possible to wider ranges with our current implementation of parsing strings to
+ * BigDecimal, but it's not worth the effort as JSON also support upto float64 range. In
  * case this requirement changes, it would be advisable to move away from using {@code Doubles}
  * and {@code Long} in this class.
  * <br/>
