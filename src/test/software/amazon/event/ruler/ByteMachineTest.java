@@ -132,7 +132,7 @@ public class ByteMachineTest {
             Range[] ranges = new Range[data.length-1];
             int rangeIdx = 0;
             ByteMachine cut = new ByteMachine();
-            for (int i = 1; i < data.length; i++) {;
+            for (int i = 1; i < data.length; i++) {
                 cut.addPattern(Range.lessThan(Double.toString(data[i])));
                 ranges[rangeIdx++] = Range.lessThan(Double.toString(data[i]));
             }

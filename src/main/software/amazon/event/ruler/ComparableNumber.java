@@ -35,6 +35,8 @@ class ComparableNumber {
     static final int MAX_LENGTH_IN_BYTES = 10;
     static final int BASE_128_BITMASK = 0x7f; // 127 or 01111111
 
+    private ComparableNumber() {}
+
     /**
      * Generates a comparable number string from a given string representation
      * using numbits representation.
