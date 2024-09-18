@@ -40,7 +40,7 @@ public class PatternsTest {
                 null,
                 null,
                 "ab",
-                "++PkKpbHlAGk",
+                "\u007F?ykBGW\u0005\u000F.",
                 "abc",
                 "xyz",
                 "hElLo",
