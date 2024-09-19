@@ -19,8 +19,8 @@ import java.util.List;
  * https://github.com/aws/event-ruler/issues/179 for more context.
  * <br/>
  * The numbers are first parsed as a Java {@code BigDecimal} as there is a well known issue
- * where parsing directly to {@code Double} can loose precision when parsing doubles. It's
- * probably possible to wider ranges with our current implementation of parsing strings to
+ * where parsing directly to {@code Double} can lose precision when parsing doubles. It's
+ * probably possible to support wider ranges with our current implementation of parsing strings to
  * BigDecimal, but it's not worth the effort as JSON also support upto float64 range. In
  * case this requirement changes, it would be advisable to move away from using {@code Doubles}
  * and {@code Long} in this class.
