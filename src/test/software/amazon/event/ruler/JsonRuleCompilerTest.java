@@ -287,20 +287,20 @@ public class JsonRuleCompilerTest {
     @Test
     public void testNumericExpressions() {
         String[] goods = {
-                "[\"=\", 3.8]", "[\"=\", 0.000033]", "[\"=\", -4e-6]", "[\"=\", 55555]",
-                "[\"<\", 3.8]", "[\"<\", 0.000033]", "[\"<\", -4e-6]", "[\"<\", 55555]",
-                "[\">\", 3.8]", "[\">\", 0.000033]", "[\">\", -4e-6]", "[\">\", 55555]",
-                "[\"<=\", 3.8]", "[\"<=\", 0.000033]", "[\"<=\", -4e-6]", "[\"<=\", 55555]",
-                "[\">=\", 3.8]", "[\">=\", 0.000033]", "[\">=\", -4e-6]", "[\">=\", 55555]",
+                "[\"=\", 3.8]", "[\"=\", 0.000033]", "[\"=\", -4e-6]", "[\"=\", 55555]", "[\"=\", 1E-320]",
+                "[\"<\", 3.8]", "[\"<\", 0.000033]", "[\"<\", -4e-6]", "[\"<\", 55555]", "[\"<\", 1E-320]",
+                "[\">\", 3.8]", "[\">\", 0.000033]", "[\">\", -4e-6]", "[\">\", 55555]", "[\">\", 1E-320]",
+                "[\"<=\", 3.8]", "[\"<=\", 0.000033]", "[\"<=\", -4e-6]", "[\"<=\", 55555]", "[\"<=\", 1E-320]",
+                "[\">=\", 3.8]", "[\">=\", 0.000033]", "[\">=\", -4e-6]", "[\">=\", 55555]", "[\">=\", 1E-320]",
                 "[\">\", 0, \"<\", 1]", "[\">=\", 0, \"<\", 1]",
                 "[\">\", 0, \"<=\", 1]", "[\">=\", 0, \"<=\", 1]"
         };
 
-        String[] bads = {
-                "[\"=\", true]", "[\"=\", 2.0e22]", "[\"=\", \"-4e-6\"]", "[\"=\"]",
-                "[\"<\", true]", "[\"<\", 2.0e22]", "[\"<\", \"-4e-6\"]", "[\"<\"]",
-                "[\">=\", true]", "[\">=\", 2.0e22]", "[\">=\", \"-4e-6\"]", "[\">=\"]",
-                "[\"<=\", true]", "[\"<=\", 2.0e22]", "[\"<=\", \"-4e-6\"]", "[\"<=\"]",
+        String[] bads = new String[]{
+                "[\"=\", true]", "[\"=\", 2.0e422]", "[\"=\", \"-4e-6\"]", "[\"=\"]", "[\"=\", 1E309]", "[\"=\", 1E-325]",
+                "[\"<\", true]", "[\"<\", 2.0e422]", "[\"<\", \"-4e-6\"]", "[\"<\"]", "[\"=\", 1E309]", "[\"=\", 1E-325]",
+                "[\">=\", true]", "[\">=\", 2.0e422]", "[\">=\", \"-4e-6\"]", "[\">=\"]", "[\"=\", 1E309]", "[\"=\", 1E-325]",
+                "[\"<=\", true]", "[\"<=\", 2.0e422]", "[\"<=\", \"-4e-6\"]", "[\"<=\"]", "[\"=\", 1E309]", "[\"=\", 1E-325]",
                 "[\"<>\", 1, \">\", 0]", "[\"==\", 1, \">\", 0]",
                 "[\"<\", 1, \">\", 0]", "[\">\", 1, \"<\", 1]",
                 "[\">\", 30, \"<\", 1]", "[\">\", 1, \"<\", 30, false]"
@@ -517,7 +517,7 @@ public class JsonRuleCompilerTest {
                 "[{metricName=[VP:\"CPUUtilization\" (T:EXACT), VP:\"ReadLatency\" (T:EXACT)]}, {namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)]}]",
                 "[{detail.source=[VP:\"aws.cloudwatch\" (T:EXACT)], metricName=[VP:\"CPUUtilization\" (T:EXACT), VP:\"ReadLatency\" (T:EXACT)]}, {namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)], detail.source=[VP:\"aws.cloudwatch\" (T:EXACT)]}, {detail.detail-type=[VP:\"CloudWatch Alarm State Change\" (T:EXACT)], metricName=[VP:\"CPUUtilization\" (T:EXACT), VP:\"ReadLatency\" (T:EXACT)]}, {namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)], detail.detail-type=[VP:\"CloudWatch Alarm State Change\" (T:EXACT)]}]",
                 "[{source=[VP:\"aws.cloudwatch\" (T:EXACT)], metricName=[VP:\"CPUUtilization\" (T:EXACT), VP:\"ReadLatency\" (T:EXACT)]}, {namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)], metricType=[VP:\"MetricType\" (T:EXACT)], source=[VP:\"aws.cloudwatch\" (T:EXACT)]}, {source=[VP:\"aws.cloudwatch\" (T:EXACT)], scope=[VP:\"Service\" (T:EXACT)]}]",
-                "[{source=[VP:\"aws.cloudwatch\" (T:EXACT)], metricName=[VP:\"CPUUtilization\" (T:EXACT), VP:\"ReadLatency\" (T:EXACT)]}, {namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)], metricType=[VP:\"MetricType\" (T:EXACT)], source=[VP:\"aws.cloudwatch\" (T:EXACT)], metricId=[VP:++PkKpcRDpW+ (T:NUMERIC_EQ), VP:1234 (T:EXACT)]}, {namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)], metricType=[VP:\"MetricType\" (T:EXACT)], spaceId=[VP:++PkKpcDHAc+ (T:NUMERIC_EQ), VP:1000 (T:EXACT)], source=[VP:\"aws.cloudwatch\" (T:EXACT)]}, {source=[VP:\"aws.cloudwatch\" (T:EXACT)], scope=[VP:\"Service\" (T:EXACT)]}]",
+                "[{source=[VP:\"aws.cloudwatch\" (T:EXACT)], metricName=[VP:\"CPUUtilization\" (T:EXACT), VP:\"ReadLatency\" (T:EXACT)]}, {namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)], metricType=[VP:\"MetricType\" (T:EXACT)], source=[VP:\"aws.cloudwatch\" (T:EXACT)], metricId=[VP:[127, 64, 73, 82, 0, 0, 0, 0, 0, 0] (T:NUMERIC_EQ), VP:1234 (T:EXACT)]}, {namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)], metricType=[VP:\"MetricType\" (T:EXACT)], spaceId=[VP:[127, 64, 71, 80, 0, 0, 0, 0, 0, 0] (T:NUMERIC_EQ), VP:1000 (T:EXACT)], source=[VP:\"aws.cloudwatch\" (T:EXACT)]}, {source=[VP:\"aws.cloudwatch\" (T:EXACT)], scope=[VP:\"Service\" (T:EXACT)]}]",
                 "[{detail.state.value=[VP:\"ALARM\" (T:EXACT)], source=[VP:\"aws.cloudwatch\" (T:EXACT)], withConfiguration.metrics.metricStat.metric.namespace=[VP:\"AWS/EC2\" (T:EXACT)]}, {detail.state.value=[VP:\"ALARM\" (T:EXACT)], source=[VP:\"aws.cloudwatch\" (T:EXACT)], withoutConfiguration.metric.name=[VP:\"AWS/Default\" (T:EXACT)]}]"
         };
         int i = 0;
@@ -575,8 +575,8 @@ public class JsonRuleCompilerTest {
         final String[] expectedCompiledRules = {
                 "{$or=[0A000000/0A0000FF:false/false:true (T:NUMERIC_RANGE)]}",
                 "{$or.namespace=[VP:\"AWS/EC2\" (T:EXACT), VP:\"AWS/ES\" (T:EXACT)], source=[VP:\"aws.cloudwatch\" (T:EXACT)], $or.metricType=[VP:\"MetricType\" (T:EXACT)]}",
-                "{detail.$or=[++PkKpbHgU++/++PkKpbHzYh+:true/false:false (T:NUMERIC_RANGE), 0A000000/0AFFFFFF:false/false:true (T:NUMERIC_RANGE)], time=[VP:\"2017-10-02 (T:PREFIX)]}",
-                "{detail.$or=[++PkKpbHgU++/++PkKpbHzYh+:true/false:false (T:NUMERIC_RANGE), ++PkKpbIGdO+/++rUhfCbN+++:true/false:false (T:NUMERIC_RANGE)]}"
+                "{detail.$or=[[127, 0, 0, 0, 0, 0, 0, 0, 0, 0]/[127, 64, 10, 0, 0, 0, 0, 0, 0, 0]:true/false:false (T:NUMERIC_RANGE), 0A000000/0AFFFFFF:false/false:true (T:NUMERIC_RANGE)], time=[VP:\"2017-10-02 (T:PREFIX)]}",
+                "{detail.$or=[[127, 0, 0, 0, 0, 0, 0, 0, 0, 0]/[127, 64, 10, 0, 0, 0, 0, 0, 0, 0]:true/false:false (T:NUMERIC_RANGE), [127, 64, 18, 0, 0, 0, 0, 0, 0, 0]/[127, 127, 119, 127, 127, 127, 127, 127, 127, 127]:true/false:false (T:NUMERIC_RANGE)]}"
         };
 
         int i = 0;

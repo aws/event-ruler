@@ -38,18 +38,16 @@ final class Constants {
   final static byte MAX_HEX_DIGIT = HEX_DIGITS[HEX_DIGITS.length - 1]; // F
   final static byte MIN_HEX_DIGIT = HEX_DIGITS[0]; // 0
 
-  static final byte[] BASE64_DIGITS = {
-          // numbers are ordered intentionally to based on ascii table value
-          '+', '/',
-          '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-          'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
-          'W', 'X', 'Y', 'Z',
-          'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
-          'w', 'x', 'y', 'z',
-  };
+  static final byte[] BASE128_DIGITS = new byte[128];
 
-  final static byte MAX_NUM_DIGIT = BASE64_DIGITS[BASE64_DIGITS.length - 1]; // z
-  final static byte MIN_NUM_DIGIT = BASE64_DIGITS[0]; // +
+  static {
+    for (int i = 0; i < BASE128_DIGITS.length; i++) {
+      BASE128_DIGITS[i] = (byte) i;
+    }
+  }
+
+  final static byte MAX_NUM_DIGIT = BASE128_DIGITS[BASE128_DIGITS.length - 1];
+  final static byte MIN_NUM_DIGIT = BASE128_DIGITS[0];
 
   final static List<String> RESERVED_FIELD_NAMES_IN_OR_RELATIONSHIP = Arrays.asList(
       EXACT_MATCH,

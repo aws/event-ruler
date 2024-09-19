@@ -273,10 +273,8 @@ Anything-but wildcard list (strings):
 ```
 
 Above, the references to `c-count`, `d-count`, and `x-limit` illustrate numeric matching,
-and only
-work with values that are JSON numbers.  Numeric matching is limited to value between
--5.0e11 and +5.0e11 inclusive, with 17 digits of precision, that is to say 6 digits
-to the right of the decimal point.
+and only work with values that are JSON numbers.  Numeric matching supports the same 
+precision and range as Java's `double` primitive which implements IEEE 754 `binary64` standard. 
 
 ### IP Address Matching
 ```javascript
