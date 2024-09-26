@@ -103,7 +103,7 @@ class ComparableNumber {
 
         // Populate the byte array with the Base128 encoded bytes of the input value
         for(; index >= 0; index--) {
-            result[index] = (byte) (value & BASE_128_BITMASK);
+            result[index] = (byte)(value & BASE_128_BITMASK);
             value >>= 7;
         }
 
