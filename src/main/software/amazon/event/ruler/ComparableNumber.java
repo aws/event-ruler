@@ -14,7 +14,7 @@ import java.util.List;
  * Numbers are first standardized to floating-point values and then converted
  * to a Base128 encoded string of 10 bytes.
  * <br/>
- * We use Base128 encoding offers a compact representation of decimal numbers
+ * The used Base128 encoding offers a compact representation of decimal numbers
  * as it preserves the lexicographical order of the numbers. See
  * https://github.com/aws/event-ruler/issues/179 for more context.
  * <br/>
@@ -33,6 +33,7 @@ import java.util.List;
 class ComparableNumber {
 
     static final int MAX_LENGTH_IN_BYTES = 10;
+    static final long NOT_FINITE = 0x7ff0L << 52;
     static final int BASE_128_BITMASK = 0x7f; // 127 or 01111111
 
     private ComparableNumber() {}
@@ -57,10 +58,12 @@ class ComparableNumber {
         }
         final long bits = Double.doubleToRawLongBits(doubleValue);
 
+        // https://github.com/aws/event-ruler/pull/188/files#r1769199522
+        // https://mastodon.online/@raph/113071041069390831
         // if high bit is 0, we want to xor with sign bit 1 << 63, else negate (xor with ^0). Meaning,
         // bits >= 0, mask = 1000000000000000000000000000000000000000000000000000000000000000
         // bits < 0,  mask = 1111111111111111111111111111111111111111111111111111111111111111
-        final  long mask = ((bits >>> 63) * 0xFFFFFFFFFFFFFFFFL) | (1L  << 63);
+        final  long mask = (bits >> 63) | (1L  << 63);
         return numbits(bits ^ mask );
     }
 
@@ -88,6 +91,8 @@ class ComparableNumber {
     public static String numbits(long value) {
         int trailingZeroes = 0;
         int index;
+        int highBits = 0;
+        int lowBits = 0;
         // Count the number of trailing zero bytes to skip setting them
         for(index = MAX_LENGTH_IN_BYTES - 1; index >= 0; index--) {
             if((value & BASE_128_BITMASK) != 0) {
@@ -101,8 +106,15 @@ class ComparableNumber {
 
         // Populate the byte array with the Base128 encoded bytes of the input value
         for(; index >= 0; index--) {
-            result[index] = (byte)(value & BASE_128_BITMASK);
-            value >>= 7;
+
+            if(index % 2 == 0) {
+                highBits = (byte) (value & BASE_128_BITMASK);
+                value >>= 7;
+                result[index / 2] = (byte) (highBits | (lowBits << 7));
+            } else {
+                lowBits = (byte) (value & BASE_128_BITMASK);
+                value >>= 7;
+            }
         }
 
         return new String(result, StandardCharsets.UTF_8);

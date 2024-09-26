@@ -35,6 +35,9 @@ public class ComparableNumberTest {
 
     @Test
     public void WHEN_EventHasVaryingPrecision_THEN_MatchRuleWithDecimalAsString() throws Exception {
+        double x = 27.807807921694092;
+        double y = 37.807807921694092;
+
         String badRule = "{\"x\": [ 27.807807921694092 ] }";
         String[] varying = {
                 "27.807807921694092",
@@ -185,7 +188,7 @@ public class ComparableNumberTest {
         for (int i = 1; i < lows.length; i++) {
             String s0 = ComparableNumber.generate(Double.toString(lows[i - 1]));
             String s1 = ComparableNumber.generate(Double.toString(lows[i]));
-            System.out.println("i=" + i + " s0:" + s0 + " s1:" + s1);
+            System.out.println("i=" + i + " s0:" + ComparableNumber.toIntVals(s0) + " s1:" + ComparableNumber.toIntVals(s1));
             assertTrue(s0.compareTo(s1) < 0);
         }
 
