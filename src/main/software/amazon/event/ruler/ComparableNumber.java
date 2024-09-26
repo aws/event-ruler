@@ -33,7 +33,6 @@ import java.util.List;
 class ComparableNumber {
 
     static final int MAX_LENGTH_IN_BYTES = 10;
-    static final long NOT_FINITE = 0x7ff0L << 52;
     static final int BASE_128_BITMASK = 0x7f; // 127 or 01111111
 
     private ComparableNumber() {}
@@ -91,8 +90,6 @@ class ComparableNumber {
     public static String numbits(long value) {
         int trailingZeroes = 0;
         int index;
-        int highBits = 0;
-        int lowBits = 0;
         // Count the number of trailing zero bytes to skip setting them
         for(index = MAX_LENGTH_IN_BYTES - 1; index >= 0; index--) {
             if((value & BASE_128_BITMASK) != 0) {
@@ -106,15 +103,8 @@ class ComparableNumber {
 
         // Populate the byte array with the Base128 encoded bytes of the input value
         for(; index >= 0; index--) {
-
-            if(index % 2 == 0) {
-                highBits = (byte) (value & BASE_128_BITMASK);
-                value >>= 7;
-                result[index / 2] = (byte) (highBits | (lowBits << 7));
-            } else {
-                lowBits = (byte) (value & BASE_128_BITMASK);
-                value >>= 7;
-            }
+            result[index] = (byte) (value & BASE_128_BITMASK);
+            value >>= 7;
         }
 
         return new String(result, StandardCharsets.UTF_8);
