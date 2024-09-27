@@ -14,7 +14,7 @@ import java.util.List;
  * Numbers are first standardized to floating-point values and then converted
  * to a Base128 encoded string of 10 bytes.
  * <br/>
- * We use Base128 encoding offers a compact representation of decimal numbers
+ * The used Base128 encoding offers a compact representation of decimal numbers
  * as it preserves the lexicographical order of the numbers. See
  * https://github.com/aws/event-ruler/issues/179 for more context.
  * <br/>
@@ -57,10 +57,12 @@ class ComparableNumber {
         }
         final long bits = Double.doubleToRawLongBits(doubleValue);
 
+        // https://github.com/aws/event-ruler/pull/188/files#r1769199522
+        // https://mastodon.online/@raph/113071041069390831
         // if high bit is 0, we want to xor with sign bit 1 << 63, else negate (xor with ^0). Meaning,
         // bits >= 0, mask = 1000000000000000000000000000000000000000000000000000000000000000
         // bits < 0,  mask = 1111111111111111111111111111111111111111111111111111111111111111
-        final  long mask = ((bits >>> 63) * 0xFFFFFFFFFFFFFFFFL) | (1L  << 63);
+        final  long mask = (bits >> 63) | (1L  << 63);
         return numbits(bits ^ mask );
     }
 
