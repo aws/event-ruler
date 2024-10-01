@@ -38,7 +38,7 @@
     <compiler.plugin.version>3.13.0</compiler.plugin.version>
     <javadoc.plugin.version>3.10.0</javadoc.plugin.version>
     <source.plugin.version>3.3.1</source.plugin.version>
-    <gpg.plugin.version>3.2.6</gpg.plugin.version>
+    <gpg.plugin.version>3.2.7</gpg.plugin.version>
     <staging.plugin.version>1.7.0</staging.plugin.version>
     <checkstyle.plugin.version>3.5.0</checkstyle.plugin.version>
     <spotbugs.plugin.version>4.8.6.4</spotbugs.plugin.version>
