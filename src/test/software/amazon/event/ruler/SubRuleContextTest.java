@@ -13,6 +13,19 @@ public class SubRuleContextTest {
     private static final String NAME = "name";
 
     @Test
+    public void testPerformance() {
+        long start = System.nanoTime();
+
+        for (int i = 0; i < 10_000_000; i++) {
+            SubRuleContext.Generator generator = new SubRuleContext.Generator();
+            SubRuleContext c = generator.generate(NAME);
+//            assertEquals(NAME, generator.getNameForGeneratedId(c.getId()));
+            assertEquals(NAME, c.getRuleName());
+        }
+        System.out.println( (System.nanoTime() - start) / 1000_000 + "ms");
+    }
+
+    @Test
     public void testGetters() {
         SubRuleContext.Generator generator = new SubRuleContext.Generator();
         SubRuleContext context = generator.generate(NAME);
