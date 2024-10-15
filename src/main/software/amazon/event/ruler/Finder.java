@@ -83,7 +83,7 @@ class Finder {
     }
 
     // Move from a state.  Give all the remaining tokens a chance to transition from it
-    private static void moveFrom(final Set<Double> candidateSubRuleIdsForNextStep, final NameState nameState,
+    private static void moveFrom(final Set<SubRuleContext> candidateSubRuleIdsForNextStep, final NameState nameState,
                                  final int tokenIndex, final Task task,
                                  final SubRuleContext.Generator subRuleContextGenerator) {
         /*
@@ -111,11 +111,11 @@ class Finder {
         }
     }
 
-    private static void moveFromWithPriorCandidates(final Set<Double> candidateSubRuleIds,
+    private static void moveFromWithPriorCandidates(final Set<SubRuleContext> candidateSubRuleIds,
                                                     final NameState fromState, final Patterns fromPattern,
                                                     final int tokenIndex, final Task task,
                                                     final SubRuleContext.Generator subRuleContextGenerator) {
-        Set<Double> candidateSubRuleIdsForNextStep = calculateCandidateSubRuleIdsForNextStep(candidateSubRuleIds,
+        Set<SubRuleContext> candidateSubRuleIdsForNextStep = calculateCandidateSubRuleIdsForNextStep(candidateSubRuleIds,
                 fromState, fromPattern);
 
         // If there are no more candidate sub-rules, there is no need to proceed further.
@@ -135,12 +135,12 @@ class Finder {
      * @return The set of candidate sub-rule IDs for the next step. Null means there are no candidates and thus, there
      *         is no point to evaluating subsequent steps.
      */
-    private static Set<Double> calculateCandidateSubRuleIdsForNextStep(final Set<Double> currentCandidateSubRuleIds,
+    private static Set<SubRuleContext> calculateCandidateSubRuleIdsForNextStep(final Set<SubRuleContext> currentCandidateSubRuleIds,
                                                                        final NameState fromState,
                                                                        final Patterns fromPattern) {
         // These are all the sub-rules that use the matched pattern to transition to the next NameState. Note that they
         // are not all candidates as they may have required different values for previously evaluated fields.
-        Set<Double> subRuleIds = fromState.getNonTerminalSubRuleIdsForPattern(fromPattern);
+        Set<SubRuleContext> subRuleIds = fromState.getNonTerminalSubRuleIdsForPattern(fromPattern);
 
         // If no sub-rules used the matched pattern to transition to the next NameState, then there are no matches to be
         // found by going further.
@@ -156,7 +156,7 @@ class Finder {
 
         // There are candidate sub-rules, so retain only those that used the matched pattern to transition to the next
         // NameState.
-        Set<Double> candidateSubRuleIdsForNextStep = new HashSet<>();
+        Set<SubRuleContext> candidateSubRuleIdsForNextStep = new HashSet<>();
         intersection(subRuleIds, currentCandidateSubRuleIds, candidateSubRuleIdsForNextStep);
         return candidateSubRuleIdsForNextStep;
     }
@@ -193,7 +193,7 @@ class Finder {
         }
     }
 
-    private static void tryNameMatching(final Set<Double> candidateSubRuleIds, final NameState nameState,
+    private static void tryNameMatching(final Set<SubRuleContext> candidateSubRuleIds, final NameState nameState,
                                         final Task task, final int keyIndex,
                                         final SubRuleContext.Generator subRuleContextGenerator) {
         if (!nameState.hasKeyTransitions()) {
@@ -208,7 +208,7 @@ class Finder {
         }
     }
 
-    private static void addNameState(Set<Double> candidateSubRuleIds, NameState nameState, Patterns pattern, Task task,
+    private static void addNameState(Set<SubRuleContext> candidateSubRuleIds, NameState nameState, Patterns pattern, Task task,
                                      int nextKeyIndex, final SubRuleContext.Generator subRuleContextGenerator) {
         // one of the matches might imply a rule match
         task.collectRules(candidateSubRuleIds, nameState, pattern, subRuleContextGenerator);

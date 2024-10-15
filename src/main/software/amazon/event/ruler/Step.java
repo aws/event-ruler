@@ -14,9 +14,9 @@ import java.util.Set;
 class Step {
     final int keyIndex;
     final NameState nameState;
-    final Set<Double> candidateSubRuleIds;
+    final Set<SubRuleContext> candidateSubRuleIds;
 
-    Step(final int keyIndex, final NameState nameState, final Set<Double> candidateSubRuleIds) {
+    Step(final int keyIndex, final NameState nameState, final Set<SubRuleContext> candidateSubRuleIds) {
         this.keyIndex = keyIndex;
         this.nameState = nameState;
         this.candidateSubRuleIds = candidateSubRuleIds;

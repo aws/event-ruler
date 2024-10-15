@@ -255,7 +255,7 @@ public class GenericMachine<T> {
         Collections.sort(keys);
         synchronized(this) {
             final List<String> deletedKeys =  new ArrayList<>();
-            final Set<Double> candidateSubRuleIds = new HashSet<>();
+            final Set<SubRuleContext> candidateSubRuleIds = new HashSet<>();
             deleteStep(getStartState(), keys, 0, namevals, name, deletedKeys, candidateSubRuleIds);
             // check and delete the key from filedUsed ...
             checkAndDeleteUsedFields(deletedKeys);
@@ -272,15 +272,15 @@ public class GenericMachine<T> {
         deletePatternRule(name, patternMap);
     }
 
-    private Set<Double> deleteStep(final NameState state,
+    private Set<SubRuleContext> deleteStep(final NameState state,
                                    final List<String> keys,
                                    final int keyIndex,
                                    final Map<String, List<Patterns>> patterns,
                                    final T ruleName,
                                    final List<String> deletedKeys,
-                                   final Set<Double> candidateSubRuleIds) {
+                                   final Set<SubRuleContext> candidateSubRuleIds) {
 
-        final Set<Double> deletedSubRuleIds = new HashSet<>();
+        final Set<SubRuleContext> deletedSubRuleIds = new HashSet<>();
         final String key = keys.get(keyIndex);
         ByteMachine byteMachine = state.getTransitionOn(key);
         NameMatcher<NameState> nameMatcher = state.getKeyTransitionOn(key);
@@ -309,7 +309,7 @@ public class GenericMachine<T> {
                 boolean isTerminal = nextKeyIndex == keys.size();
 
                 // Trim the candidate sub-rule ID set to contain only the sub-rule IDs present in the next NameState.
-                Set<Double> nextNameStateSubRuleIds = isTerminal ?
+                Set<SubRuleContext> nextNameStateSubRuleIds = isTerminal ?
                         nextNameState.getTerminalSubRuleIdsForPattern(pattern) :
                         nextNameState.getNonTerminalSubRuleIdsForPattern(pattern);
                 // If no sub-rule IDs are found for next NameState, then we have no candidates, and will return below
@@ -319,9 +319,9 @@ public class GenericMachine<T> {
                     // If candidate set is empty, we are at first NameState, so initialize to next NameState's sub-rule IDs.
                     // When initializing, ensure that sub-rule IDs match the provided rule name for deletion.
                 } else if (candidateSubRuleIds.isEmpty()) {
-                    for (Double nextNameStateSubRuleId : nextNameStateSubRuleIds) {
+                    for (SubRuleContext nextNameStateSubRuleId : nextNameStateSubRuleIds) {
                         if (Objects.equals(ruleName,
-                                subRuleContextGenerator.getNameForGeneratedId(nextNameStateSubRuleId))) {
+                                nextNameStateSubRuleId.getRuleName())) {
                             candidateSubRuleIds.add(nextNameStateSubRuleId);
                         }
                     }
@@ -331,9 +331,9 @@ public class GenericMachine<T> {
                 }
 
                 if (isTerminal) {
-                    for (Double candidateSubRuleId : candidateSubRuleIds) {
+                    for (SubRuleContext candidateSubRuleId : candidateSubRuleIds) {
                         if (nextNameState.deleteSubRule(
-                                subRuleContextGenerator.getNameForGeneratedId(candidateSubRuleId), candidateSubRuleId,
+                                candidateSubRuleId.getRuleName(), candidateSubRuleId,
                                 pattern, true)) {
                             deletedSubRuleIds.add(candidateSubRuleId);
                             // Only delete the pattern if the pattern does not transition to the next NameState.
@@ -351,8 +351,8 @@ public class GenericMachine<T> {
                     deletedSubRuleIds.addAll(deleteStep(nextNameState, keys, nextKeyIndex, patterns, ruleName,
                             deletedKeys, new HashSet<>(candidateSubRuleIds)));
 
-                    for (double deletedSubRuleId : deletedSubRuleIds) {
-                        nextNameState.deleteSubRule(subRuleContextGenerator.getNameForGeneratedId(deletedSubRuleId),
+                    for (SubRuleContext deletedSubRuleId : deletedSubRuleIds) {
+                        nextNameState.deleteSubRule(deletedSubRuleId.getRuleName(),
                                 deletedSubRuleId, pattern, false);
                     }
 
@@ -519,7 +519,7 @@ public class GenericMachine<T> {
                 boolean isTerminal = i + 1 == keys.size();
                 for (Patterns pattern : patterns.get(keys.get(i))) {
                     for (NameState nameState : nameStates[i]) {
-                        nameState.addSubRule(ruleName, context.getId(), pattern, isTerminal);
+                        nameState.addSubRule(ruleName, context, pattern, isTerminal);
                     }
                 }
             }
@@ -541,7 +541,7 @@ public class GenericMachine<T> {
      *         keyIndex and greater. If keyIndex==0 and the returned set is empty, then the keys and patterns being
      *         added represent a new sub-rule.
      */
-    private Set<Double> addStep(final NameState state,
+    private Set<SubRuleContext> addStep(final NameState state,
                                 final List<String> keys,
                                 final int keyIndex,
                                 final Map<String, List<Patterns>> patterns,
@@ -595,8 +595,8 @@ public class GenericMachine<T> {
         // rule+pattern for the given key are returned up the recursion stack as our "candidates". At each level of the
         // stack, we remove any candidates if they did not have the same rule+pattern for that level's key. If our
         // candidate set becomes empty, we know we are adding a new rule.
-        Set<Double> candidateSubRuleIds = null;
-        Set<Double> candidateSubRuleIdsForThisKey = null;
+        Set<SubRuleContext> candidateSubRuleIds = null;
+        Set<SubRuleContext> candidateSubRuleIdsForThisKey = null;
         final int nextKeyIndex = keyIndex + 1;
         boolean isTerminal = nextKeyIndex == keys.size();
         for (NameState nameState : nameStates) {
@@ -606,8 +606,8 @@ public class GenericMachine<T> {
             if (isTerminal) {
                 candidateSubRuleIds = new HashSet<>();
                 for (Patterns pattern : patterns.get(key)) {
-                    Set<Double> subRuleIdsForPattern = nameState.getTerminalSubRuleIdsForPattern(pattern);
-                    Set<Double> subRuleIdsForName = subRuleContextGenerator.getIdsGeneratedForName(ruleName);
+                    Set<SubRuleContext> subRuleIdsForPattern = nameState.getTerminalSubRuleIdsForPattern(pattern);
+                    Set<SubRuleContext> subRuleIdsForName = subRuleContextGenerator.getIdsGeneratedForName(ruleName);
                     if (subRuleIdsForPattern != null && subRuleIdsForName != null) {
                         intersection(subRuleIdsForPattern, subRuleIdsForName, candidateSubRuleIds);
                     }
@@ -632,7 +632,7 @@ public class GenericMachine<T> {
 
                 candidateSubRuleIdsForThisKey = new HashSet<>();
                 for (Patterns pattern : patternsForThisKey) {
-                    Set<Double> nonTerminalSubRuleIds = nameState.getNonTerminalSubRuleIdsForPattern(pattern);
+                    Set<SubRuleContext> nonTerminalSubRuleIds = nameState.getNonTerminalSubRuleIdsForPattern(pattern);
                     if (nonTerminalSubRuleIds != null) {
                         candidateSubRuleIdsForThisKey.addAll(nonTerminalSubRuleIds);
                     }
