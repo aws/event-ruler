@@ -41,7 +41,7 @@
     <gpg.plugin.version>3.2.7</gpg.plugin.version>
     <staging.plugin.version>1.7.0</staging.plugin.version>
     <checkstyle.plugin.version>3.6.0</checkstyle.plugin.version>
-    <spotbugs.plugin.version>4.8.6.4</spotbugs.plugin.version>
+    <spotbugs.plugin.version>4.8.6.5</spotbugs.plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jmh.version>1.37</jmh.version>
     <exec.plugin.version>3.5.0</exec.plugin.version>
