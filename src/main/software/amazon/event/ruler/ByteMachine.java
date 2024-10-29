@@ -702,7 +702,6 @@ class ByteMachine {
             case WILDCARD:
                 assert pattern instanceof ValuePatterns;
                 return addMatchPattern((ValuePatterns) pattern, nameState);
-
             case EXISTS:
                 return addExistencePattern(pattern, nameState);
             default:

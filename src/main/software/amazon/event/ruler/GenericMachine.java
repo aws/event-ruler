@@ -2,6 +2,7 @@ package software.amazon.event.ruler;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.sun.org.apache.xpath.internal.operations.And;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -606,6 +607,33 @@ public class GenericMachine<T> {
             if (isTerminal) {
                 candidateSubRuleIds = new HashSet<>();
                 for (Patterns pattern : patterns.get(key)) {
+                    if(pattern.type() == MatchType.AND) {
+                        addStep(keys, patterns, ruleName);
+//                        AndPattern andPattern = (AndPattern) patterns.values().stream().iterator().next().get(0);
+//                        List<Map<String, List<Patterns>>> values = andPattern.getValues();
+//                        for(Map<String, List<Patterns>> value : values) {
+//                            addStep(keys, patterns, ruleName);
+
+                            /*// This is an optimization for the single pattern, single NameState case. This appears to be the
+                            // majority of cases so it's worth the extra code.
+                            // Rishi'note : probably not the case for AND
+                            List<Patterns> patternsForThisKey = patterns.get(key);
+                            if (patternsForThisKey.size() == 1 && nameStates.size() == 1) {
+                                candidateSubRuleIdsForThisKey = nameState.getNonTerminalSubRuleIdsForPattern(
+                                        patternsForThisKey.get(0));
+                                break;
+                            }
+
+                            candidateSubRuleIdsForThisKey = new HashSet<>();
+                            for (Patterns pattern : patternsForThisKey) {
+                                Set<Double> nonTerminalSubRuleIds = nameState.getNonTerminalSubRuleIdsForPattern(pattern);
+                                if (nonTerminalSubRuleIds != null) {
+                                    candidateSubRuleIdsForThisKey.addAll(nonTerminalSubRuleIds);
+                                }
+                            }*/
+//                        }
+
+                    }
                     Set<Double> subRuleIdsForPattern = nameState.getTerminalSubRuleIdsForPattern(pattern);
                     Set<Double> subRuleIdsForName = subRuleContextGenerator.getIdsGeneratedForName(ruleName);
                     if (subRuleIdsForPattern != null && subRuleIdsForName != null) {
@@ -662,7 +690,7 @@ public class GenericMachine<T> {
     }
 
     private boolean isNamePattern(Patterns pattern) {
-        return pattern.type() == MatchType.ABSENT;
+        return pattern.type() == MatchType.ABSENT || pattern.type() == MatchType.AND;
     }
 
     private void addIntoUsedFields(List<String> keys) {

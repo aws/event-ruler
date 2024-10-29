@@ -374,6 +374,7 @@ public class JsonRuleCompiler {
                                                 final boolean withQuotes) throws IOException {
 
         final List<Map<String, List<Patterns>>> currentRules = deepCopyRules(rules);
+        final List<Map<String, List<Patterns>>> andRules = new ArrayList<>();
         rules.clear();
 
         JsonToken token = parser.nextToken();
@@ -390,7 +391,7 @@ public class JsonRuleCompiler {
                     newRules.add(new HashMap<>());
                 }
                 parseObjectInsideAndRelationship(newRules, path, parser, withQuotes);
-                rules.addAll(newRules); // FIXME these probably should be individual rules but one joint one
+                andRules.addAll(newRules); // FIXME these probably should not be individual rules but one joint one
             } else {
                 barf(parser,
                         "Only JSON object is allowed in array of " + Constants.AND_RELATIONSHIP_KEYWORD + " relationship.");
@@ -399,6 +400,12 @@ public class JsonRuleCompiler {
         if (loopCnt < 2) {
             barf(parser, "There must have at least 2 Objects in " + Constants.AND_RELATIONSHIP_KEYWORD + " relationship.");
         }
+        Patterns patterns = Patterns.andMatch(andRules);
+        HashMap<String, List<Patterns>> hashMap = new HashMap<>();
+        ArrayList<Patterns> value = new ArrayList<>();
+        value.add(patterns);
+        hashMap.put(path.name(), value);
+        rules.add(hashMap);
     }
 
     // This is not exactly the real deep copy because here we only need deep copy at List element level,

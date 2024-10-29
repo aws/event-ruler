@@ -423,6 +423,89 @@ public class JsonRuleCompilerTest {
     }
 
     @Test
+    public void testBasicFunctionOfAndRelationshipRules() throws Exception {
+        final Machine machine = new Machine();
+        String event = "{\n" +
+                "  \"detail\": {\n" +
+                "    \"detail-type\": \"EC2 Instance State-change Notification\",\n" +
+                "    \"resources\": \"arn:aws:ec2:us-east-1:123456789012:instance/i-000000aaaaaa00000\",\n" +
+                "    \"info\": {\n" +
+                "      \"state-status\": \"running\",\n" +
+                "      \"state-count\": {\n" +
+                "        \"count\": 100\n" +
+                "      }\n" +
+                "    },\n" +
+                "    \"c-count\": 1,\n" +
+                "    \"d-count\": 8\n" +
+                "  },\n" +
+                "  \"news\": {\n" +
+                "    \"newsProviders\": \"p1\",\n" +
+                "    \"newCondition1\": \"news111\",\n" +
+                "    \"newCondition2\": \"news222\"\n" +
+                "  }\n" +
+                "}";
+
+        String rule1 = "{\n" +
+                "  \"detail\": {\n" +
+                "    \"$and\" : [\n" +
+                "       {\"c-count\": [ { \"numeric\": [ \">\", 0 ] } ]},\n" +
+                "       {\"c-count\": [ { \"numeric\": [ \"<=\", 5 ] } ]},\n" +
+                "       {\"d-count\": [ { \"numeric\": [ \"<\", 10 ] } ]},\n" +
+                "       {\"x-limit\": [ { \"numeric\": [ \"=\", 3.018e2 ] } ]}\n" +
+                "    ]\n" +
+                "  }\n" +
+                "}";
+
+        String rule2 = "{\n" +
+                "  \"detail\": {\n" +
+                "    \"detail-type\": [ \"EC2 Instance State-change Notification\" ],\n" +
+                "    \"resources\": [ \"arn:aws:ec2:us-east-1:123456789012:instance/i-000000aaaaaa00000\" ],\n" +
+                "    \"info\": {\n" +
+                "        \"state-status\": [ \"initializing\", \"running\" ],\n" +
+                "        \"state-count\" : { \n" +
+                "          \"count\" : [ 100 ]\n" +
+                "        }\n" +
+                "    },\n" +
+                "    \"$and\" : [\n" +
+                "       {\"c-count\": [ { \"numeric\": [ \">\", 0, \"<=\", 5 ] } ]},\n" +
+                "       {\"d-count\": [ { \"numeric\": [ \"<\", 10 ] } ]},\n" +
+                "       {\"x-limit\": [ { \"numeric\": [ \"=\", 3.018e2 ] } ]}\n" +
+                "    ]\n" +
+                "  },\n" +
+                "  \"news\": {\n" +
+                "      \"newsProviders\": [ \"p1\", \"p2\" ],\n" +
+                "      \"$and\" : [\n" +
+                "         {\"newCondition1\": [ \"news111\" ] },\n" +
+                "         {\"newCondition2\": [ \"news222\"] }\n" +
+                "      ]\n" +
+                "  }\n" +
+                "}";
+
+
+        List<Map<String, List<Patterns>>> compiledRules;
+        compiledRules = JsonRuleCompiler.compile(rule1);
+        assertEquals(1, compiledRules.size());
+        compiledRules = JsonRuleCompiler.compile(rule2);
+        assertEquals(1, compiledRules.size());
+
+        machine.addRule("rule1", rule1);
+        machine.addRule("rule2", rule2);
+
+        List<String> found = machine.rulesForJSONEvent(event);
+        assertEquals(2, found.size());
+        assertTrue(found.contains("rule1"));
+        assertTrue(found.contains("rule2"));
+
+        machine.deleteRule("rule1", rule1);
+        found = machine.rulesForJSONEvent(event);
+        assertEquals(1, found.size());
+        machine.deleteRule("rule2", rule2);
+        found = machine.rulesForJSONEvent(event);
+        assertEquals(0, found.size());
+        assertTrue(machine.isEmpty());
+    }
+
+    @Test
     public void testBasicFunctionOfOrRelationshipRules() throws Exception {
         final Machine machine = new Machine();
         String event = "{\n" +

@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-// FIXME docs and maybe make this a logicalPattern
+// FIXME docs and maybe make this a logicalPattern to support $or and $not
 public class AndPattern extends Patterns {
     private final List<Map<String, List<Patterns>>> values;
 
