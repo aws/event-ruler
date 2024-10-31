@@ -2418,7 +2418,7 @@ public class MachineTest {
         assertEquals(1, matchRules.size());
     }
 
-    @Test(timeout = 500)
+    @Test(timeout = 250)
     public void testApproximateSizeDoNotTakeForeverForRulesWithNumericMatchers() throws Exception {
         Machine machine = new Machine();
         machine.addRule("rule",
@@ -2428,7 +2428,7 @@ public class MachineTest {
                         "    \"c\": [{ \"numeric\": [\">\", 50] }]\n" +
                         "}");
 
-        assertEquals(3299, machine.approximateObjectCount(10000));
+        assertEquals(52, machine.approximateObjectCount(10000));
     }
 
     @Test

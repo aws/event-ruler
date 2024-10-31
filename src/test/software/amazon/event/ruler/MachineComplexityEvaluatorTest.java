@@ -503,7 +503,7 @@ public class MachineComplexityEvaluatorTest {
         ByteMachine machine = new ByteMachine();
         machine.addPattern(Patterns.anythingButWildcard(new HashSet<>(Arrays.asList("a*aaa", "aa*aa"))));
         // "aaaa" is matched by 7 wildcard prefixes: "a*", "a*a", "a*aa", "a*aaa", "aa*", "aa*a", "aa*aa"
-        assertEquals(7, machine.evaluateComplexity(evaluator));
+        assertEquals(6, machine.evaluateComplexity(evaluator));
     }
 
     @Test
@@ -518,6 +518,38 @@ public class MachineComplexityEvaluatorTest {
         // "aaaa" is matched by 7 wildcard prefixes: "a*", "a*a", "a*aa", "a*aaa", "aa*", "aa*a", "aa*aa"
         testPatternPermutations(7, Patterns.wildcardMatch("a*aaa"),
                                    Patterns.anythingButWildcard("aa*aa"));
+    }
+
+    /**
+     * Make sure we do not trigger a state explosion when evaluating complexity for rules
+     * with numeric matchers
+     */
+    @Test(timeout = 250)
+    public void testEvaluateForMultipleNumericMatchers() throws Exception {
+        String rule = "{\n" +
+                "    \"field1\": [{\n" +
+                "        \"numeric\": [\"<=\", 120.0]\n" +
+                "    }],\n" +
+                "    \"field2\": [{\n" +
+                "        \"numeric\": [\">\", 300.0]\n" +
+                "    }],\n" +
+                "    \"field3\": [{\n" +
+                "        \"numeric\": [\"=\", 60.0]\n" +
+                "    }],\n" +
+                "    \"field4\": [{\n" +
+                "        \"numeric\": [\"<\", 60.0]\n" +
+                "    }],\n" +
+                "    \"field5\": [{\n" +
+                "        \"numeric\": [\"<=\", 60.0]\n" +
+                "    }]\n" +
+                "}";
+        Machine machine = new Machine.Builder().withAdditionalNameStateReuse(true).build();
+        machine.addRule("rule", rule);
+        assertEquals(0, machine.evaluateComplexity(evaluator));
+
+        machine = new Machine.Builder().withAdditionalNameStateReuse(false).build();
+        machine.addRule("rule", rule);
+        assertEquals(0, machine.evaluateComplexity(evaluator));
     }
 
     private void testPatternPermutations(int expectedComplexity, Patterns ... patterns) {
