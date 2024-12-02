@@ -32,7 +32,7 @@
   <properties>
     <jdk.version>1.8</jdk.version>
     <jackson.version>2.18.2</jackson.version>
-    <fastdoubleparser.version>2.0.0</fastdoubleparser.version>
+    <fastdoubleparser.version>2.0.1</fastdoubleparser.version>
     <jsr.version>3.0.2</jsr.version>
     <junit.version>4.13.2</junit.version>
     <compiler.plugin.version>3.13.0</compiler.plugin.version>
@@ -41,7 +41,7 @@
     <gpg.plugin.version>3.2.7</gpg.plugin.version>
     <staging.plugin.version>1.7.0</staging.plugin.version>
     <checkstyle.plugin.version>3.6.0</checkstyle.plugin.version>
-    <spotbugs.plugin.version>4.8.6.5</spotbugs.plugin.version>
+    <spotbugs.plugin.version>4.8.6.6</spotbugs.plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jmh.version>1.37</jmh.version>
     <exec.plugin.version>3.5.0</exec.plugin.version>
