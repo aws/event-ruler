@@ -20,7 +20,7 @@
   <groupId>software.amazon.event.ruler</groupId>
   <artifactId>event-ruler</artifactId>
   <name>Event Ruler</name>
-  <version>1.8.1</version>
+  <version>1.8.2</version>
   <description>Event Ruler is a Java library that allows matching Rules to Events. An event is a list of fields,
     which may be given as name/value pairs or as a JSON object. A rule associates event field names with lists of
     possible values. There are two reasons to use Ruler: 1/ It's fast; the time it takes to match Events doesn't
