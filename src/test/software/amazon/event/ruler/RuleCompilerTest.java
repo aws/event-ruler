@@ -585,6 +585,21 @@ public class RuleCompilerTest {
         }
     }
 
+    @Test
+    public void testWithRuleOverride() throws Exception {
+        // Example rule taken from: https://github.com/aws/event-ruler/issues/22
+        String jsonSimpleRule2 = "{\n" +
+            "  \"source\": [\"aws.sns\"],\n" +
+            "  \"detail-type\": [\"AWS API Call via CloudTrail\"],\n" +
+            "  \"detail\": {\n" +
+            "    \"eventSource\": [\"s3.amazonaws.com\"],\n" +
+            "    \"eventSource\": [\"sns.amazonaws.com\"]\n" +
+            "  }\n" +
+            "}";
+        assertNull("", RuleCompiler.check(jsonSimpleRule2));
+        assertEquals("Overriding path 'detail.eventSource' is already defined. Please check that the rule does not list the same path multiple times.", JsonRuleCompiler.check(jsonSimpleRule2, false));
+    }
+
     private void multiThreadedTestHelper(List<String> rules,
                                          List<String[]> events, int numMatchesPerEvent) throws Exception {
 

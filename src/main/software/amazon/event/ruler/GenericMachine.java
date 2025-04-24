@@ -414,7 +414,7 @@ public class GenericMachine<T> {
         try {
             JsonRuleCompiler.compile(json, configuration.isRuleOverriding()).forEach(rule -> addPatternRule(name, rule));
         } catch (JsonParseException e) {
-            addPatternRule(name, RuleCompiler.compile(json));
+            addPatternRule(name, RuleCompiler.compile(json, configuration.isRuleOverriding()));
         }
     }
 
@@ -429,7 +429,7 @@ public class GenericMachine<T> {
         try {
             JsonRuleCompiler.compile(json, configuration.isRuleOverriding()).forEach(rule -> addPatternRule(name, rule));
         } catch (JsonParseException e) {
-            addPatternRule(name, RuleCompiler.compile(json));
+            addPatternRule(name, RuleCompiler.compile(json, configuration.isRuleOverriding()));
         }
     }
 
@@ -444,7 +444,7 @@ public class GenericMachine<T> {
         try {
             JsonRuleCompiler.compile(json, configuration.isRuleOverriding()).forEach(rule -> addPatternRule(name, rule));
         } catch (JsonParseException e) {
-            addPatternRule(name, RuleCompiler.compile(json));
+            addPatternRule(name, RuleCompiler.compile(json, configuration.isRuleOverriding()));
         }
     }
 
@@ -459,7 +459,7 @@ public class GenericMachine<T> {
         try {
             JsonRuleCompiler.compile(json, configuration.isRuleOverriding()).forEach(rule -> addPatternRule(name, rule));
         } catch (JsonParseException e) {
-            addPatternRule(name, RuleCompiler.compile(json));
+            addPatternRule(name, RuleCompiler.compile(json, configuration.isRuleOverriding()));
         }
     }
 
@@ -474,7 +474,7 @@ public class GenericMachine<T> {
         try {
             JsonRuleCompiler.compile(json, configuration.isRuleOverriding()).forEach(rule -> deletePatternRule(name, rule));
         } catch (JsonParseException e) {
-            deletePatternRule(name, RuleCompiler.compile(json));
+            deletePatternRule(name, RuleCompiler.compile(json, configuration.isRuleOverriding()));
         }
     }
 
@@ -489,7 +489,7 @@ public class GenericMachine<T> {
         try {
             JsonRuleCompiler.compile(json, configuration.isRuleOverriding()).forEach(rule -> deletePatternRule(name, rule));
         } catch (JsonParseException e) {
-            deletePatternRule(name, RuleCompiler.compile(json));
+            deletePatternRule(name, RuleCompiler.compile(json, configuration.isRuleOverriding()));
         }
     }
 
@@ -504,7 +504,7 @@ public class GenericMachine<T> {
         try {
             JsonRuleCompiler.compile(json, configuration.isRuleOverriding()).forEach(rule -> deletePatternRule(name, rule));
         } catch (JsonParseException e) {
-            deletePatternRule(name, RuleCompiler.compile(json));
+            deletePatternRule(name, RuleCompiler.compile(json, configuration.isRuleOverriding()));
         }
     }
 
