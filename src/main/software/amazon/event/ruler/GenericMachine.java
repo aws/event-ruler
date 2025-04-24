@@ -412,7 +412,7 @@ public class GenericMachine<T> {
      */
     public void addRule(final T name, final String json) throws IOException {
         try {
-            JsonRuleCompiler.compile(json).forEach(rule -> addPatternRule(name, rule));
+            JsonRuleCompiler.compile(json, configuration.isRuleOverriding()).forEach(rule -> addPatternRule(name, rule));
         } catch (JsonParseException e) {
             addPatternRule(name, RuleCompiler.compile(json));
         }
@@ -427,7 +427,7 @@ public class GenericMachine<T> {
      */
     public void addRule(final T name, final Reader json) throws IOException {
         try {
-            JsonRuleCompiler.compile(json).forEach(rule -> addPatternRule(name, rule));
+            JsonRuleCompiler.compile(json, configuration.isRuleOverriding()).forEach(rule -> addPatternRule(name, rule));
         } catch (JsonParseException e) {
             addPatternRule(name, RuleCompiler.compile(json));
         }
@@ -442,7 +442,7 @@ public class GenericMachine<T> {
      */
     public void addRule(final T name, final InputStream json) throws IOException {
         try {
-            JsonRuleCompiler.compile(json).forEach(rule -> addPatternRule(name, rule));
+            JsonRuleCompiler.compile(json, configuration.isRuleOverriding()).forEach(rule -> addPatternRule(name, rule));
         } catch (JsonParseException e) {
             addPatternRule(name, RuleCompiler.compile(json));
         }
@@ -457,7 +457,7 @@ public class GenericMachine<T> {
      */
     public void addRule(final T name, final byte[] json) throws IOException {
         try {
-            JsonRuleCompiler.compile(json).forEach(rule -> addPatternRule(name, rule));
+            JsonRuleCompiler.compile(json, configuration.isRuleOverriding()).forEach(rule -> addPatternRule(name, rule));
         } catch (JsonParseException e) {
             addPatternRule(name, RuleCompiler.compile(json));
         }
@@ -472,7 +472,7 @@ public class GenericMachine<T> {
      */
     public void deleteRule(final T name, final String json) throws IOException {
         try {
-            JsonRuleCompiler.compile(json).forEach(rule -> deletePatternRule(name, rule));
+            JsonRuleCompiler.compile(json, configuration.isRuleOverriding()).forEach(rule -> deletePatternRule(name, rule));
         } catch (JsonParseException e) {
             deletePatternRule(name, RuleCompiler.compile(json));
         }
@@ -487,7 +487,7 @@ public class GenericMachine<T> {
      */
     public void deleteRule(final T name, final Reader json) throws IOException {
         try {
-            JsonRuleCompiler.compile(json).forEach(rule -> deletePatternRule(name, rule));
+            JsonRuleCompiler.compile(json, configuration.isRuleOverriding()).forEach(rule -> deletePatternRule(name, rule));
         } catch (JsonParseException e) {
             deletePatternRule(name, RuleCompiler.compile(json));
         }
@@ -502,7 +502,7 @@ public class GenericMachine<T> {
      */
     public void deleteRule(final T name, final InputStream json) throws IOException {
         try {
-            JsonRuleCompiler.compile(json).forEach(rule -> deletePatternRule(name, rule));
+            JsonRuleCompiler.compile(json, configuration.isRuleOverriding()).forEach(rule -> deletePatternRule(name, rule));
         } catch (JsonParseException e) {
             deletePatternRule(name, RuleCompiler.compile(json));
         }
