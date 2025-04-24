@@ -764,10 +764,42 @@ public class GenericMachine<T> {
          */
         private boolean additionalNameStateReuse = false;
 
+        /**
+         * If true, when encountering the same name path in a rule, the compiler will accept the rule and
+         * override previously encountered patterns with the latest patterns from the compilation of the
+         * last-most occurrence of the name path. For example:
+         * <pre>
+         * {@code
+         *   {
+         *     "a": [1, 2]
+         *     "a": [3, 4]
+         *   }
+         * }
+         * </pre>
+         * Will have the same effect as:
+         * <pre>
+         *   {@code
+         *   {
+         *    "a": [3, 4]
+         *    }
+         * }
+         * </pre>
+         *
+         * When set to false, all rules where paths are overlapping are considered invalid and rejected by the compiler.
+         * For retro-compatibility, rule overriding is by default true.
+         * @see <a href="https://github.com/aws/event-ruler/issues/22">Undocumented duplicate key behaviour for events and rules</a>
+         */
+        private boolean ruleOverriding = true;
+
         Builder() {}
 
         public Builder<M,T> withAdditionalNameStateReuse(boolean additionalNameStateReuse) {
             this.additionalNameStateReuse = additionalNameStateReuse;
+            return this;
+        }
+
+        public Builder<M, T> withRuleOverriding(boolean ruleOverriding) {
+            this.ruleOverriding = ruleOverriding;
             return this;
         }
 
@@ -776,7 +808,7 @@ public class GenericMachine<T> {
         }
 
         protected GenericMachineConfiguration buildConfig() {
-            return new GenericMachineConfiguration(additionalNameStateReuse);
+            return new GenericMachineConfiguration(additionalNameStateReuse, ruleOverriding);
         }
     }
 }
