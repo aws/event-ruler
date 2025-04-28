@@ -31,7 +31,7 @@
 
   <properties>
     <jdk.version>1.8</jdk.version>
-    <jackson.version>2.18.2</jackson.version>
+    <jackson.version>2.19.0</jackson.version>
     <fastdoubleparser.version>2.0.1</fastdoubleparser.version>
     <jsr.version>3.0.2</jsr.version>
     <junit.version>4.13.2</junit.version>
