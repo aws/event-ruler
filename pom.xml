@@ -35,7 +35,7 @@
     <fastdoubleparser.version>2.0.1</fastdoubleparser.version>
     <jsr.version>3.0.2</jsr.version>
     <junit.version>4.13.2</junit.version>
-    <compiler.plugin.version>3.13.0</compiler.plugin.version>
+    <compiler.plugin.version>3.14.0</compiler.plugin.version>
     <javadoc.plugin.version>3.11.2</javadoc.plugin.version>
     <source.plugin.version>3.3.1</source.plugin.version>
     <gpg.plugin.version>3.2.7</gpg.plugin.version>
