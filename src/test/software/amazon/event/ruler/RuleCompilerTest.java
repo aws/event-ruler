@@ -597,7 +597,14 @@ public class RuleCompilerTest {
             "  }\n" +
             "}";
         assertNull("", RuleCompiler.check(jsonSimpleRule2));
-        assertEquals("Overriding path 'detail.eventSource' is already defined. Please check that the rule does not list the same path multiple times.", JsonRuleCompiler.check(jsonSimpleRule2, false));
+        assertEquals("Path `detail.eventSource` cannot be allowed multiple times\n at [Source: (String)\"{\n" +
+                "  \"source\": [\"aws.sns\"],\n" +
+                "  \"detail-type\": [\"AWS API Call via CloudTrail\"],\n" +
+                "  \"detail\": {\n" +
+                "    \"eventSource\": [\"s3.amazonaws.com\"],\n" +
+                "    \"eventSource\": [\"sns.amazonaws.com\"]\n" +
+                "  }\n" +
+                "}\"; line: 6, column: 41]", RuleCompiler.check(jsonSimpleRule2, false));
     }
 
     private void multiThreadedTestHelper(List<String> rules,

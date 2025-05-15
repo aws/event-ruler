@@ -798,7 +798,7 @@ public class GenericMachine<T> {
             return this;
         }
 
-        public Builder<M, T> withRuleOverriding(boolean ruleOverriding) {
+        public Builder<M, T> withOverridesForDuplicateRules(boolean ruleOverriding) {
             this.ruleOverriding = ruleOverriding;
             return this;
         }

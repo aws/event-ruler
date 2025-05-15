@@ -660,7 +660,14 @@ public class JsonRuleCompilerTest {
         List<String> rulesUnexpected = machine.rulesForJSONEvent(expectedEventByOverriding);
         assertEquals(1, rulesUnexpected.size());
         // Without overriding should throw an error.
-        assertEquals("Overriding path 'name' is already defined. Please check that the rule does not list the same path multiple times.", JsonRuleCompiler.check(jsonSimpleRule, false));
+        assertEquals("Path `name` cannot be allowed multiple times\n" +
+                " at [Source: (String)\"{\n" +
+                "  \"name\": [\"a\", \"b\"],\n" +
+                "  \"$or\": [\n" +
+                "    {\"name\": [ { \"anything-but\": \"a\" } ]},\n" +
+                "    {\"condition1\": [\"x\"]}\n" +
+                "  ]\n" +
+                "}\"; line: 4, column: 41]", JsonRuleCompiler.check(jsonSimpleRule, false));
         // Example rule taken from: https://github.com/aws/event-ruler/issues/22
         String jsonSimpleRule2 = "{\n" +
                                  "  \"source\": [\"aws.sns\"],\n" +
@@ -671,8 +678,16 @@ public class JsonRuleCompilerTest {
                                  "  }\n" +
                                  "}";
         assertNull("", JsonRuleCompiler.check(jsonSimpleRule2));
-        assertEquals("Overriding path 'detail.eventSource' is already defined. Please check that the rule does not list the same path multiple times.", JsonRuleCompiler.check(jsonSimpleRule2, false));
-        // Example rule with a more complex structure with top level or, should not be considered an override (as path are handled separately)
+        assertEquals("Path `detail.eventSource` cannot be allowed multiple times\n" +
+                " at [Source: (String)\"{\n" +
+                "  \"source\": [\"aws.sns\"],\n" +
+                "  \"detail-type\": [\"AWS API Call via CloudTrail\"],\n" +
+                "  \"detail\": {\n" +
+                "    \"eventSource\": [\"s3.amazonaws.com\"],\n" +
+                "    \"eventSource\": [\"sns.amazonaws.com\"]\n" +
+                "  }\n" +
+                "}\"; line: 6, column: 41]", JsonRuleCompiler.check(jsonSimpleRule2, false));
+        // Example rule with a more complex structure with top level or, should not be considered an override (as paths are handled separately)
         String jsonComplexRule = "{\n" +
                                  "  \"$or\": [\n" +
                                  "    {\n" +

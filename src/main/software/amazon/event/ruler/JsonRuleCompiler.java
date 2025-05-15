@@ -380,12 +380,12 @@ public class JsonRuleCompiler {
         if (rules.isEmpty()) {
             rules.add(new HashMap<>());
         }
-        rules.forEach(rule -> {
+        for (Map<String, List<Patterns>> rule : rules) {
             if (!withOverriding && rule.containsKey(name)) {
-                throw new IllegalArgumentException("Overriding path '" + name + "' is already defined. Please check that the rule does not list the same path multiple times.");
+                barf(parser, String.format("Path `%s` cannot be allowed multiple times", name));
             }
             rule.put(name, values);
-        });
+        }
     }
 
     // Used to be, the format was
