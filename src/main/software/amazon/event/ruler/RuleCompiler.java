@@ -47,13 +47,17 @@ public final class RuleCompiler {
      * @param source rule, as a Reader
      * @return null if the rule is valid, otherwise an error message
      */
-    public static String check(final Reader source) {
+    public static String check(final Reader source, final boolean withOverriding) {
         try {
-            doCompile(JSON_FACTORY.createParser(source));
+            doCompile(JSON_FACTORY.createParser(source), withOverriding);
             return null;
         } catch (Exception e) {
             return e.getLocalizedMessage();
         }
+    }
+
+    public static String check(final Reader source) {
+        return check(source, true);
     }
 
     /**
@@ -61,13 +65,17 @@ public final class RuleCompiler {
      * @param source rule, as a String
      * @return null if the rule is valid, otherwise an error message
      */
-    public static String check(final String source) {
+    public static String check(final String source, final boolean withOverriding) {
         try {
-            doCompile(JSON_FACTORY.createParser(source));
+            doCompile(JSON_FACTORY.createParser(source), withOverriding);
             return null;
         } catch (Exception e) {
             return e.getLocalizedMessage();
         }
+    }
+
+    public static String check(final String source) {
+        return check(source, true);
     }
 
     /**
@@ -75,13 +83,17 @@ public final class RuleCompiler {
      * @param source rule, as a byte array
      * @return null if the rule is valid, otherwise an error message
      */
-    public static String check(final byte[] source) {
+    public static String check(final byte[] source, final boolean withOverriding) {
         try {
-            doCompile(JSON_FACTORY.createParser(source));
+            doCompile(JSON_FACTORY.createParser(source), withOverriding);
             return null;
         } catch (Exception e) {
             return e.getLocalizedMessage();
         }
+    }
+
+    public static String check(final byte[] source) {
+        return check(source, true);
     }
 
     /**
@@ -89,13 +101,17 @@ public final class RuleCompiler {
      * @param source rule, as an InputStream
      * @return null if the rule is valid, otherwise an error message
      */
-    public static String check(final InputStream source) {
+    public static String check(final InputStream source, final boolean withOverriding) {
         try {
-            doCompile(JSON_FACTORY.createParser(source));
+            doCompile(JSON_FACTORY.createParser(source), withOverriding);
             return null;
         } catch (Exception e) {
             return e.getLocalizedMessage();
         }
+    }
+
+    public static String check(final InputStream source) {
+        return check(source, true);
     }
 
     /**
@@ -105,8 +121,12 @@ public final class RuleCompiler {
      * @return Map form of rule
      * @throws IOException if the rule isn't syntactically valid
      */
+    public static Map<String, List<Patterns>> compile(final Reader source, final boolean withOverriding) throws IOException {
+        return doCompile(JSON_FACTORY.createParser(source), withOverriding);
+    }
+
     public static Map<String, List<Patterns>> compile(final Reader source) throws IOException {
-        return doCompile(JSON_FACTORY.createParser(source));
+        return compile(source, true);
     }
 
     /**
@@ -116,8 +136,12 @@ public final class RuleCompiler {
      * @return Map form of rule
      * @throws IOException if the rule isn't syntactically valid
      */
+    public static Map<String, List<Patterns>> compile(final String source, final boolean withOverriding) throws IOException {
+        return doCompile(JSON_FACTORY.createParser(source), withOverriding);
+    }
+
     public static Map<String, List<Patterns>> compile(final String source) throws IOException {
-        return doCompile(JSON_FACTORY.createParser(source));
+        return compile(source, true);
     }
 
     /**
@@ -127,8 +151,12 @@ public final class RuleCompiler {
      * @return Map form of rule
      * @throws IOException if the rule isn't syntactically valid
      */
+    public static Map<String, List<Patterns>> compile(final byte[] source, final boolean withOverriding) throws IOException {
+        return doCompile(JSON_FACTORY.createParser(source), withOverriding);
+    }
+
     public static Map<String, List<Patterns>> compile(final byte[] source) throws IOException {
-        return doCompile(JSON_FACTORY.createParser(source));
+        return compile(source, true);
     }
 
     /**
@@ -138,17 +166,21 @@ public final class RuleCompiler {
      * @return Map form of rule
      * @throws IOException if the rule isn't syntactically valid
      */
-    public static Map<String, List<Patterns>> compile(final InputStream source) throws IOException {
-        return doCompile(JSON_FACTORY.createParser(source));
+    public static Map<String, List<Patterns>> compile(final InputStream source, final boolean withOverriding) throws IOException {
+        return doCompile(JSON_FACTORY.createParser(source), withOverriding);
     }
 
-    private static Map<String, List<Patterns>> doCompile(final JsonParser parser) throws IOException {
+    public static Map<String, List<Patterns>> compile(final InputStream source) throws IOException {
+        return compile(source, true);
+    }
+
+    private static Map<String, List<Patterns>> doCompile(final JsonParser parser, final boolean withOverriding) throws IOException {
         final Path path = new Path();
         final Map<String, List<Patterns>> rule = new HashMap<>();
         if (parser.nextToken() != JsonToken.START_OBJECT) {
             barf(parser, "Filter is not an object");
         }
-        parseObject(rule, path, parser, true);
+        parseObject(rule, path, parser, true, withOverriding);
         parser.close();
         return rule;
     }
@@ -156,7 +188,8 @@ public final class RuleCompiler {
     private static void parseObject(final Map<String, List<Patterns>> rule,
                                     final Path path,
                                     final JsonParser parser,
-                                    final boolean withQuotes) throws IOException {
+                                    final boolean withQuotes,
+                                    final boolean withOverriding) throws IOException {
 
         boolean fieldsPresent = false;
         while (parser.nextToken() != JsonToken.END_OBJECT) {
@@ -168,12 +201,12 @@ public final class RuleCompiler {
             switch (parser.nextToken()) {
             case START_OBJECT:
                 path.push(stepName);
-                parseObject(rule, path, parser, withQuotes);
+                parseObject(rule, path, parser, withQuotes, withOverriding);
                 path.pop();
                 break;
 
             case START_ARRAY:
-                writeRules(rule, path.extendedName(stepName), parser, withQuotes);
+                writeRules(rule, path.extendedName(stepName), parser, withQuotes, withOverriding);
                 break;
 
             default:
@@ -188,7 +221,8 @@ public final class RuleCompiler {
     private static void writeRules(final Map<String, List<Patterns>> rule,
                                    final String name,
                                    final JsonParser parser,
-                                   final boolean withQuotes) throws IOException {
+                                   final boolean withQuotes,
+                                   final boolean withOverriding) throws IOException {
         JsonToken token;
         final List<Patterns> values = new ArrayList<>();
 
@@ -239,6 +273,9 @@ public final class RuleCompiler {
         }
         if (values.isEmpty()) {
             barf(parser, "Empty arrays are not allowed");
+        }
+        if (!withOverriding && rule.containsKey(name)) {
+            barf(parser, String.format("Path `%s` cannot be allowed multiple times", name));
         }
         rule.put(name, values);
     }

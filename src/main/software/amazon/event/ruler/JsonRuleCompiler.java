@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 import static software.amazon.event.ruler.input.DefaultParser.getParser;
 
 /**
- * Represents a updated compiler comparing to RuleCompiler class, it parses a rule described by a JSON string into
+ * Represents an updated compiler comparing to RuleCompiler class, it parses a rule described by a JSON string into
  * a list of Map which is composed of field Patterns, each Map represents one dedicated match branch in the rule.
  * By default, fields in the rule will be interpreted as "And" relationship implicitly and will result into one Map with
  * fields of Patterns, but once it comes across the "$or" relationship which is explicitly decorated by "$or" primitive
@@ -62,9 +62,22 @@ public class JsonRuleCompiler {
      * @param source rule, as a String
      * @return null if the rule is valid, otherwise an error message
      */
-    public static String check(final Reader source) {
+    public static String check(final Reader source, final boolean withOverriding) {
         try {
-            doCompile(JSON_FACTORY.createParser(source));
+            doCompile(JSON_FACTORY.createParser(source), withOverriding);
+            return null;
+        } catch (Exception e) {
+            return e.getLocalizedMessage();
+        }
+    }
+
+    public static String check(final Reader source) {
+        return check(source, true);
+    }
+
+    public static String check(final String source, final boolean withOverriding) {
+        try {
+            doCompile(JSON_FACTORY.createParser(source), withOverriding);
             return null;
         } catch (Exception e) {
             return e.getLocalizedMessage();
@@ -72,8 +85,12 @@ public class JsonRuleCompiler {
     }
 
     public static String check(final String source) {
+        return check(source, true);
+    }
+
+    public static String check(final byte[] source, final boolean withOverriding) {
         try {
-            doCompile(JSON_FACTORY.createParser(source));
+            doCompile(JSON_FACTORY.createParser(source), withOverriding);
             return null;
         } catch (Exception e) {
             return e.getLocalizedMessage();
@@ -81,8 +98,12 @@ public class JsonRuleCompiler {
     }
 
     public static String check(final byte[] source) {
+        return check(source, true);
+    }
+
+    public static String check(final InputStream source, final boolean withOverriding) {
         try {
-            doCompile(JSON_FACTORY.createParser(source));
+            doCompile(JSON_FACTORY.createParser(source), withOverriding);
             return null;
         } catch (Exception e) {
             return e.getLocalizedMessage();
@@ -90,12 +111,7 @@ public class JsonRuleCompiler {
     }
 
     public static String check(final InputStream source) {
-        try {
-            doCompile(JSON_FACTORY.createParser(source));
-            return null;
-        } catch (Exception e) {
-            return e.getLocalizedMessage();
-        }
+        return check(source, true);
     }
 
     /**
@@ -105,33 +121,50 @@ public class JsonRuleCompiler {
      * @return List of Sub rule which represented as Map
      * @throws IOException if the rule isn't syntactically valid
      */
-    public static List<Map<String, List<Patterns>>> compile(final Reader source)
+    public static List<Map<String, List<Patterns>>> compile(final Reader source, boolean withOverriding)
             throws IOException {
-        return doCompile(JSON_FACTORY.createParser(source));
+        return doCompile(JSON_FACTORY.createParser(source), withOverriding);
     }
 
-    public static List<Map<String, List<Patterns>>> compile(final String source)
-            throws IOException {
-        return doCompile(JSON_FACTORY.createParser(source));
+    public static List<Map<String, List<Patterns>>> compile(final Reader source) throws IOException {
+        return compile(source, true);
     }
 
-    public static List<Map<String, List<Patterns>>> compile(final byte[] source)
+
+    public static List<Map<String, List<Patterns>>> compile(final String source, boolean withOverriding)
             throws IOException {
-        return doCompile(JSON_FACTORY.createParser(source));
+        return doCompile(JSON_FACTORY.createParser(source), withOverriding);
     }
 
-    public static List<Map<String, List<Patterns>>> compile(final InputStream source)
-            throws IOException {
-        return doCompile(JSON_FACTORY.createParser(source));
+    public static List<Map<String, List<Patterns>>> compile(final String source) throws IOException {
+        return compile(source, true);
     }
 
-    private static List<Map<String, List<Patterns>>> doCompile(final JsonParser parser) throws IOException {
+    public static List<Map<String, List<Patterns>>> compile(final byte[] source, boolean withOverriding)
+            throws IOException {
+        return doCompile(JSON_FACTORY.createParser(source), withOverriding);
+    }
+
+    public static List<Map<String, List<Patterns>>> compile(final byte[] source) throws IOException {
+        return compile(source, true);
+    }
+
+    public static List<Map<String, List<Patterns>>> compile(final InputStream source, final boolean withOverriding)
+            throws IOException {
+        return doCompile(JSON_FACTORY.createParser(source), withOverriding);
+    }
+
+    public static List<Map<String, List<Patterns>>> compile(final InputStream source) throws IOException {
+        return compile(source, true);
+    }
+
+    private static List<Map<String, List<Patterns>>> doCompile(final JsonParser parser, boolean withOverriding) throws IOException {
         final Path path = new Path();
         final List<Map<String, List<Patterns>>> rules = new ArrayList<>();
         if (parser.nextToken() != JsonToken.START_OBJECT) {
             barf(parser, "Filter is not an object");
         }
-        parseObject(rules, path, parser, true);
+        parseObject(rules, path, parser, true, withOverriding);
         parser.close();
         return rules;
     }
@@ -139,7 +172,8 @@ public class JsonRuleCompiler {
     private static void parseObject(final List<Map<String, List<Patterns>>> rules,
                                     final Path path,
                                     final JsonParser parser,
-                                    final boolean withQuotes) throws IOException {
+                                    final boolean withQuotes,
+                                    final boolean withOverriding) throws IOException {
 
         boolean fieldsPresent = false;
         while (parser.nextToken() != JsonToken.END_OBJECT) {
@@ -151,7 +185,7 @@ public class JsonRuleCompiler {
             // If it is "$or" primitive, we should bypass that primitive itself in the path as it is not
             // a real field name, it is just used to describe the "$or" relationship among object in the followed array.
             if (stepName.equals(Constants.OR_RELATIONSHIP_KEYWORD)) {
-                parseIntoOrRelationship(rules, path, parser, withQuotes);
+                parseIntoOrRelationship(rules, path, parser, withQuotes, withOverriding);
                 // all Objects in $or array have been handled in above function, just bypass below logic.
                 continue;
             }
@@ -159,12 +193,12 @@ public class JsonRuleCompiler {
             switch (parser.nextToken()) {
             case START_OBJECT:
                 path.push(stepName);
-                parseObject(rules, path, parser, withQuotes);
+                parseObject(rules, path, parser, withQuotes, withOverriding);
                 path.pop();
                 break;
 
             case START_ARRAY:
-                writeRules(rules, path.extendedName(stepName), parser, withQuotes);
+                writeRules(rules, path.extendedName(stepName), parser, withQuotes, withOverriding);
                 break;
 
             default:
@@ -179,7 +213,8 @@ public class JsonRuleCompiler {
     private static void parseObjectInsideOrRelationship(final List<Map<String, List<Patterns>>> rules,
                                                         final Path path,
                                                         final JsonParser parser,
-                                                        final boolean withQuotes) throws IOException {
+                                                        final boolean withQuotes,
+                                                        final boolean withOverriding) throws IOException {
 
         boolean fieldsPresent = false;
         while (parser.nextToken() != JsonToken.END_OBJECT) {
@@ -191,7 +226,7 @@ public class JsonRuleCompiler {
             // If it is "$or" primitive, we should bypass the "$or" primitive itself in the path as it is not
             // a real step name, it is just used to describe the "$or" relationship among object in the followed Array.
             if (stepName.equals(Constants.OR_RELATIONSHIP_KEYWORD)) {
-                parseIntoOrRelationship(rules, path, parser, withQuotes);
+                parseIntoOrRelationship(rules, path, parser, withQuotes, withOverriding);
                 continue;
             }
 
@@ -204,12 +239,12 @@ public class JsonRuleCompiler {
             switch (parser.nextToken()) {
                 case START_OBJECT:
                     path.push(stepName);
-                    parseObjectInsideOrRelationship(rules, path, parser, withQuotes);
+                    parseObjectInsideOrRelationship(rules, path, parser, withQuotes, withOverriding);
                     path.pop();
                     break;
 
                 case START_ARRAY:
-                    writeRules(rules, path.extendedName(stepName), parser, withQuotes);
+                    writeRules(rules, path.extendedName(stepName), parser, withQuotes, withOverriding);
                     break;
 
                 default:
@@ -247,7 +282,8 @@ public class JsonRuleCompiler {
     private static void parseIntoOrRelationship(final List<Map<String, List<Patterns>>> rules,
                                                 final Path path,
                                                 final JsonParser parser,
-                                                final boolean withQuotes) throws IOException {
+                                                final boolean withQuotes,
+                                                final boolean withOverriding) throws IOException {
 
         final List<Map<String, List<Patterns>>> currentRules = deepCopyRules(rules);
         rules.clear();
@@ -265,7 +301,7 @@ public class JsonRuleCompiler {
                 if (newRules.isEmpty()) {
                     newRules.add(new HashMap<>());
                 }
-                parseObjectInsideOrRelationship(newRules, path, parser, withQuotes);
+                parseObjectInsideOrRelationship(newRules, path, parser, withQuotes, withOverriding);
                 rules.addAll(newRules);
             } else {
                 barf(parser,
@@ -285,7 +321,8 @@ public class JsonRuleCompiler {
     private static void writeRules(final List<Map<String, List<Patterns>>> rules,
                                    final String name,
                                    final JsonParser parser,
-                                   final boolean withQuotes) throws IOException {
+                                   final boolean withQuotes,
+                                   final boolean withOverriding) throws IOException {
 
         JsonToken token;
         final List<Patterns> values = new ArrayList<>();
@@ -343,7 +380,12 @@ public class JsonRuleCompiler {
         if (rules.isEmpty()) {
             rules.add(new HashMap<>());
         }
-        rules.forEach(rule -> rule.put(name, values));
+        for (Map<String, List<Patterns>> rule : rules) {
+            if (!withOverriding && rule.containsKey(name)) {
+                barf(parser, String.format("Path `%s` cannot be allowed multiple times", name));
+            }
+            rule.put(name, values);
+        }
     }
 
     // Used to be, the format was

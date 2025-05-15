@@ -632,4 +632,99 @@ public class JsonRuleCompilerTest {
                     e.getMessage());
         }
     }
+
+
+    @Test
+    public void testWithRuleOverride() throws Exception {
+        // Simple rule with the same name path twice
+        String jsonSimpleRule = "{\n" +
+                      "  \"name\": [\"a\", \"b\"],\n" +
+                      "  \"$or\": [\n" +
+                      "    {\"name\": [ { \"anything-but\": \"a\" } ]},\n" +
+                      "    {\"condition1\": [\"x\"]}\n" +
+                      "  ]\n" +
+                      "}";
+
+        assertNull("", JsonRuleCompiler.check(jsonSimpleRule));
+        Machine machine = Machine.builder().build();
+        machine.addRule("r1", jsonSimpleRule);
+        String event = "{\n" +
+                       "  \"name\": \"a\",\n" +
+                       "  \"condition1\": \"x\"\n" +
+                       "}";
+        List<String> rules = machine.rulesForJSONEvent(event);
+        assertEquals(1, rules.size());
+        String expectedEventByOverriding = "{\n" +
+                                 "   \"name\": \"c\"\n" +
+                                 "}";
+        List<String> rulesUnexpected = machine.rulesForJSONEvent(expectedEventByOverriding);
+        assertEquals(1, rulesUnexpected.size());
+        // Without overriding should throw an error.
+        assertEquals("Path `name` cannot be allowed multiple times\n" +
+                " at [Source: (String)\"{\n" +
+                "  \"name\": [\"a\", \"b\"],\n" +
+                "  \"$or\": [\n" +
+                "    {\"name\": [ { \"anything-but\": \"a\" } ]},\n" +
+                "    {\"condition1\": [\"x\"]}\n" +
+                "  ]\n" +
+                "}\"; line: 4, column: 41]", JsonRuleCompiler.check(jsonSimpleRule, false));
+        // Example rule taken from: https://github.com/aws/event-ruler/issues/22
+        String jsonSimpleRule2 = "{\n" +
+                                 "  \"source\": [\"aws.sns\"],\n" +
+                                 "  \"detail-type\": [\"AWS API Call via CloudTrail\"],\n" +
+                                 "  \"detail\": {\n" +
+                                 "    \"eventSource\": [\"s3.amazonaws.com\"],\n" +
+                                 "    \"eventSource\": [\"sns.amazonaws.com\"]\n" +
+                                 "  }\n" +
+                                 "}";
+        assertNull("", JsonRuleCompiler.check(jsonSimpleRule2));
+        assertEquals("Path `detail.eventSource` cannot be allowed multiple times\n" +
+                " at [Source: (String)\"{\n" +
+                "  \"source\": [\"aws.sns\"],\n" +
+                "  \"detail-type\": [\"AWS API Call via CloudTrail\"],\n" +
+                "  \"detail\": {\n" +
+                "    \"eventSource\": [\"s3.amazonaws.com\"],\n" +
+                "    \"eventSource\": [\"sns.amazonaws.com\"]\n" +
+                "  }\n" +
+                "}\"; line: 6, column: 41]", JsonRuleCompiler.check(jsonSimpleRule2, false));
+        // Example rule with a more complex structure with top level or, should not be considered an override (as paths are handled separately)
+        String jsonComplexRule = "{\n" +
+                                 "  \"$or\": [\n" +
+                                 "    {\n" +
+                                 "      \"source\": [\"aws.sns\"],\n" +
+                                 "      \"detail\": {\n" +
+                                 "        \"eventSource\": [\"s3.amazonaws.com\"],\n" +
+                                 "        \"field1\": [\"value1\"]\n" +
+                                 "      }\n" +
+                                 "    },\n" +
+                                 "    {\n" +
+                                 "      \"source\": [\"aws.sns\"],\n" +
+                                 "      \"detail\": {\n" +
+                                 "        \"field2\": [\"value2\"],\n" +
+                                 "        \"eventSource\": [\"sns.amazonaws.com\"]\n" +
+                                 "      }\n" +
+                                 "    }\n" +
+                                 "  ]\n" +
+                                 "}";
+        assertNull("", JsonRuleCompiler.check(jsonComplexRule));
+        assertNull("", JsonRuleCompiler.check(jsonComplexRule, false));
+        // Same example as before, but the or is placed inside the detail
+        String jsonComplexRule2 = "{\n" +
+                                  "  \"source\": [\"aws.sns\"],\n" +
+                                  "  \"detail\": {\n" +
+                                  "    \"$or\": [\n" +
+                                  "      {\n" +
+                                  "        \"eventSource\": [\"s3.amazonaws.com\"],\n" +
+                                  "        \"field1\": [\"value1\"]\n" +
+                                  "      },\n" +
+                                  "      {\n" +
+                                  "        \"field2\": [\"value2\"],\n" +
+                                  "        \"eventSource\": [\"sns.amazonaws.com\"]\n" +
+                                  "      }\n" +
+                                  "    ]\n" +
+                                  "  }\n" +
+                                  "}";
+        assertNull("", JsonRuleCompiler.check(jsonComplexRule2));
+        assertNull("", JsonRuleCompiler.check(jsonComplexRule2, false));
+    }
 }

@@ -6,13 +6,19 @@ package software.amazon.event.ruler;
 class GenericMachineConfiguration {
 
     private final boolean additionalNameStateReuse;
+    private final boolean ruleOverriding;
 
-    GenericMachineConfiguration(boolean additionalNameStateReuse) {
+    GenericMachineConfiguration(boolean additionalNameStateReuse, boolean ruleOverriding) {
         this.additionalNameStateReuse = additionalNameStateReuse;
+        this.ruleOverriding = ruleOverriding;
     }
 
     boolean isAdditionalNameStateReuse() {
         return additionalNameStateReuse;
+    }
+
+    public boolean isRuleOverriding() {
+        return ruleOverriding;
     }
 }
 
