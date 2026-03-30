@@ -2756,6 +2756,34 @@ public class ACMachineTest {
         assertEquals(1, matches.size());
         assertTrue(matches.contains("rule1"));
     }
+    
+    @Test
+    public void testLargeArrayCompletesInReasonableTime() throws Exception {
+        // exists:true so every array element triggers a value match.
+        String rule = "{\"source\":[\"myapp\"],\"items\":[{\"exists\":true}]}";
+        Machine machine = new Machine();
+        machine.addRule("rule1", rule);
+
+        StringBuilder sb = new StringBuilder("{\"source\":\"myapp\",\"items\":[");
+        for (int i = 0; i < 10000; i++) {
+            if (i > 0) {
+                sb.append(",");
+            }
+            sb.append("\"val").append(i).append("\"");
+        }
+        sb.append("]}");
+        String event = sb.toString();
+
+        // Warmup
+        machine.rulesForJSONEvent(event);
+
+        long start = System.currentTimeMillis();
+        List<String> matches = machine.rulesForJSONEvent(event);
+        long elapsed = System.currentTimeMillis() - start;
+
+        assertEquals(1, matches.size());
+        assertTrue("Took " + elapsed + "ms, expected < 500ms", elapsed < 500);
+    }
 
     private static Set<String> set(String ... strings) {
         return set(Arrays.asList(strings));

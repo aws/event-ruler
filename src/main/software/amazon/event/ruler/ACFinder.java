@@ -116,7 +116,12 @@ class ACFinder {
                 subRuleContextGenerator);
 
         while (fieldIndex < task.fieldCount) {
-            task.addStep(fieldIndex++, nameState, candidateSubRuleIdsForNextStep, arrayMembership);
+            // Only enqueue a step if the NameState has a value transition for this field's name.
+            final Field field = task.event.fields.get(fieldIndex);
+            if (nameState.getTransitionOn(field.name) != null) {
+                task.addStep(fieldIndex, nameState, candidateSubRuleIdsForNextStep, arrayMembership);
+            }
+            fieldIndex++;
         }
     }
 
