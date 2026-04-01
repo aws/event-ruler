@@ -1,9 +1,5 @@
 package software.amazon.event.ruler;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonNode;
-
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -18,6 +14,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
+import javax.annotation.Nonnull;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import static software.amazon.event.ruler.SetOperations.intersection;
 
@@ -79,16 +80,44 @@ public class GenericMachine<T> {
      *  of different elements of the same JSON array in the event are matched.
      * @param jsonEvent The JSON representation of the event
      * @return list of rule names that match. The list may be empty but never null.
+     * @deprecated Use {@link #rulesForJSONEventNonBlocking(String)} instead, which provides the same array-consistent
+     *  matching semantics with linear performance regardless of array size. This method can exhibit O(N^2) performance
+     *  on events with large arrays matching multi-field rules.
      */
+    @Deprecated
     @SuppressWarnings("unchecked")
     public List<T> rulesForJSONEvent(final String jsonEvent) throws Exception {
         final Event event = new Event(jsonEvent, this);
         return (List<T>) ACFinder.matchRules(event, this, subRuleContextGenerator);
     }
+
+    /**
+     * @deprecated Use {@link #rulesForJSONEventNonBlocking(String)} instead.
+     */
+    @Deprecated
     @SuppressWarnings("unchecked")
     public List<T> rulesForJSONEvent(final JsonNode eventRoot) {
         final Event event = new Event(eventRoot, this);
         return (List<T>) ACFinder.matchRules(event, this, subRuleContextGenerator);
+    }
+
+    /**
+     * Return any rules that match the fields in the event, with array-consistent matching
+     * and linear performance regardless of array size.
+     *
+     * <p>This method walks the JSON tree structurally, splitting on object arrays and matching
+     * per-element. It avoids the O(N^2) step queue growth that {@link #rulesForJSONEvent(String)}
+     * can exhibit on events with large arrays matching multi-field rules.</p>
+     *
+     * <p>Semantically equivalent to {@link #rulesForJSONEvent(String)} — same rules match
+     * same events — but with guaranteed linear performance in event size.</p>
+     *
+     * @param jsonEvent The JSON representation of the event
+     * @return list of rule names that match. The list may be empty but never null.
+     */
+    @SuppressWarnings("unchecked")
+    public List<T> rulesForJSONEventNonBlocking(final String jsonEvent) throws Exception {
+        return (List<T>) StructuredFinder.matchRules(jsonEvent, this, subRuleContextGenerator);
     }
 
     /**

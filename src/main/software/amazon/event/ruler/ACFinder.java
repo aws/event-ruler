@@ -115,13 +115,23 @@ class ACFinder {
         tryMustNotExistMatch(candidateSubRuleIdsForNextStep, nameState, task, fieldIndex, arrayMembership,
                 subRuleContextGenerator);
 
-        while (fieldIndex < task.fieldCount) {
-            // Only enqueue a step if the NameState has a value transition for this field's name.
-            final Field field = task.event.fields.get(fieldIndex);
-            if (nameState.getTransitionOn(field.name) != null) {
-                task.addStep(fieldIndex, nameState, candidateSubRuleIdsForNextStep, arrayMembership);
+        // Use the field name index to jump directly to fields the NameState transitions on,
+        // instead of iterating all remaining fields. For each matching field, pre-check array
+        // consistency before enqueuing. This makes moveFrom() O(T * M) where T = number of
+        // transitions and M = number of array-consistent fields per name, instead of O(F)
+        // where F = total remaining fields.
+        for (final String transitionKey : nameState.getValueTransitionKeys()) {
+            final int[] range = task.event.getFieldRange(transitionKey);
+            if (range == null) {
+                continue;
             }
-            fieldIndex++;
+            final int start = Math.max(range[0], fieldIndex);
+            for (int i = start; i < range[1]; i++) {
+                final Field field = task.event.fields.get(i);
+                if (ArrayMembership.checkArrayConsistency(arrayMembership, field.arrayMembership) != null) {
+                    task.addStep(i, nameState, candidateSubRuleIdsForNextStep, arrayMembership);
+                }
+            }
         }
     }
 

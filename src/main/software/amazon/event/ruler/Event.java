@@ -1,16 +1,8 @@
 package software.amazon.event.ruler;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import javax.annotation.Nonnull;
-import javax.annotation.concurrent.Immutable;
-import javax.annotation.concurrent.ThreadSafe;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -19,6 +11,16 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.StringJoiner;
 import java.util.TreeMap;
+
+import javax.annotation.Nonnull;
+import javax.annotation.concurrent.Immutable;
+import javax.annotation.concurrent.ThreadSafe;
+
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Prepares events for Ruler rule matching.
@@ -53,6 +55,11 @@ final class Event {
 
     // the fields of the event
     final List<Field> fields = new ArrayList<>();
+
+    // Index: field name -> [startIndex, endIndex) in the fields list.
+    // Fields are sorted by name (from TreeMap), so same-name fields are contiguous.
+    // Used by ACFinder to jump directly to relevant fields in moveFrom().
+    private final Map<String, int[]> fieldNameRanges = new HashMap<>();
 
     /**
      * represents the current state of an Event-constructor project
@@ -102,6 +109,7 @@ final class Event {
                 fields.add(new Field(entry.getKey(), val.val, val.membership));
             }
         }
+        buildFieldNameRanges();
     }
 
     // as above, only with the JSON already parsed into a ObjectMapper tree
@@ -118,6 +126,33 @@ final class Event {
                 fields.add(new Field(entry.getKey(), val.val, val.membership));
             }
         }
+        buildFieldNameRanges();
+    }
+
+    /**
+     * Build an index from field name to [startIndex, endIndex) in the fields list.
+     * Since fields are sorted by name (from TreeMap), same-name fields are contiguous.
+     */
+    private void buildFieldNameRanges() {
+        if (fields.isEmpty()) return;
+        String currentName = fields.get(0).name;
+        int start = 0;
+        for (int i = 1; i <= fields.size(); i++) {
+            String name = (i < fields.size()) ? fields.get(i).name : null;
+            if (!currentName.equals(name)) {
+                fieldNameRanges.put(currentName, new int[]{start, i});
+                start = i;
+                currentName = name;
+            }
+        }
+    }
+
+    /**
+     * Get the index range [start, end) for fields with the given name.
+     * Returns null if no fields have that name.
+     */
+    int[] getFieldRange(final String fieldName) {
+        return fieldNameRanges.get(fieldName);
     }
 
     private void traverseObject(final JsonParser parser, final TreeMap<String, List<Value>> fieldMap, final Progress progress) throws IOException {
