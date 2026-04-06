@@ -1,0 +1,1288 @@
+[
+  {
+    "name": "flat: 2-field exists, both present",
+    "rule": {
+      "d": {
+        "a": [
+          {
+            "exists": true
+          }
+        ],
+        "b": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": {
+        "a": 1,
+        "b": 2
+      }
+    }
+  },
+  {
+    "name": "flat: 2-field exists, one missing",
+    "rule": {
+      "d": {
+        "a": [
+          {
+            "exists": true
+          }
+        ],
+        "b": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": {
+        "a": 1
+      }
+    }
+  },
+  {
+    "name": "flat: exact match",
+    "rule": {
+      "d": {
+        "a": [
+          "hello"
+        ],
+        "b": [
+          "world"
+        ]
+      }
+    },
+    "event": {
+      "d": {
+        "a": "hello",
+        "b": "world"
+      }
+    }
+  },
+  {
+    "name": "flat: exact mismatch",
+    "rule": {
+      "d": {
+        "a": [
+          "hello"
+        ],
+        "b": [
+          "world"
+        ]
+      }
+    },
+    "event": {
+      "d": {
+        "a": "hello",
+        "b": "nope"
+      }
+    }
+  },
+  {
+    "name": "flat: prefix",
+    "rule": {
+      "d": {
+        "a": [
+          {
+            "prefix": "hel"
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": {
+        "a": "hello"
+      }
+    }
+  },
+  {
+    "name": "flat: numeric range",
+    "rule": {
+      "d": {
+        "x": [
+          {
+            "numeric": [
+              ">",
+              0,
+              "<",
+              100
+            ]
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": {
+        "x": 50
+      }
+    }
+  },
+  {
+    "name": "flat: anything-but",
+    "rule": {
+      "d": {
+        "s": [
+          {
+            "anything-but": "banned"
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": {
+        "s": "active"
+      }
+    }
+  },
+  {
+    "name": "objarray: same element",
+    "rule": {
+      "d": {
+        "a": [
+          {
+            "exists": true
+          }
+        ],
+        "b": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": [
+        {
+          "a": 1,
+          "b": 2
+        }
+      ]
+    }
+  },
+  {
+    "name": "objarray: split",
+    "rule": {
+      "d": {
+        "a": [
+          {
+            "exists": true
+          }
+        ],
+        "b": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": [
+        {
+          "a": 1
+        },
+        {
+          "b": 2
+        }
+      ]
+    }
+  },
+  {
+    "name": "objarray: 3 elem, last valid",
+    "rule": {
+      "d": {
+        "a": [
+          {
+            "exists": true
+          }
+        ],
+        "b": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": [
+        {
+          "a": 1
+        },
+        {
+          "b": 2
+        },
+        {
+          "a": 3,
+          "b": 4
+        }
+      ]
+    }
+  },
+  {
+    "name": "objarray: 3-field, all in one",
+    "rule": {
+      "d": {
+        "a": [
+          {
+            "exists": true
+          }
+        ],
+        "b": [
+          {
+            "exists": true
+          }
+        ],
+        "c": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": [
+        {
+          "a": 1,
+          "b": 2,
+          "c": 3
+        }
+      ]
+    }
+  },
+  {
+    "name": "objarray: 3-field, split 3 ways",
+    "rule": {
+      "d": {
+        "a": [
+          {
+            "exists": true
+          }
+        ],
+        "b": [
+          {
+            "exists": true
+          }
+        ],
+        "c": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": [
+        {
+          "a": 1
+        },
+        {
+          "b": 2
+        },
+        {
+          "c": 3
+        }
+      ]
+    }
+  },
+  {
+    "name": "objarray: exact same elem",
+    "rule": {
+      "d": {
+        "name": [
+          "alice"
+        ],
+        "status": [
+          "active"
+        ]
+      }
+    },
+    "event": {
+      "d": [
+        {
+          "name": "alice",
+          "status": "active"
+        }
+      ]
+    }
+  },
+  {
+    "name": "objarray: exact split",
+    "rule": {
+      "d": {
+        "name": [
+          "alice"
+        ],
+        "status": [
+          "active"
+        ]
+      }
+    },
+    "event": {
+      "d": [
+        {
+          "name": "alice"
+        },
+        {
+          "status": "active"
+        }
+      ]
+    }
+  },
+  {
+    "name": "objarray: prefix same",
+    "rule": {
+      "d": {
+        "name": [
+          {
+            "prefix": "al"
+          }
+        ],
+        "status": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": [
+        {
+          "name": "alice",
+          "status": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "name": "objarray: prefix split",
+    "rule": {
+      "d": {
+        "name": [
+          {
+            "prefix": "al"
+          }
+        ],
+        "status": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": [
+        {
+          "name": "alice"
+        },
+        {
+          "status": "ok"
+        }
+      ]
+    }
+  },
+  {
+    "name": "primarray: exists",
+    "rule": {
+      "d": {
+        "tags": [
+          {
+            "exists": true
+          }
+        ],
+        "name": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": {
+        "tags": [
+          "a",
+          "b"
+        ],
+        "name": "x"
+      }
+    }
+  },
+  {
+    "name": "primarray: exact match",
+    "rule": {
+      "tags": [
+        "admin"
+      ]
+    },
+    "event": {
+      "tags": [
+        "user",
+        "admin"
+      ]
+    }
+  },
+  {
+    "name": "primarray: no match",
+    "rule": {
+      "tags": [
+        "superadmin"
+      ]
+    },
+    "event": {
+      "tags": [
+        "user",
+        "admin"
+      ]
+    }
+  },
+  {
+    "name": "nested: inner same",
+    "rule": {
+      "u": {
+        "t": {
+          "k": [
+            "color"
+          ],
+          "v": [
+            "blue"
+          ]
+        }
+      }
+    },
+    "event": {
+      "u": [
+        {
+          "t": [
+            {
+              "k": "color",
+              "v": "blue"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "nested: inner split",
+    "rule": {
+      "u": {
+        "t": {
+          "k": [
+            "color"
+          ],
+          "v": [
+            "blue"
+          ]
+        }
+      }
+    },
+    "event": {
+      "u": [
+        {
+          "t": [
+            {
+              "k": "color"
+            },
+            {
+              "v": "blue"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "nested: outer split",
+    "rule": {
+      "d": {
+        "name": [
+          {
+            "exists": true
+          }
+        ],
+        "info": {
+          "x": [
+            "1"
+          ]
+        }
+      }
+    },
+    "event": {
+      "d": [
+        {
+          "name": "alice"
+        },
+        {
+          "info": {
+            "x": "1"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "nested: outer same",
+    "rule": {
+      "d": {
+        "name": [
+          {
+            "exists": true
+          }
+        ],
+        "info": {
+          "x": [
+            "1"
+          ]
+        }
+      }
+    },
+    "event": {
+      "d": [
+        {
+          "name": "alice",
+          "info": {
+            "x": "1"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "nested2: same leaf",
+    "rule": {
+      "a": {
+        "b": {
+          "x": [
+            {
+              "exists": true
+            }
+          ],
+          "y": [
+            {
+              "exists": true
+            }
+          ]
+        }
+      }
+    },
+    "event": {
+      "a": [
+        {
+          "b": [
+            {
+              "x": 1,
+              "y": 2
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "nested2: split leaf",
+    "rule": {
+      "a": {
+        "b": {
+          "x": [
+            {
+              "exists": true
+            }
+          ],
+          "y": [
+            {
+              "exists": true
+            }
+          ]
+        }
+      }
+    },
+    "event": {
+      "a": [
+        {
+          "b": [
+            {
+              "x": 1
+            },
+            {
+              "y": 2
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "mixed: array+scalar match",
+    "rule": {
+      "users": {
+        "name": [
+          {
+            "exists": true
+          }
+        ]
+      },
+      "version": [
+        "1"
+      ]
+    },
+    "event": {
+      "users": [
+        {
+          "name": "alice"
+        }
+      ],
+      "version": "1"
+    }
+  },
+  {
+    "name": "mixed: array+scalar fail",
+    "rule": {
+      "users": {
+        "name": [
+          {
+            "exists": true
+          }
+        ]
+      },
+      "version": [
+        "2"
+      ]
+    },
+    "event": {
+      "users": [
+        {
+          "name": "alice"
+        }
+      ],
+      "version": "1"
+    }
+  },
+  {
+    "name": "exists-false: absent",
+    "rule": {
+      "d": {
+        "a": [
+          {
+            "exists": true
+          }
+        ],
+        "b": [
+          {
+            "exists": false
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": [
+        {
+          "a": 1
+        }
+      ]
+    }
+  },
+  {
+    "name": "exists-false: present",
+    "rule": {
+      "d": {
+        "a": [
+          {
+            "exists": true
+          }
+        ],
+        "b": [
+          {
+            "exists": false
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": [
+        {
+          "a": 1,
+          "b": 2
+        }
+      ]
+    }
+  },
+  {
+    "name": "empty object",
+    "rule": {
+      "d": {
+        "a": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {}
+  },
+  {
+    "name": "empty array",
+    "rule": {
+      "d": {
+        "a": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": []
+    }
+  },
+  {
+    "name": "single-field rule",
+    "rule": {
+      "d": {
+        "a": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": [
+        {
+          "a": 1
+        },
+        {
+          "a": 2
+        }
+      ]
+    }
+  },
+  {
+    "name": "many elem one valid",
+    "rule": {
+      "d": {
+        "a": [
+          "target"
+        ],
+        "b": [
+          "found"
+        ]
+      }
+    },
+    "event": {
+      "d": [
+        {
+          "a": "x"
+        },
+        {
+          "a": "y"
+        },
+        {
+          "a": "target",
+          "b": "found"
+        },
+        {
+          "a": "z"
+        }
+      ]
+    }
+  },
+  {
+    "name": "numeric+exists array",
+    "rule": {
+      "i": {
+        "p": [
+          {
+            "numeric": [
+              ">",
+              0,
+              "<",
+              100
+            ]
+          }
+        ],
+        "n": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "i": [
+        {
+          "n": "w",
+          "p": 50
+        },
+        {
+          "n": "g",
+          "p": 200
+        }
+      ]
+    }
+  },
+  {
+    "name": "anything-but array",
+    "rule": {
+      "u": {
+        "s": [
+          {
+            "anything-but": "banned"
+          }
+        ],
+        "n": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "u": [
+        {
+          "n": "alice",
+          "s": "banned"
+        },
+        {
+          "n": "bob",
+          "s": "active"
+        }
+      ]
+    }
+  },
+  {
+    "name": "primarray: large + scalar, exists",
+    "rule": {
+      "d": {
+        "tags": [
+          {
+            "exists": true
+          }
+        ],
+        "type": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": {
+        "tags": [
+          "a",
+          "b",
+          "c"
+        ],
+        "type": "GROUP"
+      }
+    }
+  },
+  {
+    "name": "primarray: large + scalar, prefix",
+    "rule": {
+      "d": {
+        "tags": [
+          {
+            "prefix": "ad"
+          }
+        ],
+        "type": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": {
+        "tags": [
+          "admin",
+          "user",
+          "dev"
+        ],
+        "type": "GROUP"
+      }
+    }
+  },
+  {
+    "name": "primarray: large + scalar, no match",
+    "rule": {
+      "d": {
+        "tags": [
+          {
+            "prefix": "super"
+          }
+        ],
+        "type": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": {
+        "tags": [
+          "admin",
+          "user",
+          "dev"
+        ],
+        "type": "GROUP"
+      }
+    }
+  },
+  {
+    "name": "primarray: nested under object",
+    "rule": {
+      "detail": {
+        "data": {
+          "name": [
+            {
+              "exists": true
+            }
+          ],
+          "type": [
+            {
+              "exists": true
+            }
+          ]
+        }
+      }
+    },
+    "event": {
+      "detail": {
+        "data": {
+          "name": [
+            "alice",
+            "bob"
+          ],
+          "type": "GROUP"
+        }
+      }
+    }
+  },
+  {
+    "name": "primarray: two prim arrays + scalar",
+    "rule": {
+      "tags": [
+        {
+          "exists": true
+        }
+      ],
+      "cats": [
+        {
+          "exists": true
+        }
+      ],
+      "v": [
+        "1"
+      ]
+    },
+    "event": {
+      "tags": [
+        "a",
+        "b"
+      ],
+      "cats": [
+        "x",
+        "y"
+      ],
+      "v": "1"
+    }
+  },
+  {
+    "name": "primarray: exact match among many",
+    "rule": {
+      "d": {
+        "name": [
+          "target"
+        ],
+        "type": [
+          "GROUP"
+        ]
+      }
+    },
+    "event": {
+      "d": {
+        "name": [
+          "a",
+          "b",
+          "target",
+          "c"
+        ],
+        "type": "GROUP"
+      }
+    }
+  },
+  {
+    "name": "primarray: numeric in array",
+    "rule": {
+      "d": {
+        "vals": [
+          {
+            "numeric": [
+              ">",
+              0,
+              "<",
+              10
+            ]
+          }
+        ],
+        "type": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": {
+        "vals": [
+          100,
+          5,
+          200
+        ],
+        "type": "ok"
+      }
+    }
+  },
+  {
+    "name": "primarray: anything-but in array",
+    "rule": {
+      "d": {
+        "tags": [
+          {
+            "anything-but": "banned"
+          }
+        ],
+        "type": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": {
+        "tags": [
+          "banned",
+          "ok"
+        ],
+        "type": "x"
+      }
+    }
+  },
+  {
+    "name": "primarray: single value array",
+    "rule": {
+      "d": {
+        "name": [
+          {
+            "exists": true
+          }
+        ],
+        "type": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": {
+        "name": [
+          "only"
+        ],
+        "type": "x"
+      }
+    }
+  },
+  {
+    "name": "primarray: empty prim array",
+    "rule": {
+      "d": {
+        "name": [
+          {
+            "exists": true
+          }
+        ],
+        "type": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": {
+        "name": [],
+        "type": "x"
+      }
+    }
+  },
+  {
+    "name": "mixed: obj-array + prim-array",
+    "rule": {
+      "users": {
+        "name": [
+          {
+            "exists": true
+          }
+        ]
+      },
+      "tags": [
+        "admin"
+      ]
+    },
+    "event": {
+      "users": [
+        {
+          "name": "alice"
+        }
+      ],
+      "tags": [
+        "admin",
+        "user"
+      ]
+    }
+  },
+  {
+    "name": "mixed: obj-array split + prim-array",
+    "rule": {
+      "users": {
+        "name": [
+          {
+            "exists": true
+          }
+        ],
+        "email": [
+          {
+            "exists": true
+          }
+        ]
+      },
+      "tags": [
+        "admin"
+      ]
+    },
+    "event": {
+      "users": [
+        {
+          "name": "alice"
+        },
+        {
+          "email": "b@x"
+        }
+      ],
+      "tags": [
+        "admin"
+      ]
+    }
+  },
+  {
+    "name": "deep prim: nested 3 levels",
+    "rule": {
+      "a": {
+        "b": {
+          "c": {
+            "vals": [
+              {
+                "exists": true
+              }
+            ],
+            "type": [
+              {
+                "exists": true
+              }
+            ]
+          }
+        }
+      }
+    },
+    "event": {
+      "a": {
+        "b": {
+          "c": {
+            "vals": [
+              "x",
+              "y",
+              "z"
+            ],
+            "type": "ok"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "suffix match in array",
+    "rule": {
+      "d": {
+        "name": [
+          {
+            "suffix": "ice"
+          }
+        ],
+        "type": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": [
+        {
+          "name": "alice",
+          "type": "user"
+        }
+      ]
+    }
+  },
+  {
+    "name": "N emails, only last element has name — dedup loses the only valid match",
+    "rule": {
+      "detail": {
+        "email": [{ "exists": true }],
+        "name":  [{ "exists": true }]
+      }
+    },
+    "event": {
+      "detail": [
+        { "email": "a@x" },
+        { "email": "b@x" },
+        { "email": "c@x" },
+        { "email": "d@x" },
+        { "email": "e@x", "name": "eve" }
+      ]
+    }
+  },
+  {
+    "name": "suffix match split",
+    "rule": {
+      "d": {
+        "name": [
+          {
+            "suffix": "ice"
+          }
+        ],
+        "type": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "event": {
+      "d": [
+        {
+          "name": "alice"
+        },
+        {
+          "type": "user"
+        }
+      ]
+    }
+  }
+]

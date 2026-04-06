@@ -37,8 +37,17 @@ class ArrayMembership {
     boolean isEmpty() {
         return membership.isEmpty();
     }
-    private int size() {
+
+    int size() {
         return membership.size();
+    }
+
+    /**
+     * Get all array membership entries (arrayId -> elementIndex).
+     * Used by StructuredFinder for building the secondary index.
+     */
+    Iterable<IntIntMap.Entry> entries() {
+        return membership.entries();
     }
 
     // for debugging

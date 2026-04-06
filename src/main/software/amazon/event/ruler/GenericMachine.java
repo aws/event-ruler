@@ -1,9 +1,5 @@
 package software.amazon.event.ruler;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonNode;
-
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -18,6 +14,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
+import javax.annotation.Nonnull;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import static software.amazon.event.ruler.SetOperations.intersection;
 
@@ -82,9 +83,13 @@ public class GenericMachine<T> {
      */
     @SuppressWarnings("unchecked")
     public List<T> rulesForJSONEvent(final String jsonEvent) throws Exception {
+        if (configuration.isUseStructuredMatching()) {
+            return (List<T>) StructuredFinder.matchRules(jsonEvent, this, subRuleContextGenerator);
+        }
         final Event event = new Event(jsonEvent, this);
         return (List<T>) ACFinder.matchRules(event, this, subRuleContextGenerator);
     }
+
     @SuppressWarnings("unchecked")
     public List<T> rulesForJSONEvent(final JsonNode eventRoot) {
         final Event event = new Event(eventRoot, this);
@@ -791,6 +796,13 @@ public class GenericMachine<T> {
          */
         private boolean ruleOverriding = true;
 
+        /**
+         * When true, {@code rulesForJSONEvent()} uses structured tree-walking matching
+         * instead of ACFinder, providing linear performance on events with large arrays.
+         * Default is false for backward compatibility.
+         */
+        private boolean useStructuredMatching = false;
+
         Builder() {}
 
         public Builder<M,T> withAdditionalNameStateReuse(boolean additionalNameStateReuse) {
@@ -803,12 +815,18 @@ public class GenericMachine<T> {
             return this;
         }
 
+        public Builder<M, T> withStructuredMatching(boolean useStructuredMatching) {
+            this.useStructuredMatching = useStructuredMatching;
+            return this;
+        }
+
         public M build() {
             return (M) new GenericMachine<T>(buildConfig());
         }
 
         protected GenericMachineConfiguration buildConfig() {
-            return new GenericMachineConfiguration(additionalNameStateReuse, ruleOverriding);
+            return new GenericMachineConfiguration(additionalNameStateReuse, ruleOverriding,
+                    useStructuredMatching);
         }
     }
 }

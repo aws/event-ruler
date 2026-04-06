@@ -7,10 +7,17 @@ class GenericMachineConfiguration {
 
     private final boolean additionalNameStateReuse;
     private final boolean ruleOverriding;
+    private final boolean useStructuredMatching;
 
     GenericMachineConfiguration(boolean additionalNameStateReuse, boolean ruleOverriding) {
+        this(additionalNameStateReuse, ruleOverriding, false);
+    }
+
+    GenericMachineConfiguration(boolean additionalNameStateReuse, boolean ruleOverriding,
+                                boolean useStructuredMatching) {
         this.additionalNameStateReuse = additionalNameStateReuse;
         this.ruleOverriding = ruleOverriding;
+        this.useStructuredMatching = useStructuredMatching;
     }
 
     boolean isAdditionalNameStateReuse() {
@@ -19,6 +26,14 @@ class GenericMachineConfiguration {
 
     public boolean isRuleOverriding() {
         return ruleOverriding;
+    }
+
+    /**
+     * When true, {@link GenericMachine#rulesForJSONEvent(String)} uses {@link StructuredFinder}
+     * instead of {@link ACFinder}, providing linear performance on events with large arrays.
+     */
+    boolean isUseStructuredMatching() {
+        return useStructuredMatching;
     }
 }
 

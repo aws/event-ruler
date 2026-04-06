@@ -1,10 +1,11 @@
 package software.amazon.event.ruler;
 
-import javax.annotation.concurrent.ThreadSafe;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.concurrent.ThreadSafe;
 
 /**
  * Represents a state in the machine.
@@ -46,6 +47,14 @@ class NameState {
 
     ByteMachine getTransitionOn(final String token) {
         return valueTransitions.get(token);
+    }
+
+    /**
+     * Get all field names that have value transitions from this state.
+     * Used by ACFinder to iterate only relevant fields in moveFrom().
+     */
+    Set<String> getValueTransitionKeys() {
+        return valueTransitions.keySet();
     }
 
     /**

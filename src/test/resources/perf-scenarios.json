@@ -1,0 +1,445 @@
+[
+  {
+    "name": "prim-array + scalar (2-field exists)",
+    "rule": {
+      "d": {
+        "tags": [
+          {
+            "exists": true
+          }
+        ],
+        "type": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "generator": "primArrayPlusScalar",
+    "sizes": [
+      500,
+      1000,
+      2000,
+      3000
+    ],
+    "expectedMatches": 1,
+    "notes": "OrigAC: quadratic. getTransitionOn fix: linear."
+  },
+  {
+    "name": "prim-array + scalar (prefix pattern)",
+    "rule": {
+      "d": {
+        "tags": [
+          {
+            "prefix": "t"
+          }
+        ],
+        "type": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "generator": "primArrayPlusScalar",
+    "sizes": [
+      500,
+      1000,
+      2000,
+      3000
+    ],
+    "expectedMatches": 1,
+    "notes": "Same shape, prefix instead of exists. Same quadratic."
+  },
+  {
+    "name": "prim-array + scalar (exact, 1 match among N)",
+    "rule": {
+      "d": {
+        "tags": [
+          "t0"
+        ],
+        "type": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "generator": "primArrayPlusScalar",
+    "sizes": [
+      500,
+      1000,
+      2000
+    ],
+    "expectedMatches": 1,
+    "notes": "Only 1 element matches first field. Should be fast for all."
+  },
+  {
+    "name": "prim-array + scalar (no match)",
+    "rule": {
+      "d": {
+        "tags": [
+          "NOTFOUND"
+        ],
+        "type": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "generator": "primArrayPlusScalar",
+    "sizes": [
+      500,
+      1000,
+      2000
+    ],
+    "expectedMatches": 0,
+    "notes": "No element matches. Should be fast for all."
+  },
+  {
+    "name": "single-field rule on large prim-array",
+    "rule": {
+      "d": {
+        "tags": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "generator": "primArrayOnly",
+    "sizes": [
+      1000
+    ],
+    "expectedMatches": 1,
+    "notes": "Single field = no fan-out. Linear for all."
+  },
+  {
+    "name": "obj-array, both fields in every element",
+    "rule": {
+      "d": {
+        "a": [
+          {
+            "exists": true
+          }
+        ],
+        "b": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "generator": "objArrayBothFields",
+    "sizes": [
+      100,
+      200,
+      500,
+      1000,
+      2000
+    ],
+    "expectedMatches": 1,
+    "notes": "OrigAC+FixedAC: quadratic. Per-element grouping: linear."
+  },
+  {
+    "name": "obj-array, N-1 partial + last valid",
+    "rule": {
+      "d": {
+        "a": [
+          {
+            "exists": true
+          }
+        ],
+        "b": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "generator": "objArrayLastValid",
+    "sizes": [
+      100,
+      200,
+      500,
+      1000,
+      2000
+    ],
+    "expectedMatches": 1,
+    "notes": "Only last element has both fields. Tests worst-case search."
+  },
+  {
+    "name": "obj-array, all partial (no match)",
+    "rule": {
+      "d": {
+        "a": [
+          {
+            "exists": true
+          }
+        ],
+        "b": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "generator": "objArrayAllPartial",
+    "sizes": [
+      100,
+      200,
+      500,
+      1000,
+      2000
+    ],
+    "expectedMatches": 0,
+    "notes": "No element has both fields. Must exhaust all paths."
+  },
+  {
+    "name": "customer-like 6-field rule",
+    "rule": {
+      "detail": {
+        "data": {
+          "name": [
+            {
+              "exists": true
+            }
+          ],
+          "domains": {
+            "email": [
+              {
+                "exists": true
+              },
+              {
+                "exists": false
+              }
+            ]
+          },
+          "type": [
+            {
+              "exists": true
+            }
+          ]
+        },
+        "context": {
+          "companyId": [
+            {
+              "exists": true
+            }
+          ],
+          "userId": [
+            {
+              "exists": true
+            }
+          ],
+          "email": [
+            {
+              "exists": true
+            }
+          ]
+        }
+      }
+    },
+    "generator": "customerLike",
+    "sizes": [
+      100,
+      500,
+      1000,
+      2000,
+      3000
+    ],
+    "expectedMatches": 1,
+    "notes": "Real production pattern from P403641881."
+  },
+  {
+    "name": "prim-array inside obj-array elements",
+    "rule": {
+      "detail": {
+        "data": {
+          "name": [
+            {
+              "exists": true
+            }
+          ],
+          "type": [
+            {
+              "exists": true
+            }
+          ]
+        }
+      }
+    },
+    "generator": "primInsideObjArray",
+    "sizes": [
+      100,
+      500,
+      1000,
+      2000
+    ],
+    "expectedMatches": 1,
+    "notes": "Tests nesting: EG splits by element then hits prim-array."
+  },
+  {
+    "name": "no obj-array, just large prim-array",
+    "rule": {
+      "detail": {
+        "data": {
+          "name": [
+            {
+              "exists": true
+            }
+          ],
+          "type": [
+            {
+              "exists": true
+            }
+          ]
+        }
+      }
+    },
+    "generator": "noObjArrayLargePrim",
+    "sizes": [
+      500,
+      1000,
+      2000
+    ],
+    "expectedMatches": 1,
+    "notes": "EG falls back to OrigAC here. Only FixedAC helps."
+  },
+  {
+    "name": "nested 2-level obj-arrays (outer x inner=10)",
+    "rule": {
+      "a": {
+        "b": {
+          "x": [
+            {
+              "exists": true
+            }
+          ],
+          "y": [
+            {
+              "exists": true
+            }
+          ]
+        }
+      }
+    },
+    "generator": "nested2Level",
+    "sizes": [
+      50,
+      100,
+      200,
+      500
+    ],
+    "expectedMatches": 1,
+    "notes": "Outer N elements x 10 inner. Tests nested array handling."
+  },
+  {
+    "name": "deep nesting: obj > obj > prim-array",
+    "rule": {
+      "a": {
+        "b": {
+          "tags": [
+            {
+              "exists": true
+            }
+          ],
+          "type": [
+            {
+              "exists": true
+            }
+          ]
+        }
+      }
+    },
+    "generator": "deepNestedPrim",
+    "sizes": [
+      100,
+      500,
+      1000,
+      2000
+    ],
+    "expectedMatches": 1,
+    "notes": "3 obj-array elements, each with nested prim-array of size N."
+  },
+  {
+    "name": "wide rule (3 fields) + prim-array",
+    "rule": {
+      "d": {
+        "a": [
+          {
+            "exists": true
+          }
+        ],
+        "b": [
+          {
+            "exists": true
+          }
+        ],
+        "c": [
+          {
+            "exists": true
+          }
+        ]
+      }
+    },
+    "generator": "wideRulePrimArray",
+    "sizes": [
+      500,
+      1000,
+      2000,
+      3000
+    ],
+    "expectedMatches": 1,
+    "notes": "3-field AND rule. More fields = worse fan-out."
+  },
+  {
+    "name": "two prim-arrays + scalar",
+    "rule": {
+      "tags": [
+        {
+          "exists": true
+        }
+      ],
+      "cats": [
+        {
+          "exists": true
+        }
+      ],
+      "v": [
+        "1"
+      ]
+    },
+    "generator": "twoPrimArrays",
+    "sizes": [
+      100,
+      500,
+      1000,
+      2000
+    ],
+    "expectedMatches": 1,
+    "notes": "Two independent prim-arrays. Tests cross-array interaction."
+  },
+  {
+    "name": "control: scalar only (no arrays)",
+    "rule": {
+      "a": [
+        {
+          "exists": true
+        }
+      ],
+      "b": [
+        {
+          "exists": true
+        }
+      ]
+    },
+    "generator": "controlScalar",
+    "sizes": [
+      1
+    ],
+    "expectedMatches": 1,
+    "notes": "Baseline. All matchers should be <1ms."
+  }
+]
