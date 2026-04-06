@@ -1,7 +1,5 @@
 package software.amazon.event.ruler;
 
-import org.junit.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
@@ -18,11 +16,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import org.junit.Test;
+
+import static junit.framework.TestCase.assertFalse;
 
 /**
  * Unit testing a state machine is hard.  Tried hand-computing a few machines
@@ -30,6 +30,11 @@ import static org.junit.Assert.fail;
  *  more of a smoke/integration test.  But the coverage is quite good.
  */
 public class ACMachineTest {
+
+    protected Machine createMachine() {
+        return new Machine();
+    }
+
 
     private String toIP(int ip) {
         String sb = String.valueOf((ip >> 24) & 0xFF) + '.' +
@@ -54,7 +59,7 @@ public class ACMachineTest {
             String rule = "{ " +
                     "  \"a\": [ {\"cidr\": \"10.0.0.0/" + i + "\"} ]" +
                     "}";
-            Machine m = new Machine();
+            Machine m = createMachine();
             m.addRule("r", rule);
             long numberThatShouldMatch = 1L << (32 - i);
 
@@ -78,7 +83,7 @@ public class ACMachineTest {
         String rule2 = "{\"sourceIPAddress\": [{\"cidr\": \"220.160.154.255/24\"}]}";
         String rule3 = "{\"sourceIPAddress\": [{\"cidr\": \"220.160.59.225/31\"}]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
         machine.addRule("rule3", rule3);
@@ -184,7 +189,7 @@ public class ACMachineTest {
         };
 
         for (String rule : rules) {
-            Machine m = new Machine();
+            Machine m = createMachine();
             m.addRule("r0", rule);
             assertEquals(1, m.rulesForJSONEvent(JSON_FROM_README).size());
         }
@@ -227,7 +232,7 @@ public class ACMachineTest {
                 "{\"Songs\": { \"Writers\": { \"First\": [ \"Mick\" ], \"Last\": [ \"McCartney\" ] }}}",
                 "{\"Genres\": { \"Pop\": [ true ] }, \"Songs\": { \"Writers\": { \"First\": [ \"Mick\" ], \"Last\": [ \"McCartney\" ] }}}",
         };
-        Machine m = new Machine();
+        Machine m = createMachine();
         for (int i = 0; i < rulesThatShouldMatch.length; i++) {
             String rule = rulesThatShouldMatch[i];
             String name = String.format("r%d", i);
@@ -288,7 +293,7 @@ public class ACMachineTest {
                 "}";
 
 
-        Machine m = new Machine();
+        Machine m = createMachine();
         m.addRule("r", rule);
         List<String> result = m.rulesForJSONEvent(intensities);
         assertEquals(1, result.size());
@@ -299,7 +304,7 @@ public class ACMachineTest {
     public void testSimplestPossibleMachine() throws Exception {
         String rule1 = "{ \"a\" : [ 1 ] }";
         String rule2 = "{ \"b\" : [ 2 ] }";
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("r1", rule1);
         machine.addRule("r2", rule2);
         String event1 = "{ \"a\": 1 }";
@@ -322,7 +327,7 @@ public class ACMachineTest {
     public void testPrefixMatching() throws Exception {
         String rule1 = "{ \"a\" : [ { \"prefix\": \"zoo\" } ] }";
         String rule2 = "{ \"b\" : [ { \"prefix\": \"child\" } ] }";
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("r1", rule1);
         machine.addRule("r2", rule2);
         String[] events = {
@@ -342,7 +347,7 @@ public class ACMachineTest {
             }
         }
 
-        machine = new Machine();
+        machine = createMachine();
         String rule3 = "{ \"a\" : [ { \"prefix\": \"al\" } ] }";
         String rule4 = "{ \"a\" : [ \"albert\" ] }";
         machine.addRule("r3", rule3);
@@ -356,7 +361,7 @@ public class ACMachineTest {
     public void testPrefixEqualsIgnoreCase() throws Exception {
         String rule1 = "{ \"a\" : [ { \"prefix\": { \"equals-ignore-case\" : \"zoo\" } } ] }";
         String rule2 = "{ \"b\" : [ { \"prefix\": { \"equals-ignore-case\" : \"child\" } } ] }";
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("r1", rule1);
         machine.addRule("r2", rule2);
         String[] events = {
@@ -376,7 +381,7 @@ public class ACMachineTest {
             }
         }
 
-        machine = new Machine();
+        machine = createMachine();
         String rule3 = "{ \"a\" : [ { \"prefix\": { \"equals-ignore-case\" : \"al\" } } ] }";
         String rule4 = "{ \"a\" : [ \"ALbert\" ] }";
         machine.addRule("r3", rule3);
@@ -390,7 +395,7 @@ public class ACMachineTest {
     public void testSuffixEqualsIgnoreCase() throws Exception {
         String rule1 = "{ \"a\" : [ { \"suffix\": { \"equals-ignore-case\" : \"eper\" } } ] }";
         String rule2 = "{ \"b\" : [ { \"suffix\": { \"equals-ignore-case\" : \"hood\" } } ] }";
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("r1", rule1);
         machine.addRule("r2", rule2);
         String[] events = {
@@ -411,7 +416,7 @@ public class ACMachineTest {
             }
         }
 
-        machine = new Machine();
+        machine = createMachine();
         String rule3 = "{ \"a\" : [ { \"suffix\": { \"equals-ignore-case\" : \"ert\" } } ] }";
         String rule4 = "{ \"a\" : [ \"AlbeRT\" ] }";
         machine.addRule("r3", rule3);
@@ -423,7 +428,7 @@ public class ACMachineTest {
 
     @Test
     public void testSuffixEqualsIgnoreCaseChineseMatch() throws Exception {
-        Machine m = new Machine();
+        Machine m = createMachine();
         String rule = "{\n" +
                 "   \"status\": {\n" +
                 "       \"weatherText\": [{\"suffix\": \"统治者\"}]\n" +
@@ -442,7 +447,7 @@ public class ACMachineTest {
 
     @Test
     public void testSuffixChineseMatch() throws Exception {
-        Machine m = new Machine();
+        Machine m = createMachine();
         String rule = "{\n" +
                 "   \"status\": {\n" +
                 "       \"weatherText\": [{\"suffix\": \"统治者\"}]\n" +
@@ -487,7 +492,7 @@ public class ACMachineTest {
                 "    \"type\": [ \"Polygon\" ]" +
                 "  }" +
                 "}";
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("R1", rule);
         List<String> r = machine.rulesForJSONEvent(eJSON);
         assertEquals(1, r.size());
@@ -656,7 +661,7 @@ public class ACMachineTest {
 
     @Test
     public void testBuild() throws Exception {
-        Machine machine = new Machine();
+        Machine machine = createMachine();
 
         setRules(machine);
         assertNotNull(machine);
@@ -746,7 +751,7 @@ public class ACMachineTest {
 
     @Test
     public void addRuleOriginalAPI() throws Exception {
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         String rule1 = "{ \"f1\": [ \"x\", \"y\"], \"f2\": [1,2]}";
         String rule2 = "{ \"f1\": [\"foo\", \"bar\"] }";
         machine.addRule("r1", rule1);
@@ -763,7 +768,7 @@ public class ACMachineTest {
 
     @Test
     public void twoRulesSamePattern() throws Exception {
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         String json = "{\"detail\":{\"testId\":[\"foo\"]}}";
         machine.addRule("rule1", json);
         machine.addRule("rule2", new StringReader(json));
@@ -777,7 +782,7 @@ public class ACMachineTest {
 
     @Test
     public void twoRulesSamePattern2() throws Exception {
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         List<Rule> rules = new ArrayList<>();
         Rule rule;
         rule = new Rule("R1");
@@ -803,7 +808,7 @@ public class ACMachineTest {
 
     @Test
     public void dynamicAddRules() throws Exception {
-        Machine machine = new Machine();
+        Machine machine = createMachine();
 
         TestEvent e = new TestEvent("0", "\"\"", "a", "11", "b", "21", "c", "31", "gamma", "41", "zoo", "\"keeper\"");
 
@@ -852,7 +857,7 @@ public class ACMachineTest {
      */
     @Test
     public void dynamicDeleteRules() throws Exception {
-        Machine machine = new Machine();
+        Machine machine = createMachine();
 
         TestEvent e = new TestEvent("0", "\"\"", "a", "11", "b", "21", "c", "31", "gamma", "41", "zoo", "\"keeper\"");
 
@@ -902,7 +907,7 @@ public class ACMachineTest {
      */
     @Test
     public void testMultipleThreadReadAddRule() throws Exception {
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         List<String> event = new ArrayList<>();
         List <Rule> rules = new ArrayList<>();
 
@@ -1002,7 +1007,7 @@ public class ACMachineTest {
 
     @Test
     public void testMultipleThreadReadDeleteRule() throws Exception {
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         List<String> event = new ArrayList<>();
         List <Rule> rules = new ArrayList<>();
 
@@ -1105,7 +1110,7 @@ public class ACMachineTest {
     @Test
     public void testFunkyDelete() throws Exception {
         String rule = "{ \"foo\": { \"bar\": [ 23 ] }}";
-        Machine cut = new Machine();
+        Machine cut = createMachine();
 
         // add the rule, ensure it matches
         cut.addRule("r1", rule);
@@ -1143,7 +1148,7 @@ public class ACMachineTest {
         String rule3 = "{ \"foo\": { \"bar\": [ 44, 45, 46 ] }}";
         String rule4 = "{ \"foo\": { \"bar\": [ 44, 46, 47 ] }}";
         String rule5 = "{ \"foo\": { \"bar\": [ 23, 44, 45, 46, 47 ] }}";
-        Machine cut = new Machine();
+        Machine cut = createMachine();
 
         // add the rule, ensure it matches
         cut.addRule("r1", rule);
@@ -1203,7 +1208,7 @@ public class ACMachineTest {
 
         String rule = "{\"x\": [{\"numeric\": [\">=\", 0, \"<\", 1000000000]}]}";
 
-        Machine cut = new Machine();
+        Machine cut = createMachine();
 
         // add the rule, ensure it matches
         cut.addRule("r1", rule);
@@ -1245,7 +1250,7 @@ public class ACMachineTest {
     @Test
     public void deleteRule() throws Exception {
         String rule = "{ \"foo\": { \"bar\": [ \"ab\", \"cd\" ] }}";
-        Machine cut = new Machine();
+        Machine cut = createMachine();
 
         // add the rule, ensure it matches
         cut.addRule("r1", rule);
@@ -1273,7 +1278,7 @@ public class ACMachineTest {
 
     @Test
     public void WHEN_RuleForJsonEventIsPresented_THEN_ItIsMatched() throws Exception {
-        final Machine rulerMachine = new Machine();
+        final Machine rulerMachine = createMachine();
         rulerMachine.addRule( "test-rule", "{ \"type\": [\"Notification\"] }" );
 
         String event = "        { \n" +
@@ -1292,7 +1297,7 @@ public class ACMachineTest {
     @Test
     public void OneEventWithDuplicatedKeyButDifferentValueMatchRules() throws Exception {
 
-        Machine cut = new Machine();
+        Machine cut = createMachine();
         String rule1 = "{ \"foo\": { \"bar\": [ \"ab\" ] }}";
         String rule2 = "{ \"foo\": { \"bar\": [ \"cd\" ] }}";
 
@@ -1327,7 +1332,7 @@ public class ACMachineTest {
     @Test
     public void OneRuleMadeByTwoConditions() throws Exception {
 
-        Machine cut = new Machine();
+        Machine cut = createMachine();
         String condition1 = "{\n" +
                 "\"A\" : [ \"on\" ],\n" +
                 "\"C\" : [ \"on\" ],\n" +
@@ -1376,7 +1381,7 @@ public class ACMachineTest {
                 "\"y\": [ { \"numeric\": [ \">=\", 0 ] } ],\n" +
                 "\"z\": [ { \"numeric\": [ \">\", 0, \"<\", 1 ] } ]\n" +
                 "}";
-        Machine cut = new Machine();
+        Machine cut = createMachine();
 
         // add the rule, ensure it matches
         cut.addRule("r1", rule);
@@ -1405,7 +1410,7 @@ public class ACMachineTest {
                 "\"d\": [ { \"anything-but\": 111 } ],\n" +
                 "\"z\": [ { \"numeric\": [ \">\", 0, \"<\", 1 ] } ]\n" +
                 "}";
-        Machine cut = new Machine();
+        Machine cut = createMachine();
 
         // add the rule, ensure it matches
         cut.addRule("r1", rule);
@@ -1441,7 +1446,7 @@ public class ACMachineTest {
                 "\"a\": [ { \"anything-but\": {\"prefix\": \"$\"} } ]\n" +
                 "}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("r1", rule);
 
         String event1 = "{" +
@@ -1473,7 +1478,7 @@ public class ACMachineTest {
                 "\"a\": [ { \"anything-but\": {\"prefix\": [\"$\", \"%\"] } } ]\n" +
                 "}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("r1", rule);
 
         String event1 = "{" +
@@ -1510,7 +1515,7 @@ public class ACMachineTest {
                 "\"a\": [ { \"anything-but\": {\"suffix\": \"$\"} } ]\n" +
                 "}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("r1", rule);
 
         String event1 = "{" +
@@ -1542,7 +1547,7 @@ public class ACMachineTest {
                 "\"a\": [ { \"anything-but\": {\"suffix\": [\"$\", \"%\"] } } ]\n" +
                 "}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("r1", rule);
 
         String event1 = "{" +
@@ -1581,7 +1586,7 @@ public class ACMachineTest {
                 "\"b\": [ { \"anything-but\": {\"equals-ignore-case\": \"no\"  } } ]\n" +
                 "}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("r1", rule);
 
         String event1 = "{" +
@@ -1651,7 +1656,7 @@ public class ACMachineTest {
                 "\"a\": [ { \"anything-but\": {\"wildcard\": \"*foo*\"} } ]\n" +
         "}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("r1", rule);
 
         String event1 = "{" +
@@ -1692,7 +1697,7 @@ public class ACMachineTest {
                 "\"a\": [ { \"anything-but\": {\"wildcard\": [\"*foo*\", \"*bar*\"] } } ]\n" +
         "}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("r1", rule);
 
         String event1 = "{" +
@@ -1757,7 +1762,7 @@ public class ACMachineTest {
                 "\"a\": [ { \"anything-but\": {\"wildcard\": \"*bar*\"} } ]\n" +
         "}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("r1", rule1);
         machine.addRule("r2", rule2);
 
@@ -1996,7 +2001,7 @@ public class ACMachineTest {
                                 "  }\n" +
                                 "}";
 
-        Machine cut = new Machine();
+        Machine cut = createMachine();
         // add the rule, ensure it matches
         cut.addRule("r1", rule1);
         cut.addRule("r2", rule2);
@@ -2012,7 +2017,7 @@ public class ACMachineTest {
         String rule1 = "{\"abc\": [{\"exists\": false}]}";
         String rule2 = "{\"abc\": [{\"exists\": true}]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
 
@@ -2029,7 +2034,7 @@ public class ACMachineTest {
 
     @Test
     public void testAddAndDeleteTwoRulesSamePattern() throws Exception {
-        final Machine machine = new Machine();
+        final Machine machine = createMachine();
         String event = "{\n" +
                 "  \"x\": \"y\"\n" +
                 "}";
@@ -2061,7 +2066,7 @@ public class ACMachineTest {
 
     @Test
     public void testAddAndDeleteTwoRulesSameCaseInsensitivePatternEqualsIgnoreCase() throws Exception {
-        final Machine machine = new Machine();
+        final Machine machine = createMachine();
         String event = "{\n" +
                 "  \"x\": \"y\"\n" +
                 "}";
@@ -2093,7 +2098,7 @@ public class ACMachineTest {
 
     @Test
     public void testAddAndDeleteTwoRulesSameCaseInsensitivePatternPrefixEqualsIgnoreCase() throws Exception {
-        final Machine machine = new Machine();
+        final Machine machine = createMachine();
         String event = "{\n" +
                 "  \"x\": \"yay\"\n" +
                 "}";
@@ -2125,7 +2130,7 @@ public class ACMachineTest {
 
     @Test
     public void testAddAndDeleteTwoRulesSameCaseInsensitivePatternSuffixEqualsIgnoreCase() throws Exception {
-        final Machine machine = new Machine();
+        final Machine machine = createMachine();
         String event = "{\n" +
                 "  \"x\": \"yay\"\n" +
                 "}";
@@ -2157,7 +2162,7 @@ public class ACMachineTest {
 
     @Test
     public void testDuplicateKeyLastOneWins() throws Exception {
-        final Machine machine = new Machine();
+        final Machine machine = createMachine();
         String event1 = "{\n" +
                 "  \"x\": \"y\"\n" +
                 "}";
@@ -2186,7 +2191,7 @@ public class ACMachineTest {
         String rule2 = "{\"foo\":[\"a\", \"b\"], \"bar\":[\"x\"]}";
         String rule3 = "{\"foo\":[\"a\", \"b\"], \"bar\":[\"y\"]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
         machine.addRule("rule3", rule3);
@@ -2209,7 +2214,7 @@ public class ACMachineTest {
         String rule1 = "{\"foo\":[\"a\"], \"bar\":[\"x\", \"y\"]}";
         String rule2 = "{\"foo\":[\"b\"], \"bar\":[\"x\"]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
 
@@ -2261,7 +2266,7 @@ public class ACMachineTest {
         String rule1 = "{\"zoo\":[\"1\"], \"foo\":[\"a\"], \"bar\":[\"x\"]}";
         String rule2 = "{\"foo\":[\"a\"], \"bar\":[\"x\"]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
 
@@ -2292,7 +2297,7 @@ public class ACMachineTest {
         String rule2 = "{\"zoo\":[\"1\"], \"bar\":[\"x\"]}";
         String rule2b = "{\"foo\":[\"a\"], \"bar\":[\"y\"]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
         machine.addRule("rule2", rule2b);
@@ -2314,7 +2319,7 @@ public class ACMachineTest {
         String rule1 = "{\"foo\":[\"a\"], \"bar\":[\"x\", \"y\"]}";
         String rule2 = "{\"$or\":[{\"zoo\":[\"1\"], \"bar\":[\"x\"]}, {\"foo\":[\"a\"], \"bar\":[\"y\"]}]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
 
@@ -2335,7 +2340,7 @@ public class ACMachineTest {
         String rule1 = "{\"foo\": [\"a\", \"b\", \"c\"]}";
         String rule2 = "{\"foo\": [\"b\"]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
 
@@ -2355,7 +2360,7 @@ public class ACMachineTest {
         String rule1 = "{\"foo\": [\"a\", \"b\", \"c\", \"d\", \"e\", \"f\", \"g\"]}";
         String rule2 = "{\"foo\": [\"b\", \"d\", \"f\"]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
 
@@ -2375,7 +2380,7 @@ public class ACMachineTest {
         String rule1 = "{\"bar\": [\"1\"], \"foo\": [\"a\", \"b\", \"c\"]}";
         String rule2 = "{\"bar\": [\"1\"], \"foo\": [\"b\"]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
 
@@ -2396,7 +2401,7 @@ public class ACMachineTest {
         String rule1 = "{\"bar\": [\"1\"], \"foo\": [\"a\", \"b\", \"c\", \"d\", \"e\", \"f\", \"g\"]}";
         String rule2 = "{\"bar\": [\"1\"], \"foo\": [\"b\", \"d\", \"f\"]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
 
@@ -2417,7 +2422,7 @@ public class ACMachineTest {
         String rule1 = "{\"zoo\": [\"1\"], \"foo\": [\"a\", \"b\", \"c\"]}";
         String rule2 = "{\"zoo\": [\"1\"], \"foo\": [\"b\"]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
 
@@ -2438,7 +2443,7 @@ public class ACMachineTest {
         String rule1 = "{\"zoo\": [\"1\"], \"foo\": [\"a\", \"b\", \"c\", \"d\", \"e\", \"f\", \"g\"]}";
         String rule2 = "{\"zoo\": [\"1\"], \"foo\": [\"b\", \"d\", \"f\"]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
 
@@ -2459,7 +2464,7 @@ public class ACMachineTest {
         String rule1 = "{\"bar\": [\"a\", \"b\"]}";
         String rule2 = "{\"bar\": [\"b\"], \"foo\": [{\"exists\": false}]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
 
@@ -2479,7 +2484,7 @@ public class ACMachineTest {
         String rule1 = "{\"bar\": [\"a\", \"b\"]}";
         String rule2 = "{\"bar\": [\"b\"], \"foo\": [{\"exists\": true}]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
 
@@ -2502,7 +2507,7 @@ public class ACMachineTest {
         String rule2 = "{\"foo\": [\"b\"], \"bar\": [{\"exists\": false}, \"1\"]}";
         String rule3 = "{\"foo\": [\"a\"], \"bar\": [\"1\"]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
         machine.addRule("rule3", rule3);
@@ -2525,7 +2530,7 @@ public class ACMachineTest {
         String rule2 = "{\"foo\": [\"b\"], \"bar\": [{\"exists\": true}, \"1\"]}";
         String rule3 = "{\"foo\": [\"a\"], \"bar\": [\"1\"]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
         machine.addRule("rule3", rule3);
@@ -2549,7 +2554,7 @@ public class ACMachineTest {
         String rule1 = "{\"bar\": [{\"exists\": false}]}";
         String rule2 = "{\"foo\": [{\"exists\": false}], \"zoo\": [\"a\"]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
 
@@ -2568,7 +2573,7 @@ public class ACMachineTest {
         // Every event will match this rule because any bar that is "a" cannot also be "b".
         String rule1 = "{\"bar\": [{\"anything-but\": \"a\"}, {\"anything-but\": \"b\"}]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
 
         String event = "{\"bar\": \"b\"}";
@@ -2584,7 +2589,7 @@ public class ACMachineTest {
         String rule1 = "{\"$or\": [{\"bar\": [\"1\"]}, {\"bar\": [\"2\"]}]," +
                         "\"foo\": [\"a\"] }";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
 
         String event = "{\"bar\": \"2\"," +
@@ -2602,7 +2607,7 @@ public class ACMachineTest {
         String rule1 = "{\"bar\" :[\"b\"], \"foo\": [\"c\"]}";
         String rule2 = "{\"bar\": [\"a\", \"b\"], \"foo\": [\"c\"]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
 
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
@@ -2620,7 +2625,7 @@ public class ACMachineTest {
         String rule1 = "{\"ip\": [{\"anything-but\": \"10.0.1.200\"}]}";
         String rule2 = "{\"ip\": [\"10.0.1.200\"]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
 
@@ -2638,7 +2643,7 @@ public class ACMachineTest {
         String rule1 = "{\"ip\": [{\"anything-but\": {\"prefix\": \"10.0.\"}}]}";
         String rule2 = "{\"ip\": [\"10.0.1.200\"]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
 
@@ -2656,7 +2661,7 @@ public class ACMachineTest {
         String rule1 = "{\"ip\": [{\"anything-but\": {\"suffix\": \"1.200\"}}]}";
         String rule2 = "{\"ip\": [\"10.0.1.200\"]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
 
@@ -2674,7 +2679,7 @@ public class ACMachineTest {
         String rule1 = "{\"ip\": [{\"anything-but\": {\"equals-ignore-case\": \"10.0.1.200\"}}]}";
         String rule2 = "{\"ip\": [\"10.0.1.200\"]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
 
@@ -2692,7 +2697,7 @@ public class ACMachineTest {
         String rule1 = "{\"ip\": [{\"numeric\": [\">\", 0, \"<=\", 5]}]}";
         String rule2 = "{\"ip\": [\"10.0.1.200\"]}";
 
-        Machine machine = new Machine();
+        Machine machine = createMachine();
         machine.addRule("rule1", rule1);
         machine.addRule("rule2", rule2);
 
@@ -2756,7 +2761,7 @@ public class ACMachineTest {
         assertEquals(1, matches.size());
         assertTrue(matches.contains("rule1"));
     }
-
+    
     private static Set<String> set(String ... strings) {
         return set(Arrays.asList(strings));
     }

@@ -1,9 +1,5 @@
 package software.amazon.event.ruler;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonNode;
-
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -18,6 +14,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
+import javax.annotation.Nonnull;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import static software.amazon.event.ruler.SetOperations.intersection;
 
@@ -79,12 +80,24 @@ public class GenericMachine<T> {
      *  of different elements of the same JSON array in the event are matched.
      * @param jsonEvent The JSON representation of the event
      * @return list of rule names that match. The list may be empty but never null.
+     * @deprecated Use {@code Machine.builder().withStructuredMatching(true).build()} for linear performance
+     *  on events with large arrays. This method can exhibit O(N^2) performance when
+     *  {@code withStructuredMatching} is not enabled.
      */
+    @Deprecated
     @SuppressWarnings("unchecked")
     public List<T> rulesForJSONEvent(final String jsonEvent) throws Exception {
+        if (configuration.isUseStructuredMatching()) {
+            return (List<T>) StructuredFinder.matchRules(jsonEvent, this, subRuleContextGenerator);
+        }
         final Event event = new Event(jsonEvent, this);
         return (List<T>) ACFinder.matchRules(event, this, subRuleContextGenerator);
     }
+
+    /**
+     * @deprecated Use the String overload with {@code withStructuredMatching(true)}.
+     */
+    @Deprecated
     @SuppressWarnings("unchecked")
     public List<T> rulesForJSONEvent(final JsonNode eventRoot) {
         final Event event = new Event(eventRoot, this);
@@ -791,6 +804,13 @@ public class GenericMachine<T> {
          */
         private boolean ruleOverriding = true;
 
+        /**
+         * When true, {@code rulesForJSONEvent()} uses structured tree-walking matching
+         * instead of ACFinder, providing linear performance on events with large arrays.
+         * Default is false for backward compatibility.
+         */
+        private boolean useStructuredMatching = false;
+
         Builder() {}
 
         public Builder<M,T> withAdditionalNameStateReuse(boolean additionalNameStateReuse) {
@@ -803,12 +823,18 @@ public class GenericMachine<T> {
             return this;
         }
 
+        public Builder<M, T> withStructuredMatching(boolean useStructuredMatching) {
+            this.useStructuredMatching = useStructuredMatching;
+            return this;
+        }
+
         public M build() {
             return (M) new GenericMachine<T>(buildConfig());
         }
 
         protected GenericMachineConfiguration buildConfig() {
-            return new GenericMachineConfiguration(additionalNameStateReuse, ruleOverriding);
+            return new GenericMachineConfiguration(additionalNameStateReuse, ruleOverriding,
+                    useStructuredMatching);
         }
     }
 }
