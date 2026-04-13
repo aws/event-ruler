@@ -638,19 +638,18 @@ NameState. This is accomplished by storing that we already have a NameState for 
 Note that it doesn't matter if each addRule uses a different rule name or the same rule name.
 
 #### withStructuredMatching
-Default: false
+Default: true (since 2.0.0)
 
-When set to true, `rulesForJSONEvent()` uses a linear-time matching algorithm instead of the
-default step-queue approach. This is recommended for applications that process events with large
-arrays (thousands of elements) where the default algorithm may exhibit quadratic performance.
+Controls whether `rulesForJSONEvent()` uses StructuredFinder (indexed trie walker) or
+ACFinder (step-queue iteration) for array-consistent matching. Both produce identical
+results. StructuredFinder provides linear-time performance on events with large arrays,
+where ACFinder may exhibit quadratic step queue growth.
 
-The linear-time algorithm (`StructuredFinder`) indexes the event by field path and walks the
-compiled state machine trie with direct HashMap lookups instead of scanning all remaining fields
-per step. It also exits early once all rules in the machine have been matched.
+To opt out and use the previous ACFinder behavior:
 
 ```java
 Machine machine = Machine.builder()
-    .withStructuredMatching(true)
+    .withStructuredMatching(false)
     .build();
 ```
 
@@ -744,16 +743,8 @@ specifically because it does not support array-consistent matching.
 `rulesForJSONEvent()` also has the advantage that the code which turns the JSON form
 of the event into a sorted list has been extensively profiled and optimized.
 
-For events with large arrays (thousands of elements), build the Machine with
-`withStructuredMatching(true)` to enable linear-time matching:
-
-```java
-Machine machine = Machine.builder()
-    .withStructuredMatching(true)
-    .build();
-machine.addRule("rule1", ruleJson);
-List<String> matches = machine.rulesForJSONEvent(eventJson); // uses linear-time matching
-```
+Since 2.0.0, `rulesForJSONEvent()` uses StructuredFinder by default, which provides
+linear-time matching even on events with large arrays.
 
 The performance of `rulesForEvent()` and `rulesForJSONEvent()` do not depend on the number of rules added
 with `addRule()`.  `rulesForJSONEvent()` is generally faster because of the optimized
@@ -950,7 +941,7 @@ Events are processed at over 220K/second except for:
 ### Suggestions for better performance
 
 Here are some suggestions on processing rules and events:
-1. For new code, use `withStructuredMatching(true)` on Machine.Builder for linear-time matching that handles events with large arrays efficiently.
+1. Since 2.0.0, `rulesForJSONEvent()` uses StructuredFinder by default for linear-time matching. If you need the previous behavior, use `withStructuredMatching(false)` on Machine.Builder.
 2. If your team is still using old API -- rulesForEvent, switch to rulesForJSONEvent API. Due to limited resource, old API will not be maintained well thought contributions are always welcomed.
 2. If your team does event flattening by yourself,  you are recommended to use Ruler to flatten the event, just pass Json string or Json node. We have many optimizations within Ruler parsing code.
 3. if your team does Rule Json parsing by yourself, you are recommended to just pass the Json described rule string directly to Ruler, in which will do some pre-processing, e.g. add “”.
