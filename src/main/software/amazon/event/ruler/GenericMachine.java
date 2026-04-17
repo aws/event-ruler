@@ -92,6 +92,9 @@ public class GenericMachine<T> {
 
     @SuppressWarnings("unchecked")
     public List<T> rulesForJSONEvent(final JsonNode eventRoot) {
+        if (configuration.isUseStructuredMatching()) {
+            return (List<T>) StructuredFinder.matchRules(eventRoot, this, subRuleContextGenerator);
+        }
         final Event event = new Event(eventRoot, this);
         return (List<T>) ACFinder.matchRules(event, this, subRuleContextGenerator);
     }
@@ -797,11 +800,11 @@ public class GenericMachine<T> {
         private boolean ruleOverriding = true;
 
         /**
-         * When true, {@code rulesForJSONEvent()} uses structured tree-walking matching
-         * instead of ACFinder, providing linear performance on events with large arrays.
-         * Default is false for backward compatibility.
+         * When true, {@code rulesForJSONEvent()} uses {@link StructuredFinder} (indexed trie walker)
+         * instead of {@link ACFinder} (step-queue iteration), providing linear performance on events
+         * with large arrays. Default is true since 2.0.0. Set to false to use the previous ACFinder behavior.
          */
-        private boolean useStructuredMatching = false;
+        private boolean useStructuredMatching = true;
 
         Builder() {}
 

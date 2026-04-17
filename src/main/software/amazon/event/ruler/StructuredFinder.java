@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 /**
  * Array-consistent rule matching with guaranteed linear performance.
  *
@@ -30,6 +32,17 @@ class StructuredFinder {
     static List<Object> matchRules(final String json, final GenericMachine<?> machine,
                                    final SubRuleContext.Generator gen) throws Exception {
         final Event event = new Event(json, machine);
+        return matchRulesFromEvent(event, machine, gen);
+    }
+
+    static List<Object> matchRules(final JsonNode eventRoot, final GenericMachine<?> machine,
+                                   final SubRuleContext.Generator gen) {
+        final Event event = new Event(eventRoot, machine);
+        return matchRulesFromEvent(event, machine, gen);
+    }
+
+    private static List<Object> matchRulesFromEvent(final Event event, final GenericMachine<?> machine,
+                                                    final SubRuleContext.Generator gen) {
         final FieldIndex index = new FieldIndex(event);
         final int ruleCount = gen.getRuleCount();
 
