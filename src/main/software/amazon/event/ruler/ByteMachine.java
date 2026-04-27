@@ -1,12 +1,5 @@
 package software.amazon.event.ruler;
 
-import software.amazon.event.ruler.input.InputByte;
-import software.amazon.event.ruler.input.InputCharacter;
-import software.amazon.event.ruler.input.InputCharacterType;
-import software.amazon.event.ruler.input.InputMultiByteSet;
-import software.amazon.event.ruler.input.MultiByte;
-
-import javax.annotation.concurrent.ThreadSafe;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
 import java.util.ArrayDeque;
@@ -20,6 +13,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 import static software.amazon.event.ruler.CompoundByteTransition.coalesce;
 import static software.amazon.event.ruler.MatchType.ANYTHING_BUT_SUFFIX;
 import static software.amazon.event.ruler.MatchType.EQUALS_IGNORE_CASE;
@@ -28,6 +23,11 @@ import static software.amazon.event.ruler.MatchType.EXISTS;
 import static software.amazon.event.ruler.MatchType.SUFFIX;
 import static software.amazon.event.ruler.MatchType.SUFFIX_EQUALS_IGNORE_CASE;
 import static software.amazon.event.ruler.input.DefaultParser.getParser;
+import software.amazon.event.ruler.input.InputByte;
+import software.amazon.event.ruler.input.InputCharacter;
+import software.amazon.event.ruler.input.InputCharacterType;
+import software.amazon.event.ruler.input.InputMultiByteSet;
+import software.amazon.event.ruler.input.MultiByte;
 import static software.amazon.event.ruler.input.MultiByte.MAX_CONTINUATION_BYTE;
 import static software.amazon.event.ruler.input.MultiByte.MAX_FIRST_BYTE_FOR_ONE_BYTE_CHAR;
 import static software.amazon.event.ruler.input.MultiByte.MAX_FIRST_BYTE_FOR_TWO_BYTE_CHAR;
@@ -877,7 +877,14 @@ class ByteMachine {
     }
 
     private boolean isContinuationByte(InputCharacter[] characters, int i) {
-        if (i < 0) {
+        if (i < 0 || i >= characters.length) {
+            return false;
+        }
+        // Wildcard sentinels (and any other non-byte InputCharacter) are not
+        // continuation bytes. They mark the end of any multi-byte sequence
+        // being walked, so forward/backward walkers must stop here rather
+        // than attempting to cast to InputByte.
+        if (!isByte(characters[i])) {
             return false;
         }
         byte continuationByte = InputByte.cast(characters[i]).getByte();
@@ -896,6 +903,12 @@ class ByteMachine {
     private String extractNextJavaCharacterFromInputCharactersForBackwardsArrays(InputCharacter[] characters, int i) {
         List<Byte> bytesList = new ArrayList<>();
         for (int multiByteIndex = i; multiByteIndex < characters.length; multiByteIndex++) {
+            // If we reach a non-byte InputCharacter (e.g. InputWildcard at the
+            // trailing '*' of a wildcard pattern), the multi-byte sequence has
+            // already ended. Stop before casting to InputByte.
+            if (!isByte(characters[multiByteIndex])) {
+                break;
+            }
             if (!isContinuationByte(characters, multiByteIndex)) {
                 // This is the last byte of the suffix char
                 bytesList.add(InputByte.cast(characters[multiByteIndex]).getByte());
