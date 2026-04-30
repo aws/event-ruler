@@ -58,5 +58,12 @@ public final class SubRuleContext {
         public Set<SubRuleContext> getIdsGeneratedForName(Object ruleName) {
             return nameToContext.get(ruleName);
         }
+
+        /**
+         * Returns the number of distinct rule names that have been registered.
+         */
+        int getRuleCount() {
+            return nameToContext.size();
+        }
     }
 }

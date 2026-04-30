@@ -637,6 +637,22 @@ NameState. This is accomplished by storing that we already have a NameState for 
 
 Note that it doesn't matter if each addRule uses a different rule name or the same rule name.
 
+#### withStructuredMatching
+Default: true (since 2.0.0)
+
+Controls whether `rulesForJSONEvent()` uses StructuredFinder (indexed trie walker) or
+ACFinder (step-queue iteration) for array-consistent matching. Both produce identical
+results. StructuredFinder provides linear-time performance on events with large arrays,
+where ACFinder may exhibit quadratic step queue growth.
+
+To opt out and use the previous ACFinder behavior:
+
+```java
+Machine machine = Machine.builder()
+    .withStructuredMatching(false)
+    .build();
+```
+
 ### addRule()
 
 All forms of this method have the same first argument, a String which provides
@@ -726,6 +742,9 @@ specifically because it does not support array-consistent matching.
 
 `rulesForJSONEvent()` also has the advantage that the code which turns the JSON form
 of the event into a sorted list has been extensively profiled and optimized.
+
+Since 2.0.0, `rulesForJSONEvent()` uses StructuredFinder by default, which provides
+linear-time matching even on events with large arrays.
 
 The performance of `rulesForEvent()` and `rulesForJSONEvent()` do not depend on the number of rules added
 with `addRule()`.  `rulesForJSONEvent()` is generally faster because of the optimized
@@ -919,10 +938,82 @@ Events are processed at over 220K/second except for:
  - numeric matches, which are processed at over 120K/second.
  - complex array matches, which are processed at over 35K/second.
 
+### Running the benchmarks
+
+Two benchmark harnesses are available; both operate on the same `citylots2` dataset and the same fourteen rule types.
+
+**[`Benchmarks.java`](src/test/software/amazon/event/ruler/Benchmarks.java)** — single-shot per rule type. Fast, but JVM warmup cost makes single-pass variance between runs of the same code routinely hit 10-20%. Good for eyeballing a large change; not reliable for detecting small regressions.
+
+```
+mvn test -Dtest=Benchmarks#CL2Benchmark
+```
+
+**[`StableBenchmarks.java`](src/test/software/amazon/event/ruler/StableBenchmarks.java)** — warmup + averaged across multiple measured passes. Reports mean, standard deviation, min, and max per rule type. With default settings (3 warmup / 5 measure), measured variance is typically under 2%.
+
+#### Checking for regressions on a change — the easy way
+
+Use [`scripts/perf-compare.sh`](scripts/perf-compare.sh). It checks out each ref, runs `StableBenchmarks` on both, and prints a delta table with a noise-aware verdict column:
+
+```
+scripts/perf-compare.sh main HEAD
+```
+
+Output looks like this:
+
+```
+==========================================
+  Comparison: main -> HEAD
+==========================================
+rule_type                     before_eps     after_eps   delta_pct  verdict
+---------                     ----------     ---------   ---------  -------
+EXACT                             128432        129289       +0.7%  noise (±3.2%)
+WILDCARD                          108986        108597       -0.4%  noise (±4.1%)
+PREFIX                            127129        153397      +20.7%  improvement (noise ±5.8%)
+SUFFIX                            149521        156783       +4.9%  noise (±5.1%)
+...
+```
+
+Takes ~8 minutes with defaults. Pass extra flags to `StableBenchmarks` after `--`:
+
+```
+# Focus on specific rule types (case-insensitive substring match)
+scripts/perf-compare.sh main HEAD -- -Druler.perf.only=wildcard,suffix
+
+# Tighter error bars, for subtle changes
+scripts/perf-compare.sh main HEAD -- -Druler.perf.warmup=5 -Druler.perf.measure=10
+```
+
+The wrapper requires a clean working tree (it checks out both refs). Restores your original ref on exit, even on Ctrl-C.
+
+#### Running `StableBenchmarks` directly — advanced
+
+```
+# Default: 3 warmup + 5 measure passes per rule type, all 14 rule types (~4 min)
+mvn test -Dtest=StableBenchmarks -Druler.perf.run=true
+
+# Tighter error bars (~6 minutes)
+mvn test -Dtest=StableBenchmarks -Druler.perf.run=true \
+    -Druler.perf.warmup=5 -Druler.perf.measure=10
+
+# Scope to specific rule types (case-insensitive substring match)
+mvn test -Dtest=StableBenchmarks -Druler.perf.run=true \
+    -Druler.perf.only=wildcard,suffix
+
+# Verbose (per-pass timings, not just summary)
+mvn test -Dtest=StableBenchmarks -Druler.perf.run=true -Druler.perf.verbose=true
+
+# Emit structured CSV
+mvn test -Dtest=StableBenchmarks -Druler.perf.run=true \
+    -Druler.perf.csv=/tmp/ruler-perf.csv
+```
+
+`StableBenchmarks` is gated off by default (`-Druler.perf.run=true` required) so it doesn't run in CI. For publication-grade numbers, use the [JMH benchmarks in `src/test/.../jmh/`](src/test/software/amazon/event/ruler/jmh) — those measure steady-state throughput under a full JMH harness.
+
 ### Suggestions for better performance
 
 Here are some suggestions on processing rules and events:
-1. If your team is still using old API -- rulesForEvent, switch to rulesForJSONEvent API. Due to limited resource, old API will not be maintained well thought contributions are always welcomed.
+1. Since 2.0.0, `rulesForJSONEvent()` uses StructuredFinder by default for linear-time matching. If you need the previous behavior, use `withStructuredMatching(false)` on Machine.Builder.
+2. If your team is still using old API -- rulesForEvent, switch to rulesForJSONEvent API. Due to limited resource, old API will not be maintained well thought contributions are always welcomed.
 2. If your team does event flattening by yourself,  you are recommended to use Ruler to flatten the event, just pass Json string or Json node. We have many optimizations within Ruler parsing code.
 3. if your team does Rule Json parsing by yourself, you are recommended to just pass the Json described rule string directly to Ruler, in which will do some pre-processing, e.g. add “”.
 4. In order to well protect the system and prevent ruler from hitting worse condition, limit number of fields in event and rule, e.g. for big event, consider to split to multiple small event and call ruler multiple times. while number of rule is purely depending on your memory budget which is up to you to decide that, but number of fields described in the rule is most important and sensitive on performance, if possible, try to design it as small as possible.

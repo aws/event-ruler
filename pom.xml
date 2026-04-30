@@ -20,7 +20,7 @@
   <groupId>software.amazon.event.ruler</groupId>
   <artifactId>event-ruler</artifactId>
   <name>Event Ruler</name>
-  <version>1.8.2</version>
+  <version>2.0.0</version>
   <description>Event Ruler is a Java library that allows matching Rules to Events. An event is a list of fields,
     which may be given as name/value pairs or as a JSON object. A rule associates event field names with lists of
     possible values. There are two reasons to use Ruler: 1/ It's fast; the time it takes to match Events doesn't
@@ -31,20 +31,20 @@
 
   <properties>
     <jdk.version>1.8</jdk.version>
-    <jackson.version>2.19.1</jackson.version>
+    <jackson.version>2.21.0</jackson.version>
     <fastdoubleparser.version>2.0.1</fastdoubleparser.version>
     <jsr.version>3.0.2</jsr.version>
     <junit.version>4.13.2</junit.version>
-    <compiler.plugin.version>3.14.0</compiler.plugin.version>
+    <compiler.plugin.version>3.15.0</compiler.plugin.version>
     <javadoc.plugin.version>3.12.0</javadoc.plugin.version>
-    <source.plugin.version>3.3.1</source.plugin.version>
+    <source.plugin.version>3.4.0</source.plugin.version>
     <gpg.plugin.version>3.2.8</gpg.plugin.version>
     <staging.plugin.version>1.7.0</staging.plugin.version>
     <checkstyle.plugin.version>3.6.0</checkstyle.plugin.version>
     <spotbugs.plugin.version>4.8.6.6</spotbugs.plugin.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jmh.version>1.37</jmh.version>
-    <exec.plugin.version>3.5.1</exec.plugin.version>
+    <exec.plugin.version>3.6.3</exec.plugin.version>
   </properties>
 
   <licenses>
