@@ -938,6 +938,77 @@ Events are processed at over 220K/second except for:
  - numeric matches, which are processed at over 120K/second.
  - complex array matches, which are processed at over 35K/second.
 
+### Running the benchmarks
+
+Two benchmark harnesses are available; both operate on the same `citylots2` dataset and the same fourteen rule types.
+
+**[`Benchmarks.java`](src/test/software/amazon/event/ruler/Benchmarks.java)** — single-shot per rule type. Fast, but JVM warmup cost makes single-pass variance between runs of the same code routinely hit 10-20%. Good for eyeballing a large change; not reliable for detecting small regressions.
+
+```
+mvn test -Dtest=Benchmarks#CL2Benchmark
+```
+
+**[`StableBenchmarks.java`](src/test/software/amazon/event/ruler/StableBenchmarks.java)** — warmup + averaged across multiple measured passes. Reports mean, standard deviation, min, and max per rule type. With default settings (3 warmup / 5 measure), measured variance is typically under 2%.
+
+#### Checking for regressions on a change — the easy way
+
+Use [`scripts/perf-compare.sh`](scripts/perf-compare.sh). It checks out each ref, runs `StableBenchmarks` on both, and prints a delta table with a noise-aware verdict column:
+
+```
+scripts/perf-compare.sh main HEAD
+```
+
+Output looks like this:
+
+```
+==========================================
+  Comparison: main -> HEAD
+==========================================
+rule_type                     before_eps     after_eps   delta_pct  verdict
+---------                     ----------     ---------   ---------  -------
+EXACT                             128432        129289       +0.7%  noise (±3.2%)
+WILDCARD                          108986        108597       -0.4%  noise (±4.1%)
+PREFIX                            127129        153397      +20.7%  improvement (noise ±5.8%)
+SUFFIX                            149521        156783       +4.9%  noise (±5.1%)
+...
+```
+
+Takes ~8 minutes with defaults. Pass extra flags to `StableBenchmarks` after `--`:
+
+```
+# Focus on specific rule types (case-insensitive substring match)
+scripts/perf-compare.sh main HEAD -- -Druler.perf.only=wildcard,suffix
+
+# Tighter error bars, for subtle changes
+scripts/perf-compare.sh main HEAD -- -Druler.perf.warmup=5 -Druler.perf.measure=10
+```
+
+The wrapper requires a clean working tree (it checks out both refs). Restores your original ref on exit, even on Ctrl-C.
+
+#### Running `StableBenchmarks` directly — advanced
+
+```
+# Default: 3 warmup + 5 measure passes per rule type, all 14 rule types (~4 min)
+mvn test -Dtest=StableBenchmarks -Druler.perf.run=true
+
+# Tighter error bars (~6 minutes)
+mvn test -Dtest=StableBenchmarks -Druler.perf.run=true \
+    -Druler.perf.warmup=5 -Druler.perf.measure=10
+
+# Scope to specific rule types (case-insensitive substring match)
+mvn test -Dtest=StableBenchmarks -Druler.perf.run=true \
+    -Druler.perf.only=wildcard,suffix
+
+# Verbose (per-pass timings, not just summary)
+mvn test -Dtest=StableBenchmarks -Druler.perf.run=true -Druler.perf.verbose=true
+
+# Emit structured CSV
+mvn test -Dtest=StableBenchmarks -Druler.perf.run=true \
+    -Druler.perf.csv=/tmp/ruler-perf.csv
+```
+
+`StableBenchmarks` is gated off by default (`-Druler.perf.run=true` required) so it doesn't run in CI. For publication-grade numbers, use the [JMH benchmarks in `src/test/.../jmh/`](src/test/software/amazon/event/ruler/jmh) — those measure steady-state throughput under a full JMH harness.
+
 ### Suggestions for better performance
 
 Here are some suggestions on processing rules and events:
