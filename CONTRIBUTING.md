@@ -36,7 +36,7 @@ To send us a pull request, please:
    3. Where possible stay consistent with the current code-style, patterns, and documentation language.
    4. Any changes (however minor, major, or ground-breaking) are welcomed, though reviewing them in isolation of any other changes helps us review them faster.
 3. Ensure local tests pass. Add new tests for any functionality you add / changed.
-4. Ensure there are no performance regressions by running [Benchmark Tests](https://github.com/aws/event-ruler/blob/main/src/test/software/amazon/event/ruler/Benchmarks.java).
+4. Ensure there are no performance regressions. The easiest way is [`scripts/perf-compare.sh main HEAD`](https://github.com/aws/event-ruler/blob/main/scripts/perf-compare.sh) which runs the benchmark on both refs and prints a noise-aware delta table. See the [Performance section in the README](https://github.com/aws/event-ruler/blob/main/README.md#performance) for details and alternatives ([`Benchmarks.java`](https://github.com/aws/event-ruler/blob/main/src/test/software/amazon/event/ruler/Benchmarks.java) for quick single-shot runs, [`StableBenchmarks.java`](https://github.com/aws/event-ruler/blob/main/src/test/software/amazon/event/ruler/StableBenchmarks.java) when you want to invoke the averaged harness directly).
 5. Commit to your fork using clear commit messages. [PULL_REQUEST_TEMPLATE.md](https://github.com/aws/event-ruler/blob/main/.github/PULL_REQUEST_TEMPLATE.md) shows the template we follow.
 6. Send us a pull request, answering any default questions in the pull request interface.
 7. Pay attention to any automated CI failures reported in the pull request, and stay involved in the conversation.
