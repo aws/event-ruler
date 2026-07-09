@@ -287,6 +287,265 @@ public class MachineTest {
     }
 
     @Test
+    public void testDeletingOneOfTwoIdenticalWildcardRulesLeavesTheOther() throws Exception {
+        // Two distinct rules share the exact same wildcard pattern with a leading wildcard.
+        // Deleting one rule must not delete the other. This exercises the shared self-loop
+        // structure that a leading wildcard creates in the ByteMachine.
+        Machine machine = new Machine();
+        String rule = "{ \"a\" : [ { \"wildcard\": \"*c\" } ] }";
+
+        machine.addRule("r1", rule);
+        machine.addRule("r2", rule);
+
+        assertEquals(new HashSet<>(Arrays.asList("r1", "r2")),
+                new HashSet<>(machine.rulesForJSONEvent("{\"a\" : \"xc\"}")));
+
+        machine.deleteRule("r1", rule);
+
+        // r2 must still match after r1 is deleted.
+        assertEquals(Collections.singletonList("r2"), machine.rulesForJSONEvent("{\"a\" : \"xc\"}"));
+
+        machine.deleteRule("r2", rule);
+        assertTrue(machine.rulesForJSONEvent("{\"a\" : \"xc\"}").isEmpty());
+        assertTrue(machine.isEmpty());
+    }
+
+    @Test
+    public void testDeleteRuleWithSharedWildcardClauseDifferentShapes() throws Exception {
+        // Case 1: two different-shaped rules that share an identical wildcard clause on field "x".
+        // Deleting one must never strand the other. Run many fresh machines because the defect is
+        // nondeterministic (~50% per trial) due to iteration-order-dependent shared-transition teardown.
+        String A = "{\"x\":[{\"wildcard\":\"*bar*\"}],\"y\":[\"exact1\"]}";
+        String B = "{\"x\":[{\"wildcard\":\"*bar*\"}],\"z\":[\"exact2\"]}";
+        String event = "{\"x\":\"a-bar-b\",\"z\":\"exact2\"}";
+
+        for (int i = 0; i < 200; i++) {
+            Machine m = Machine.builder().build();
+            m.addRule("0", A);
+            m.addRule("1", B);
+            m.deleteRule("0", A);
+            assertEquals("iteration " + i + ": surviving rule 1 was stranded",
+                    Collections.singletonList("1"), m.rulesForJSONEvent(event));
+        }
+    }
+
+    @Test
+    public void testDeleteRuleWithSharedWildcardClauseIdenticalShapes() throws Exception {
+        // Case 2: two identical-shape rules (same JSON, different names) sharing a wildcard clause.
+        // Deleting one must leave exactly the other; never strand it and never ghost the deleted rule.
+        String A = "{\"x\":[{\"wildcard\":\"*bar*\"}],\"y\":[\"exact1\"]}";
+        String event = "{\"x\":\"a-bar-b\",\"y\":\"exact1\"}";
+
+        for (int i = 0; i < 200; i++) {
+            Machine m = Machine.builder().build();
+            m.addRule("0", A);
+            m.addRule("1", A);
+            m.deleteRule("0", A);
+            assertEquals("iteration " + i + ": expected only surviving rule 1",
+                    Collections.singletonList("1"), m.rulesForJSONEvent(event));
+        }
+    }
+
+    @Test
+    public void testDeleteMixedOperatorShapeWithSharedWildcard() throws Exception {
+        // Case 3: a wildcard clause mixed with anything-but, numeric, exists, prefix and exact matches.
+        // Mixed operators build a different trie than a lone wildcard, so this guards the multi-operator shape.
+        // Deleting one must never strand the other. Run many fresh machines because the defect is
+        // nondeterministic (~50% per trial) due to iteration-order-dependent shared-transition teardown.
+        String A = "{\"source\":[\"app.orders\"]," +
+                "\"detail.createdAt\":[{\"exists\":true}]," +
+                "\"detail.tier\":[{\"anything-but\":[\"gold\",\"silver\"]},{\"exists\":false}]," +
+                "\"detail.code\":[{\"prefix\":\"ev_\"}]," +
+                "\"detail.count\":[{\"numeric\":[\"<=\",2]}]," +
+                "\"detail.path\":[{\"wildcard\":\"*checkout*\"}]}";
+        // Different-shaped sibling: SAME wildcard on detail.path, differs by one extra field.
+        String B = "{\"source\":[\"app.orders\"]," +
+                "\"detail.createdAt\":[{\"exists\":true}]," +
+                "\"detail.tier\":[{\"anything-but\":[\"gold\",\"silver\"]},{\"exists\":false}]," +
+                "\"detail.code\":[{\"prefix\":\"ev_\"}]," +
+                "\"detail.count\":[{\"numeric\":[\"<=\",2]}]," +
+                "\"detail.extra\":[\"sibling_only\"]," +
+                "\"detail.path\":[{\"wildcard\":\"*checkout*\"}]}";
+        String eventA = "{\"source\":\"app.orders\",\"detail\":{\"createdAt\":\"2026-01-01\"," +
+                "\"tier\":\"bronze\",\"code\":\"ev_x\",\"count\":1,\"path\":\"/a/checkout/b\"}}";
+        String eventB = "{\"source\":\"app.orders\",\"detail\":{\"createdAt\":\"2026-01-01\"," +
+                "\"tier\":\"bronze\",\"code\":\"ev_x\",\"count\":1,\"extra\":\"sibling_only\"," +
+                "\"path\":\"/a/checkout/b\"}}";
+
+        // Different shapes sharing the wildcard clause: deleting one must never strand the other.
+        for (int i = 0; i < 200; i++) {
+            Machine m = Machine.builder().build();
+            m.addRule("0", A);
+            m.addRule("1", B);
+            m.deleteRule("0", A);
+            assertEquals("iteration " + i + ": surviving rule 1 was stranded",
+                    Collections.singletonList("1"), m.rulesForJSONEvent(eventB));
+        }
+
+        // Identical shapes (same JSON, different names): delete one and leave exactly the other.
+        for (int i = 0; i < 200; i++) {
+            Machine m = Machine.builder().build();
+            m.addRule("0", A);
+            m.addRule("1", A);
+            m.deleteRule("0", A);
+            assertEquals("iteration " + i + ": expected only surviving rule 1",
+                    Collections.singletonList("1"), m.rulesForJSONEvent(eventA));
+        }
+    }
+
+    @Test
+    public void testDeleteRuleWithDifferentWildcardsStaysSafe() throws Exception {
+        // Boundary: different wildcard patterns on the same field must remain safe after delete.
+        String A = "{\"x\":[{\"wildcard\":\"*aaa*\"}],\"y\":[\"exact1\"]}";
+        String B = "{\"x\":[{\"wildcard\":\"*bbb*\"}],\"z\":[\"exact2\"]}";
+        String event = "{\"x\":\"z-bbb-z\",\"z\":\"exact2\"}";
+
+        for (int i = 0; i < 200; i++) {
+            Machine m = Machine.builder().build();
+            m.addRule("0", A);
+            m.addRule("1", B);
+            m.deleteRule("0", A);
+            assertEquals("iteration " + i, Collections.singletonList("1"),
+                    m.rulesForJSONEvent(event));
+        }
+    }
+
+    @Test
+    public void testDeleteRuleWithSharedPrefixClauseStaysSafe() throws Exception {
+        // Boundary: a shared NON-wildcard clause (prefix) across different-shaped rules must remain safe after delete.
+        String A = "{\"x\":[{\"prefix\":\"et_\"}],\"y\":[\"exact1\"]}";
+        String B = "{\"x\":[{\"prefix\":\"et_\"}],\"z\":[\"exact2\"]}";
+        String event = "{\"x\":\"et_abc\",\"z\":\"exact2\"}";
+
+        for (int i = 0; i < 200; i++) {
+            Machine m = Machine.builder().build();
+            m.addRule("0", A);
+            m.addRule("1", B);
+            m.deleteRule("0", A);
+            assertEquals("iteration " + i, Collections.singletonList("1"),
+                    m.rulesForJSONEvent(event));
+        }
+    }
+
+    @Test
+    public void testDeleteRuleSharingNothingStaysSafe() throws Exception {
+        // Boundary: deleting a rule that shares nothing with others must stay correct.
+        String A = "{\"x\":[{\"wildcard\":\"*bar*\"}]}";
+        String B = "{\"p\":[{\"wildcard\":\"*qux*\"}]}";
+
+        for (int i = 0; i < 200; i++) {
+            Machine m = Machine.builder().build();
+            m.addRule("0", A);
+            m.addRule("1", B);
+            m.deleteRule("0", A);
+            assertTrue("iteration " + i, m.rulesForJSONEvent("{\"x\":\"a-bar-b\"}").isEmpty());
+            assertEquals("iteration " + i, Collections.singletonList("1"),
+                    m.rulesForJSONEvent("{\"p\":\"a-qux-b\"}"));
+        }
+    }
+
+    @Test
+    public void testDeleteSharedWildcardThenReAddRecovers() throws Exception {
+        // Deleting one of two rules sharing a wildcard must leave the survivor matching, and re-adding the deleted
+        // rule must restore it - for any add/delete order.
+        String A = "{\"x\":[{\"wildcard\":\"*bar*\"}],\"y\":[\"exact1\"]}";
+        String event = "{\"x\":\"a-bar-b\",\"y\":\"exact1\"}";
+
+        for (int i = 0; i < 200; i++) {
+            Machine m = Machine.builder().build();
+            m.addRule("0", A);
+            m.addRule("1", A);
+            m.deleteRule("0", A);
+            assertEquals("iteration " + i, Collections.singletonList("1"), m.rulesForJSONEvent(event));
+            m.addRule("0", A);
+            assertEquals("iteration " + i, new HashSet<>(Arrays.asList("0", "1")),
+                    new HashSet<>(m.rulesForJSONEvent(event)));
+            m.deleteRule("0", A);
+            m.deleteRule("1", A);
+            assertTrue("iteration " + i, m.rulesForJSONEvent(event).isEmpty());
+            assertTrue("iteration " + i, m.isEmpty());
+        }
+    }
+
+    // Reproductions from GitHub issue #255: deleteRule silently ghosts or corrupts sibling rules that share a wildcard
+    // clause. Each runs over many fresh machines because the failure is non-deterministic (~50% per trial).
+
+    @Test
+    public void testIssue255WildcardDeleteRuleGhost() throws Exception {
+        String ruleJson = "{\"name\":[\"test\"],\"properties.foo\":[{\"wildcard\":\"*bar*\"}]}";
+        String event = "{\"name\":\"test\",\"properties\":{\"foo\":\"foobar\"}}";
+
+        for (int i = 0; i < 200; i++) {
+            Machine machine = Machine.builder().build();
+            machine.addRule("rule1", ruleJson);
+            machine.addRule("rule2", ruleJson);
+            assertEquals("iteration " + i, 2, machine.rulesForJSONEvent(event).size());
+
+            machine.deleteRule("rule1", ruleJson);
+
+            List<String> after = machine.rulesForJSONEvent(event);
+            assertFalse("iteration " + i + ": rule1 should be deleted", after.contains("rule1"));
+            assertTrue("iteration " + i + ": rule2 should still match", after.contains("rule2"));
+        }
+    }
+
+    @Test
+    public void testIssue255WildcardPlusNumericDeleteRuleCorruption() throws Exception {
+        String ruleJson = "{\"name\":[\"test\"]," +
+                "\"properties.foo\":[{\"wildcard\":\"*bar*\"}]," +
+                "\"properties.count\":[{\"numeric\":[\"<=\",2]}]}";
+        String event = "{\"name\":\"test\",\"properties\":{\"foo\":\"foobar\",\"count\":1}}";
+
+        for (int i = 0; i < 200; i++) {
+            Machine machine = Machine.builder().build();
+            machine.addRule("rule1", ruleJson);
+            machine.addRule("rule2", ruleJson);
+            assertEquals("iteration " + i, 2, machine.rulesForJSONEvent(event).size());
+
+            machine.deleteRule("rule1", ruleJson);
+
+            List<String> after = machine.rulesForJSONEvent(event);
+            assertTrue("iteration " + i + ": rule2 should still match", after.contains("rule2"));
+            assertFalse("iteration " + i + ": rule1 should be deleted", after.contains("rule1"));
+        }
+    }
+
+    @Test
+    public void testIssue255WildcardDeleteRuleOrderIndependent() throws Exception {
+        String ruleJson = "{\"type\":[\"track\"],\"name\":[\"event\"]," +
+                "\"properties.foo\":[{\"wildcard\":\"*bar*\"}]," +
+                "\"properties.color\":[{\"anything-but\":[\"purple\",\"pink\"]},{\"exists\":false}]," +
+                "\"properties.count\":[{\"numeric\":[\"<=\",2]}]," +
+                "\"properties.active\":[\"true\"]," +
+                "\"properties.dob\":[{\"exists\":true}]}";
+        String event = "{\"type\":\"track\",\"name\":\"event\"," +
+                "\"properties\":{\"foo\":\"foobar\",\"color\":\"blue\",\"count\":1,\"active\":\"true\"," +
+                "\"dob\":\"1990-01-01\"}}";
+
+        for (int i = 0; i < 200; i++) {
+            // Order A: rule1 added first.
+            Machine machineA = Machine.builder().build();
+            machineA.addRule("rule1", ruleJson);
+            machineA.addRule("rule2", ruleJson);
+            machineA.deleteRule("rule1", ruleJson);
+            List<String> resultA = machineA.rulesForJSONEvent(event);
+
+            // Order B: rule2 added first.
+            Machine machineB = Machine.builder().build();
+            machineB.addRule("rule2", ruleJson);
+            machineB.addRule("rule1", ruleJson);
+            machineB.deleteRule("rule1", ruleJson);
+            List<String> resultB = machineB.rulesForJSONEvent(event);
+
+            assertEquals("iteration " + i + ": order A should return only rule2",
+                    Collections.singletonList("rule2"), resultA);
+            assertEquals("iteration " + i + ": order B should return only rule2",
+                    Collections.singletonList("rule2"), resultB);
+            assertEquals("iteration " + i + ": both orders must produce the same result", resultA, resultB);
+        }
+    }
+
+    @Test
     public void testCityLotsProblemLines() throws Exception {
 
         String[] e = {

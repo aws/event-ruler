@@ -941,6 +941,28 @@ class ByteMachine {
         }
     }
 
+    // Like findPattern, but returns all NameStates a pattern leads to. A shared wildcard can produce one NameState per
+    // rule over the same byte transitions, and the delete path needs all of them.
+    Set<NameState> findAllPatterns(final Patterns pattern) {
+        switch (pattern.type()) {
+        case EXACT:
+        case NUMERIC_EQ:
+        case PREFIX:
+        case PREFIX_EQUALS_IGNORE_CASE:
+        case SUFFIX:
+        case SUFFIX_EQUALS_IGNORE_CASE:
+        case EQUALS_IGNORE_CASE:
+        case WILDCARD:
+            assert pattern instanceof ValuePatterns;
+            return findAllMatchPattern(getParser().parse(pattern.type(), ((ValuePatterns) pattern).pattern()), pattern);
+        case EXISTS:
+            return findAllMatchPattern(getParser().parse(pattern.type(), Patterns.EXISTS_BYTE_STRING), pattern);
+        default:
+            NameState nameState = findPattern(pattern);
+            return nameState == null ? Collections.emptySet() : Collections.singleton(nameState);
+        }
+    }
+
     NameState findPattern(final Patterns pattern) {
         switch (pattern.type()) {
         case NUMERIC_RANGE:
@@ -1009,6 +1031,11 @@ class ByteMachine {
     }
 
     private NameState findMatchPattern(final InputCharacter[] characters, final Patterns pattern) {
+        Set<NameState> nameStates = findAllMatchPattern(characters, pattern);
+        return nameStates.isEmpty() ? null : nameStates.iterator().next();
+    }
+
+    private Set<NameState> findAllMatchPattern(final InputCharacter[] characters, final Patterns pattern) {
         Set<SingleByteTransition> transitionsToProcess = new HashSet<>();
         transitionsToProcess.add(startState);
         ByteTransition shortcutTrans = null;
@@ -1050,15 +1077,15 @@ class ByteMachine {
             }
         }
 
-        // Check matches for all possible final transitions until we find the pattern we are looking for.
+        Set<NameState> nameStates = new HashSet<>();
         for (ByteTransition nextTrans : finalTransitionsToProcess) {
             for (ByteMatch match : nextTrans.getMatches()) {
                 if (match.getPattern().equals(pattern)) {
-                    return match.getNextNameState();
+                    nameStates.add(match.getNextNameState());
                 }
             }
         }
-        return null;
+        return nameStates;
     }
 
     // before we accept the delete range pattern, the input range pattern must exactly match Range ByteMatch
