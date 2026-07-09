@@ -299,83 +299,123 @@ public class GenericMachine<T> {
         }
 
         for (Patterns pattern : patterns.get(key)) {
-            NameState nextNameState = null;
+            Set<NameState> nextNameStates;
             if (isNamePattern(pattern)) {
-                if (nameMatcher != null) {
-                    nextNameState = nameMatcher.findPattern(pattern);
-                }
+                NameState nextNameState = nameMatcher == null ? null : nameMatcher.findPattern(pattern);
+                nextNameStates = nextNameState == null ? Collections.emptySet()
+                        : Collections.singleton(nextNameState);
             } else {
-                if (byteMachine != null) {
-                    nextNameState = byteMachine.findPattern(pattern);
-                }
+                nextNameStates = byteMachine == null ? Collections.emptySet()
+                        : byteMachine.findAllPatterns(pattern);
             }
 
-            if (nextNameState != null) {
-                // If this was the last step, then reaching the last state means the rule matched, and we should delete
-                // the rule from the next NameState.
-                final int nextKeyIndex = keyIndex + 1;
-                boolean isTerminal = nextKeyIndex == keys.size();
-
-                // Trim the candidate sub-rule ID set to contain only the sub-rule IDs present in the next NameState.
-                Set<SubRuleContext> nextNameStateSubRuleIds = isTerminal ?
-                        nextNameState.getTerminalSubRuleIdsForPattern(pattern) :
-                        nextNameState.getNonTerminalSubRuleIdsForPattern(pattern);
-                // If no sub-rule IDs are found for next NameState, then we have no candidates, and will return below
-                // without further recursion through the keys.
-                if (nextNameStateSubRuleIds == null) {
-                    candidateSubRuleIds.clear();
-                    // If candidate set is empty, we are at first NameState, so initialize to next NameState's sub-rule IDs.
-                    // When initializing, ensure that sub-rule IDs match the provided rule name for deletion.
-                } else if (candidateSubRuleIds.isEmpty()) {
-                    for (SubRuleContext nextNameStateSubRuleId : nextNameStateSubRuleIds) {
-                        if (Objects.equals(ruleName,
-                                nextNameStateSubRuleId.getRuleName())) {
-                            candidateSubRuleIds.add(nextNameStateSubRuleId);
-                        }
-                    }
-                    // Have already initialized candidate set. Just retain the candidates present in the next NameState.
-                } else {
-                    candidateSubRuleIds.retainAll(nextNameStateSubRuleIds);
+            if (nextNameStates.size() <= 1) {
+                NameState nextNameState = nextNameStates.isEmpty() ? null : nextNameStates.iterator().next();
+                if (nextNameState != null && deleteStepForNameState(state, key, keyIndex, keys, patterns, ruleName,
+                        deletedKeys, candidateSubRuleIds, pattern, nextNameState, deletedSubRuleIds, nextNameStates)) {
+                    return deletedSubRuleIds;
                 }
+            } else {
+                Set<SubRuleContext> survivingCandidates = new HashSet<>();
+                for (NameState nextNameState : nextNameStates) {
+                    Set<SubRuleContext> incoming = new HashSet<>(candidateSubRuleIds);
+                    deleteStepForNameState(state, key, keyIndex, keys, patterns, ruleName,
+                            deletedKeys, incoming, pattern, nextNameState, deletedSubRuleIds, nextNameStates);
+                    survivingCandidates.addAll(incoming);
+                }
+                candidateSubRuleIds.clear();
+                candidateSubRuleIds.addAll(survivingCandidates);
+            }
+        }
 
-                if (isTerminal) {
-                    for (SubRuleContext candidateSubRuleId : candidateSubRuleIds) {
-                        if (nextNameState.deleteSubRule(
-                                candidateSubRuleId.getRuleName(), candidateSubRuleId,
-                                pattern, true)) {
-                            deletedSubRuleIds.add(candidateSubRuleId);
-                            // Only delete the pattern if the pattern does not transition to the next NameState.
-                            if (!doesNameStateContainPattern(nextNameState, pattern) &&
-                                    deletePattern(state, key, pattern)) {
-                                deletedKeys.add(key);
-                                state.removeNextNameState(key);
-                            }
-                        }
-                    }
-                } else {
-                    if (candidateSubRuleIds.isEmpty()) {
-                        return deletedSubRuleIds;
-                    }
-                    deletedSubRuleIds.addAll(deleteStep(nextNameState, keys, nextKeyIndex, patterns, ruleName,
-                            deletedKeys, new HashSet<>(candidateSubRuleIds)));
+        return deletedSubRuleIds;
+    }
 
-                    for (SubRuleContext deletedSubRuleId : deletedSubRuleIds) {
-                        nextNameState.deleteSubRule(deletedSubRuleId.getRuleName(),
-                                deletedSubRuleId, pattern, false);
-                    }
+    // Deletes a single pattern via a single NameState. The teardown guard considers all NameStates the pattern can
+    // lead to (nextNameStates), so shared wildcard transitions survive while any other NameState still uses them.
+    private boolean deleteStepForNameState(final NameState state,
+                                           final String key,
+                                           final int keyIndex,
+                                           final List<String> keys,
+                                           final Map<String, List<Patterns>> patterns,
+                                           final T ruleName,
+                                           final List<String> deletedKeys,
+                                           final Set<SubRuleContext> candidateSubRuleIds,
+                                           final Patterns pattern,
+                                           final NameState nextNameState,
+                                           final Set<SubRuleContext> deletedSubRuleIds,
+                                           final Set<NameState> nextNameStates) {
+        // If this was the last step, then reaching the last state means the rule matched, and we should delete
+        // the rule from the next NameState.
+        final int nextKeyIndex = keyIndex + 1;
+        boolean isTerminal = nextKeyIndex == keys.size();
 
-                    // Unwinding the key recursion, so we aren't on a rule match. Only delete the pattern if the pattern
-                    // does not transition to the next NameState.
-                    if (!doesNameStateContainPattern(nextNameState, pattern) && deletePattern(state, key, pattern)) {
+        // Trim the candidate sub-rule ID set to contain only the sub-rule IDs present in the next NameState.
+        Set<SubRuleContext> nextNameStateSubRuleIds = isTerminal ?
+                nextNameState.getTerminalSubRuleIdsForPattern(pattern) :
+                nextNameState.getNonTerminalSubRuleIdsForPattern(pattern);
+        // If no sub-rule IDs are found for next NameState, then we have no candidates, and will return below
+        // without further recursion through the keys.
+        if (nextNameStateSubRuleIds == null) {
+            candidateSubRuleIds.clear();
+            // If candidate set is empty, we are at first NameState, so initialize to next NameState's sub-rule IDs.
+            // When initializing, ensure that sub-rule IDs match the provided rule name for deletion.
+        } else if (candidateSubRuleIds.isEmpty()) {
+            for (SubRuleContext nextNameStateSubRuleId : nextNameStateSubRuleIds) {
+                if (Objects.equals(ruleName,
+                        nextNameStateSubRuleId.getRuleName())) {
+                    candidateSubRuleIds.add(nextNameStateSubRuleId);
+                }
+            }
+            // Have already initialized candidate set. Just retain the candidates present in the next NameState.
+        } else {
+            candidateSubRuleIds.retainAll(nextNameStateSubRuleIds);
+        }
+
+        if (isTerminal) {
+            for (SubRuleContext candidateSubRuleId : candidateSubRuleIds) {
+                if (nextNameState.deleteSubRule(
+                        candidateSubRuleId.getRuleName(), candidateSubRuleId,
+                        pattern, true)) {
+                    deletedSubRuleIds.add(candidateSubRuleId);
+                    // Only delete the pattern if no NameState the pattern leads to still references it.
+                    if (noNameStateContainsPattern(nextNameStates, pattern) &&
+                            deletePattern(state, key, pattern)) {
                         deletedKeys.add(key);
                         state.removeNextNameState(key);
                     }
                 }
             }
+        } else {
+            if (candidateSubRuleIds.isEmpty()) {
+                return true;
+            }
+            deletedSubRuleIds.addAll(deleteStep(nextNameState, keys, nextKeyIndex, patterns, ruleName,
+                    deletedKeys, new HashSet<>(candidateSubRuleIds)));
 
+            for (SubRuleContext deletedSubRuleId : deletedSubRuleIds) {
+                nextNameState.deleteSubRule(deletedSubRuleId.getRuleName(),
+                        deletedSubRuleId, pattern, false);
+            }
+
+            // Unwinding the key recursion, so we aren't on a rule match. Only delete the pattern if no NameState the
+            // pattern leads to still references it.
+            if (noNameStateContainsPattern(nextNameStates, pattern) && deletePattern(state, key, pattern)) {
+                deletedKeys.add(key);
+                state.removeNextNameState(key);
+            }
         }
 
-        return deletedSubRuleIds;
+        return false;
+    }
+
+    private boolean noNameStateContainsPattern(final Set<NameState> nameStates, final Patterns pattern) {
+        for (NameState nameState : nameStates) {
+            if (doesNameStateContainPattern(nameState, pattern)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private boolean doesNameStateContainPattern(final NameState nameState, final Patterns pattern) {
