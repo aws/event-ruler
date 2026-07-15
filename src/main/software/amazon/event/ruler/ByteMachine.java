@@ -957,41 +957,30 @@ class ByteMachine {
             return findAllMatchPattern(getParser().parse(pattern.type(), ((ValuePatterns) pattern).pattern()), pattern);
         case EXISTS:
             return findAllMatchPattern(getParser().parse(pattern.type(), Patterns.EXISTS_BYTE_STRING), pattern);
-        default:
-            NameState nameState = findPattern(pattern);
-            return nameState == null ? Collections.emptySet() : Collections.singleton(nameState);
-        }
-    }
-
-    NameState findPattern(final Patterns pattern) {
-        switch (pattern.type()) {
         case NUMERIC_RANGE:
             assert pattern instanceof Range;
-            return findRangePattern((Range) pattern);
+            return asSet(findRangePattern((Range) pattern));
         case ANYTHING_BUT:
             assert pattern instanceof AnythingBut;
-            return findAnythingButPattern((AnythingBut) pattern);
+            return asSet(findAnythingButPattern((AnythingBut) pattern));
         case ANYTHING_BUT_IGNORE_CASE:
         case ANYTHING_BUT_SUFFIX:
         case ANYTHING_BUT_PREFIX:
         case ANYTHING_BUT_WILDCARD:
             assert pattern instanceof AnythingButValuesSet;
-            return findAnythingButValuesSetPattern((AnythingButValuesSet) pattern);
-        case EXACT:
-        case NUMERIC_EQ:
-        case PREFIX:
-        case PREFIX_EQUALS_IGNORE_CASE:
-        case SUFFIX:
-        case SUFFIX_EQUALS_IGNORE_CASE:
-        case EQUALS_IGNORE_CASE:
-        case WILDCARD:
-            assert pattern instanceof ValuePatterns;
-            return findMatchPattern((ValuePatterns) pattern);
-        case EXISTS:
-            return findMatchPattern(getParser().parse(pattern.type(), Patterns.EXISTS_BYTE_STRING), pattern);
+            return asSet(findAnythingButValuesSetPattern((AnythingButValuesSet) pattern));
         default:
             throw new AssertionError(pattern + " is not implemented yet");
         }
+    }
+
+    NameState findPattern(final Patterns pattern) {
+        Set<NameState> nameStates = findAllPatterns(pattern);
+        return nameStates.isEmpty() ? null : nameStates.iterator().next();
+    }
+
+    private static Set<NameState> asSet(final NameState nameState) {
+        return nameState == null ? Collections.emptySet() : Collections.singleton(nameState);
     }
 
     private NameState findAnythingButPattern(AnythingBut pattern) {
@@ -1024,10 +1013,6 @@ class ByteMachine {
             return nextNameStates.iterator().next();
         }
         return null;
-    }
-
-    private NameState findMatchPattern(ValuePatterns pattern) {
-        return findMatchPattern(getParser().parse(pattern.type(), pattern.pattern()), pattern);
     }
 
     private NameState findMatchPattern(final InputCharacter[] characters, final Patterns pattern) {
