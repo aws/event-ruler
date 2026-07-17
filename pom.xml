@@ -285,6 +285,7 @@
             <configuration>
               <publishingServerId>central</publishingServerId>
               <autoPublish>false</autoPublish>
+              <deploymentName>${project.groupId}:${project.artifactId}:${project.version}</deploymentName>
             </configuration>
           </plugin>
         </plugins>
