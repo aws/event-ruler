@@ -10,11 +10,12 @@
 # deployment in the Portal (https://central.sonatype.com -> Deployments),
 # which a maintainer reviews and publishes from the UI.
 #
-# The run is gated on the CI workflow (CI.yml) having a successful completed
-# run for the exact commit being released: pushes to main trigger CI, so a
-# tag on main is covered. If CI is still in progress for the commit, wait
-# for it and re-run this workflow. For backfill refs that predate CI
-# coverage, dispatch with skip_ci_gate set to true.
+# The run is gated on the CI workflow (CI.yml) having a successful run for
+# the exact commit being released: pushes to main trigger CI, so a tag on
+# main is covered. If CI is still queued or running for the commit, the gate
+# waits for it (up to 60 minutes) instead of failing. It fails fast when CI
+# concluded without success. For backfill refs that predate CI coverage,
+# dispatch with skip_ci_gate set to true.
 #
 # Required repository secrets:
 #   CENTRAL_TOKEN_USERNAME / CENTRAL_TOKEN_PASSWORD - Central Portal user
@@ -73,15 +74,30 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           SHA="$(git rev-parse HEAD)"
-          SUCCESSES="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/CI.yml/runs?head_sha=${SHA}&per_page=100" \
-            --jq '[.workflow_runs[] | select(.conclusion == "success")] | length')"
-          if [ "$SUCCESSES" -eq 0 ]; then
-            echo "No successful CI (Java Build) run found for ${SHA}." >&2
-            echo "If CI is still running for this commit, wait for it to pass and re-run this workflow." >&2
-            echo "For backfill refs that never ran CI, dispatch with skip_ci_gate=true." >&2
-            exit 1
-          fi
-          echo "CI passed for ${SHA} (${SUCCESSES} successful run(s))."
+          DEADLINE="$((SECONDS + 60 * 60))"
+          while :; do
+            RUNS="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/CI.yml/runs?head_sha=${SHA}&per_page=100" \
+              --jq '[.workflow_runs[] | {status, conclusion}]')"
+            SUCCESSES="$(echo "$RUNS" | jq '[.[] | select(.conclusion == "success")] | length')"
+            PENDING="$(echo "$RUNS" | jq '[.[] | select(.status != "completed")] | length')"
+            TOTAL="$(echo "$RUNS" | jq 'length')"
+            if [ "$SUCCESSES" -gt 0 ]; then
+              echo "CI passed for ${SHA} (${SUCCESSES} successful run(s))."
+              break
+            fi
+            if [ "$TOTAL" -gt 0 ] && [ "$PENDING" -eq 0 ]; then
+              echo "CI (Java Build) concluded without success for ${SHA}." >&2
+              echo "Fix CI, then re-run this workflow. For backfill refs that never ran CI, dispatch with skip_ci_gate=true." >&2
+              exit 1
+            fi
+            if [ "$SECONDS" -ge "$DEADLINE" ]; then
+              echo "Timed out waiting for a successful CI (Java Build) run for ${SHA}." >&2
+              echo "For backfill refs that never ran CI, dispatch with skip_ci_gate=true." >&2
+              exit 1
+            fi
+            echo "Waiting for CI on ${SHA} (${TOTAL} run(s), ${PENDING} pending)..."
+            sleep 60
+          done
 
       - name: Verify pom version matches tag
         if: github.ref_type == 'tag'
