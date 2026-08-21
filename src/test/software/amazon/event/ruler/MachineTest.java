@@ -3063,4 +3063,39 @@ public class MachineTest {
         machine.addRule("23", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"d\", \"e\", \"f\"], \"key3\": [\"g\", \"h\", \"i\"], \"key4\": [\"j\", \"k\", \"l\"], \"key5\": [\"m\", \"n\", \"o\"], \"key6\": [\"p\", \"q\", \"r\"], \"key7\": [\"s\", \"t\", \"u\"], \"key8\": [\"x\"]}");
         machine.addRule("24", "{\"key1\": [\"a\", \"b\", \"c\"], \"key2\": [\"d\", \"e\", \"f\"], \"key3\": [\"g\", \"h\", \"i\"], \"key4\": [\"j\", \"k\", \"l\"], \"key5\": [\"m\", \"n\", \"o\"], \"key6\": [\"p\", \"q\", \"r\"], \"key7\": [\"s\", \"t\", \"u\"], \"key8\": [\"v\", \"w\", \"x\"], \"key9\": [\"y\"]}");
     }
+
+    // Regression: suffix + equals-ignore-case with a multi-byte (non-ASCII) value must not throw
+    // ClassCastException (InputMultiByteSet cannot be cast to InputByte) during rule-machine build.
+    // The crash surfaces on a second such rule that reuses byte states from the first. Value = "a"+U+30C7 デ +U+00E9 é.
+    @Test
+    public void WHEN_SuffixEqualsIgnoreCaseValueHasMultiByteChar_THEN_RuleCompilesAndMatches() throws Exception {
+        Machine machine = new Machine();
+        // Sibling rule sharing the multi-byte tail seeds reusable InputMultiByteSet states on the
+        // shared multi-byte "デé" tail so adding the offender exercises canReuseNextByteState.
+        machine.addRule("sibling", "{\"k\": [{\"suffix\": {\"equals-ignore-case\": \"bデé\"}}]}");
+        // Offender: before the fix this threw at extractNextJavaCharacterFromInputCharactersForForwardArrays.
+        machine.addRule("offender", "{\"k\": [{\"suffix\": {\"equals-ignore-case\": \"aデé\"}}]}");
+
+        assertTrue(machine.rulesForJSONEvent("{\"k\": [\"zzaデé\"]}").contains("offender"));
+        assertTrue(machine.rulesForJSONEvent("{\"k\": [\"zzAデé\"]}").contains("offender"));
+        assertTrue(machine.rulesForJSONEvent("{\"k\": [\"aデéx\"]}").isEmpty());
+    }
+
+
+    // A caught ClassCastException must not leave the machine wedged: two identical multi-byte rules,
+    // then delete them, then add an innocuous rule. Verifies the forward-walker fix leaves no wedge at
+    // the event-ruler level (the offending rules compile, delete cleanly, and later adds still work).
+    @Test
+    public void WHEN_MultiBytePoisonRulesAddedThenDeleted_THEN_NoStickyWedge() throws Exception {
+        Machine machine = new Machine();
+        String poison = "{\"k\": [{\"suffix\": {\"equals-ignore-case\": \"aデé\"}}]}";
+        machine.addRule("p1", poison);   // two IDENTICAL rules on one field
+        machine.addRule("p2", poison);
+        machine.deleteRule("p1", poison);
+        machine.deleteRule("p2", poison);
+        // Innocuous rule after the poison rules are gone must compile and match (no wedge).
+        machine.addRule("ok", "{\"k\": [{\"suffix\": \"ade\"}]}");
+        assertTrue(machine.rulesForJSONEvent("{\"k\": [\"zzade\"]}").contains("ok"));
+        assertTrue(machine.rulesForJSONEvent("{\"k\": [\"zzaデé\"]}").isEmpty());
+    }
 }

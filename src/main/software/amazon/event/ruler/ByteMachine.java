@@ -933,12 +933,31 @@ class ByteMachine {
         if (firstByte >= MIN_FIRST_BYTE_FOR_ONE_BYTE_CHAR && firstByte <= MAX_FIRST_BYTE_FOR_ONE_BYTE_CHAR) {
             return new String(new byte[] { firstByte } , StandardCharsets.UTF_8);
         } else if (firstByte >= MIN_FIRST_BYTE_FOR_TWO_BYTE_CHAR && firstByte <= MAX_FIRST_BYTE_FOR_TWO_BYTE_CHAR) {
+            // A continuation position can hold a non-byte InputCharacter (e.g. an
+            // InputMultiByteSet from an equals-ignore-case value). Stop before
+            // casting to InputByte, as the backward walker does.
+            if (!isByteAtIndex(characters, i + 1)) {
+                return new String(new byte[] { firstByte }, StandardCharsets.UTF_8);
+            }
             return new String(new byte[] { firstByte, InputByte.cast(characters[i + 1]).getByte() },
                     StandardCharsets.UTF_8);
         } else {
+            if (!isByteAtIndex(characters, i + 1)) {
+                return new String(new byte[] { firstByte }, StandardCharsets.UTF_8);
+            }
+            if (!isByteAtIndex(characters, i + 2)) {
+                return new String(new byte[] { firstByte, InputByte.cast(characters[i + 1]).getByte() },
+                        StandardCharsets.UTF_8);
+            }
             return new String(new byte[] { firstByte, InputByte.cast(characters[i + 1]).getByte(),
                     InputByte.cast(characters[i + 2]).getByte() }, StandardCharsets.UTF_8);
         }
+    }
+
+    // Bounds-checked byte test so a non-byte continuation position never reaches
+    // InputByte.cast() in the forward multi-byte walker.
+    private static boolean isByteAtIndex(InputCharacter[] characters, int i) {
+        return i >= 0 && i < characters.length && isByte(characters[i]);
     }
 
     // Like findPattern, but returns all NameStates a pattern leads to. A shared wildcard can produce one NameState per
