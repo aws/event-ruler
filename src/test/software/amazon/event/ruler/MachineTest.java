@@ -14,7 +14,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -3097,5 +3099,109 @@ public class MachineTest {
         machine.addRule("ok", "{\"k\": [{\"suffix\": \"ade\"}]}");
         assertTrue(machine.rulesForJSONEvent("{\"k\": [\"zzade\"]}").contains("ok"));
         assertTrue(machine.rulesForJSONEvent("{\"k\": [\"zzaデé\"]}").isEmpty());
+    }
+
+    // Same defect, two-byte branch of the forward walker: a caseless TWO-byte character
+    // (© U+00A9) whose continuation position holds an InputMultiByteSet. Before the fix this
+    // threw from the two-byte cast (the line above the three-byte case in the same method).
+    @Test
+    public void WHEN_SuffixEqualsIgnoreCaseValueHasTwoByteChar_THEN_RuleCompilesAndMatches() throws Exception {
+        Machine machine = new Machine();
+        machine.addRule("sibling", "{\"k\": [{\"suffix\": {\"equals-ignore-case\": \"b©é\"}}]}");
+        machine.addRule("offender", "{\"k\": [{\"suffix\": {\"equals-ignore-case\": \"a©é\"}}]}");
+
+        assertTrue(machine.rulesForJSONEvent("{\"k\": [\"zza©é\"]}").contains("offender"));
+        // Non-ASCII case folding: É (U+00C9) must match through the InputMultiByteSet path.
+        assertTrue(machine.rulesForJSONEvent("{\"k\": [\"zzA©É\"]}").contains("offender"));
+        assertTrue(machine.rulesForJSONEvent("{\"k\": [\"zzb©é\"]}").contains("sibling"));
+        assertTrue(machine.rulesForJSONEvent("{\"k\": [\"a©éx\"]}").isEmpty());
+    }
+
+    // Same defect, second continuation position of the three-byte branch: a caseless
+    // one-byte character ("5") sits at i+1, so the first cast succeeds and the crash
+    // (before the fix) came from the i+2 cast.
+    @Test
+    public void WHEN_SuffixEqualsIgnoreCaseHasByteThenMultiByteSetContinuation_THEN_RuleCompilesAndMatches()
+            throws Exception {
+        Machine machine = new Machine();
+        machine.addRule("sibling", "{\"k\": [{\"suffix\": {\"equals-ignore-case\": \"a5デé\"}}]}");
+        machine.addRule("offender", "{\"k\": [{\"suffix\": {\"equals-ignore-case\": \"b5デé\"}}]}");
+
+        assertTrue(machine.rulesForJSONEvent("{\"k\": [\"zzb5デé\"]}").contains("offender"));
+        assertTrue(machine.rulesForJSONEvent("{\"k\": [\"zzB5デÉ\"]}").contains("offender"));
+        assertTrue(machine.rulesForJSONEvent("{\"k\": [\"zza5デé\"]}").contains("sibling"));
+        assertTrue(machine.rulesForJSONEvent("{\"k\": [\"b5デéx\"]}").isEmpty());
+    }
+
+    // A family of rules sharing the same multi-byte tail, added one at a time: every add
+    // after the first walks reusable states seeded by its predecessors, so this exercises
+    // the guard repeatedly. Each rule must match exactly its own values afterwards, and
+    // deleting part of the family must not disturb the rest.
+    @Test
+    public void WHEN_ManySuffixEqualsIgnoreCaseRulesShareMultiByteTail_THEN_AllCompileMatchAndDeleteCleanly()
+            throws Exception {
+        Machine machine = new Machine();
+        String[] prefixes = {"a", "b", "c", "d", "e", "f"};
+        for (String prefix : prefixes) {
+            machine.addRule("r-" + prefix,
+                    "{\"k\": [{\"suffix\": {\"equals-ignore-case\": \"" + prefix + "デé\"}}]}");
+        }
+
+        for (String prefix : prefixes) {
+            List<String> matches = machine.rulesForJSONEvent("{\"k\": [\"zz" + prefix + "デé\"]}");
+            assertEquals(1, matches.size());
+            assertTrue(matches.contains("r-" + prefix));
+            // Upper-cased prefix and non-ASCII-folded É must reach the same rule.
+            List<String> foldedMatches = machine.rulesForJSONEvent(
+                    "{\"k\": [\"zz" + prefix.toUpperCase(Locale.ROOT) + "デÉ\"]}");
+            assertEquals(1, foldedMatches.size());
+            assertTrue(foldedMatches.contains("r-" + prefix));
+        }
+
+        // Delete half the family; the survivors must be unaffected.
+        for (String prefix : new String[] {"a", "c", "e"}) {
+            machine.deleteRule("r-" + prefix,
+                    "{\"k\": [{\"suffix\": {\"equals-ignore-case\": \"" + prefix + "デé\"}}]}");
+        }
+        assertTrue(machine.rulesForJSONEvent("{\"k\": [\"zzaデé\"]}").isEmpty());
+        assertTrue(machine.rulesForJSONEvent("{\"k\": [\"zzbデé\"]}").contains("r-b"));
+        assertTrue(machine.rulesForJSONEvent("{\"k\": [\"zzdデé\"]}").contains("r-d"));
+        assertTrue(machine.rulesForJSONEvent("{\"k\": [\"zzfデé\"]}").contains("r-f"));
+    }
+
+    // The guard only affects the byte-state-reuse optimization, never matching: a machine
+    // built rule-by-rule (reuse path exercised, guard fires) and a machine built from the
+    // same rules on fresh state each time must produce identical match results.
+    @Test
+    public void WHEN_GuardFires_THEN_MatchResultsEqualSingleRuleMachines() throws Exception {
+        String[][] rules = {
+                {"r0", "{\"k\": [{\"suffix\": {\"equals-ignore-case\": \"aデé\"}}]}"},
+                {"r1", "{\"k\": [{\"suffix\": {\"equals-ignore-case\": \"bデé\"}}]}"},
+                {"r2", "{\"k\": [{\"suffix\": {\"equals-ignore-case\": \"a©é\"}}]}"},
+                {"r3", "{\"k\": [{\"suffix\": {\"equals-ignore-case\": \"b©é\"}}]}"},
+                {"r4", "{\"k\": [{\"suffix\": {\"equals-ignore-case\": \"a5デé\"}}]}"},
+                {"r5", "{\"k\": [{\"suffix\": {\"equals-ignore-case\": \"b5デé\"}}]}"},
+        };
+        String[] events = {
+                "{\"k\": [\"zzaデé\"]}", "{\"k\": [\"zzAデÉ\"]}", "{\"k\": [\"zzbデé\"]}",
+                "{\"k\": [\"zza©é\"]}", "{\"k\": [\"zzA©É\"]}", "{\"k\": [\"zzb©é\"]}",
+                "{\"k\": [\"zza5デé\"]}", "{\"k\": [\"zzB5デÉ\"]}",
+                "{\"k\": [\"aデéx\"]}", "{\"k\": [\"unrelated\"]}",
+        };
+
+        Machine shared = new Machine();
+        for (String[] rule : rules) {
+            shared.addRule(rule[0], rule[1]);
+        }
+
+        for (String event : events) {
+            Set<String> expected = new HashSet<>();
+            for (String[] rule : rules) {
+                Machine single = new Machine();
+                single.addRule(rule[0], rule[1]);
+                expected.addAll(single.rulesForJSONEvent(event));
+            }
+            assertEquals("event: " + event, expected, new HashSet<>(shared.rulesForJSONEvent(event)));
+        }
     }
 }
