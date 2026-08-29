@@ -13,7 +13,7 @@
 # The run is gated on the CI workflow (CI.yml) having a successful run for
 # the exact commit being released: pushes to main trigger CI, so a tag on
 # main is covered. If CI is still queued or running for the commit, the gate
-# waits for it (up to 60 minutes) instead of failing. It fails fast when CI
+# waits for it (up to 120 minutes) instead of failing. It fails fast when CI
 # concluded without success. For backfill refs that predate CI coverage,
 # dispatch with skip_ci_gate set to true.
 #
@@ -74,7 +74,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           SHA="$(git rev-parse HEAD)"
-          DEADLINE="$((SECONDS + 60 * 60))"
+          DEADLINE="$((SECONDS + 120 * 60))"
           while :; do
             RUNS="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/CI.yml/runs?head_sha=${SHA}&per_page=100" \
               --jq '[.workflow_runs[] | {status, conclusion}]')"
