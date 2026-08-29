@@ -251,6 +251,8 @@ public class GenericMachine<T> {
      *  The eventual result will be same as one time deleteRule call with r1 {a, [1,2]}.
      *  So, caller is expected to save its rule expression if want to entirely remove the rule unless deliberately
      *  want to remove partial rule from rule name.
+     *  Values within a key are order-independent; values that reach no rule are skipped while later values are
+     *  still considered.
      *
      * @param name ARN of the rule
      * @param namevals names and values which make up the rule
@@ -309,22 +311,13 @@ public class GenericMachine<T> {
                         : byteMachine.findAllPatterns(pattern);
             }
 
-            if (nextNameStates.size() <= 1) {
-                NameState nextNameState = nextNameStates.isEmpty() ? null : nextNameStates.iterator().next();
-                if (nextNameState != null && deleteStepForNameState(state, key, keyIndex, keys, patterns, ruleName,
-                        deletedKeys, candidateSubRuleIds, pattern, nextNameState, deletedSubRuleIds, nextNameStates)) {
-                    return deletedSubRuleIds;
-                }
-            } else {
-                Set<SubRuleContext> survivingCandidates = new HashSet<>();
-                for (NameState nextNameState : nextNameStates) {
-                    Set<SubRuleContext> incoming = new HashSet<>(candidateSubRuleIds);
-                    deleteStepForNameState(state, key, keyIndex, keys, patterns, ruleName,
-                            deletedKeys, incoming, pattern, nextNameState, deletedSubRuleIds, nextNameStates);
-                    survivingCandidates.addAll(incoming);
-                }
-                candidateSubRuleIds.clear();
-                candidateSubRuleIds.addAll(survivingCandidates);
+            // Values within a key have OR semantics. Each value/NameState branch starts with the same candidates
+            // inherited from the preceding keys.
+            for (NameState nextNameState : nextNameStates) {
+                final Set<SubRuleContext> branchCandidateSubRuleIds = new HashSet<>(candidateSubRuleIds);
+                deleteStepForNameState(state, key, keyIndex, keys, patterns, ruleName,
+                        deletedKeys, branchCandidateSubRuleIds, pattern, nextNameState, deletedSubRuleIds,
+                        nextNameStates);
             }
         }
 
@@ -333,18 +326,18 @@ public class GenericMachine<T> {
 
     // Deletes a single pattern via a single NameState. The teardown guard considers all NameStates the pattern can
     // lead to (nextNameStates), so shared wildcard transitions survive while any other NameState still uses them.
-    private boolean deleteStepForNameState(final NameState state,
-                                           final String key,
-                                           final int keyIndex,
-                                           final List<String> keys,
-                                           final Map<String, List<Patterns>> patterns,
-                                           final T ruleName,
-                                           final List<String> deletedKeys,
-                                           final Set<SubRuleContext> candidateSubRuleIds,
-                                           final Patterns pattern,
-                                           final NameState nextNameState,
-                                           final Set<SubRuleContext> deletedSubRuleIds,
-                                           final Set<NameState> nextNameStates) {
+    private void deleteStepForNameState(final NameState state,
+                                        final String key,
+                                        final int keyIndex,
+                                        final List<String> keys,
+                                        final Map<String, List<Patterns>> patterns,
+                                        final T ruleName,
+                                        final List<String> deletedKeys,
+                                        final Set<SubRuleContext> candidateSubRuleIds,
+                                        final Patterns pattern,
+                                        final NameState nextNameState,
+                                        final Set<SubRuleContext> deletedSubRuleIds,
+                                        final Set<NameState> nextNameStates) {
         // If this was the last step, then reaching the last state means the rule matched, and we should delete
         // the rule from the next NameState.
         final int nextKeyIndex = keyIndex + 1;
@@ -354,13 +347,12 @@ public class GenericMachine<T> {
         Set<SubRuleContext> nextNameStateSubRuleIds = isTerminal ?
                 nextNameState.getTerminalSubRuleIdsForPattern(pattern) :
                 nextNameState.getNonTerminalSubRuleIdsForPattern(pattern);
-        // If no sub-rule IDs are found for next NameState, then we have no candidates, and will return below
-        // without further recursion through the keys.
         if (nextNameStateSubRuleIds == null) {
-            candidateSubRuleIds.clear();
-            // If candidate set is empty, we are at first NameState, so initialize to next NameState's sub-rule IDs.
-            // When initializing, ensure that sub-rule IDs match the provided rule name for deletion.
-        } else if (candidateSubRuleIds.isEmpty()) {
+            return;
+        }
+        // Only the first key initializes candidates. An empty set at a later key means the preceding key
+        // constraints found no matching sub-rule and must not be reset.
+        if (keyIndex == 0) {
             for (SubRuleContext nextNameStateSubRuleId : nextNameStateSubRuleIds) {
                 if (Objects.equals(ruleName,
                         nextNameStateSubRuleId.getRuleName())) {
@@ -370,6 +362,10 @@ public class GenericMachine<T> {
             // Have already initialized candidate set. Just retain the candidates present in the next NameState.
         } else {
             candidateSubRuleIds.retainAll(nextNameStateSubRuleIds);
+        }
+
+        if (candidateSubRuleIds.isEmpty()) {
+            return;
         }
 
         if (isTerminal) {
@@ -387,11 +383,8 @@ public class GenericMachine<T> {
                 }
             }
         } else {
-            if (candidateSubRuleIds.isEmpty()) {
-                return true;
-            }
             deletedSubRuleIds.addAll(deleteStep(nextNameState, keys, nextKeyIndex, patterns, ruleName,
-                    deletedKeys, new HashSet<>(candidateSubRuleIds)));
+                    deletedKeys, candidateSubRuleIds));
 
             for (SubRuleContext deletedSubRuleId : deletedSubRuleIds) {
                 nextNameState.deleteSubRule(deletedSubRuleId.getRuleName(),
@@ -405,8 +398,6 @@ public class GenericMachine<T> {
                 state.removeNextNameState(key);
             }
         }
-
-        return false;
     }
 
     private boolean noNameStateContainsPattern(final Set<NameState> nameStates, final Patterns pattern) {

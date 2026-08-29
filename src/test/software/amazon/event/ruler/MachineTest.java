@@ -548,6 +548,116 @@ public class MachineTest {
     }
 
     @Test
+    public void testIssue260SupersetExactDeleteIsOrderIndependent() throws Exception {
+        for (String deleteRule : asList(
+                "{\"x\":[\"a\",\"b\"],\"y\":[\"e\"]}",
+                "{\"x\":[\"b\",\"a\"],\"y\":[\"e\"]}")) {
+            Machine machine = Machine.builder().build();
+            machine.addRule("r1", "{\"x\":[\"b\"],\"y\":[\"e\"]}");
+            machine.addRule("r3", "{\"x\":[\"a\"],\"y\":[\"e\"]}");
+
+            machine.deleteRule("r1", deleteRule);
+
+            assertFalse(machine.rulesForJSONEvent("{\"x\":\"b\",\"y\":\"e\"}").contains("r1"));
+            assertEquals(Collections.singletonList("r3"),
+                    machine.rulesForJSONEvent("{\"x\":\"a\",\"y\":\"e\"}"));
+        }
+    }
+
+    @Test
+    public void testIssue260SupersetWildcardDeleteIsOrderIndependent() throws Exception {
+        for (String deleteRule : asList(
+                "{\"x\":[{\"wildcard\":\"*foo*\"},{\"wildcard\":\"*bar*\"}],\"y\":[\"e\"]}",
+                "{\"x\":[{\"wildcard\":\"*bar*\"},{\"wildcard\":\"*foo*\"}],\"y\":[\"e\"]}")) {
+            Machine machine = Machine.builder().build();
+            String barRule = "{\"x\":[{\"wildcard\":\"*bar*\"}],\"y\":[\"e\"]}";
+            String fooRule = "{\"x\":[{\"wildcard\":\"*foo*\"}],\"y\":[\"e\"]}";
+            machine.addRule("r1", barRule);
+            machine.addRule("r2", barRule);
+            machine.addRule("r3", fooRule);
+
+            machine.deleteRule("r1", deleteRule);
+
+            assertEquals(Collections.singleton("r2"),
+                    new HashSet<>(machine.rulesForJSONEvent("{\"x\":\"a-bar-b\",\"y\":\"e\"}")));
+            assertEquals(Collections.singletonList("r3"),
+                    machine.rulesForJSONEvent("{\"x\":\"a-foo-b\",\"y\":\"e\"}"));
+        }
+    }
+
+    @Test
+    public void testIssue260SupersetDeletePreservesPriorKeyCandidates() throws Exception {
+        // Reuse funnels later-key values into one shared NameState, making foreign patterns findable there.
+        Machine machine = Machine.builder().withAdditionalNameStateReuse(true).build();
+        String firstRule = "{\"a\":[\"one\"],\"b\":[\"left\"],\"c\":[\"left-end\"]}";
+        String secondRule = "{\"a\":[\"two\"],\"b\":[\"right\"],\"c\":[\"right-end\"]}";
+        String otherRule = "{\"a\":[\"one\"],\"b\":[\"missing\"],\"c\":[\"other-end\"]}";
+        machine.addRule("r1", firstRule);
+        machine.addRule("r1", secondRule);
+        machine.addRule("other", otherRule);
+
+        machine.deleteRule("r1",
+                "{\"a\":[\"one\"],\"b\":[\"missing\",\"right\"],\"c\":[\"right-end\"]}");
+
+        assertTrue(machine.rulesForJSONEvent(
+                "{\"a\":\"one\",\"b\":\"left\",\"c\":\"left-end\"}").contains("r1"));
+        assertTrue(machine.rulesForJSONEvent(
+                "{\"a\":\"two\",\"b\":\"right\",\"c\":\"right-end\"}").contains("r1"));
+        assertTrue(machine.rulesForJSONEvent(
+                "{\"a\":\"one\",\"b\":\"missing\",\"c\":\"other-end\"}").contains("other"));
+    }
+
+    @Test
+    public void testIssue260TerminalSupersetDoesNotResetPriorKeyCandidates() throws Exception {
+        // Reuse funnels later-key values into one shared NameState, making foreign patterns findable there.
+        Machine machine = Machine.builder().withAdditionalNameStateReuse(true).build();
+        machine.addRule("r1", "{\"a\":[\"one\"],\"b\":[\"left\"]}");
+        machine.addRule("r1", "{\"a\":[\"two\"],\"b\":[\"right\"]}");
+        machine.addRule("other", "{\"a\":[\"one\"],\"b\":[\"missing\"]}");
+
+        machine.deleteRule("r1", "{\"a\":[\"one\"],\"b\":[\"missing\",\"right\"]}");
+
+        assertTrue(machine.rulesForJSONEvent("{\"a\":\"one\",\"b\":\"left\"}").contains("r1"));
+        assertTrue(machine.rulesForJSONEvent("{\"a\":\"two\",\"b\":\"right\"}").contains("r1"));
+        assertTrue(machine.rulesForJSONEvent("{\"a\":\"one\",\"b\":\"missing\"}").contains("other"));
+    }
+
+    @Test
+    public void testIssue260LaterKeySupersetDeleteContinuesPastEmptyBranch() throws Exception {
+        for (String deleteRule : asList(
+                "{\"a\":[\"one\"],\"b\":[\"missing\",\"right\"]}",
+                "{\"a\":[\"one\"],\"b\":[\"right\",\"missing\"]}")) {
+            // Reuse funnels later-key values into one NameState, exposing the branch-sharing edge case.
+            Machine machine = Machine.builder().withAdditionalNameStateReuse(true).build();
+            String targetRule = "{\"a\":[\"one\"],\"b\":[\"right\"]}";
+            String otherRule = "{\"a\":[\"one\"],\"b\":[\"missing\"]}";
+            machine.addRule("r1", targetRule);
+            machine.addRule("other", otherRule);
+
+            machine.deleteRule("r1", deleteRule);
+
+            assertTrue(machine.rulesForJSONEvent("{\"a\":\"one\",\"b\":\"right\"}").isEmpty());
+            assertEquals(Collections.singletonList("other"),
+                    machine.rulesForJSONEvent("{\"a\":\"one\",\"b\":\"missing\"}"));
+            machine.deleteRule("other", otherRule);
+            assertTrue(machine.isEmpty());
+        }
+    }
+
+    @Test
+    public void testIssue260SupersetDeletesIndependentSameNameSubRules() throws Exception {
+        Machine machine = Machine.builder().build();
+        machine.addRule("r1", "{\"x\":[\"a\"]}");
+        machine.addRule("r1", "{\"x\":[\"b\"]}");
+
+        machine.deleteRule("r1", "{\"x\":[\"a\",\"b\"]}");
+
+        assertTrue(machine.rulesForJSONEvent("{\"x\":\"a\"}").isEmpty());
+        assertTrue(machine.rulesForJSONEvent("{\"x\":\"b\"}").isEmpty());
+        assertTrue(machine.isEmpty());
+    }
+
+    @Test
     public void testCityLotsProblemLines() throws Exception {
 
         String[] e = {
