@@ -552,6 +552,43 @@ public class MachineComplexityEvaluatorTest {
         assertEquals(0, machine.evaluateComplexity(evaluator));
     }
 
+    @Test
+    public void testEvaluateWildcardBehindAbsentKey() throws Exception {
+        // Keys sort as aaa, zzz: the wildcard machine on zzz sits behind aaa's absent-key pattern, which is a
+        // NameMatcher edge rather than a ByteMachine. "zz" is matched by 3 wildcard prefixes: "*", "*z", "*z*".
+        String ruleBehindAbsentKey = "{\"aaa\": [{\"exists\": false}], \"zzz\": [{\"wildcard\": \"*z*\"}]}";
+        String ruleBehindPresentKey = "{\"aaa\": [{\"exists\": true}], \"zzz\": [{\"wildcard\": \"*z*\"}]}";
+        String wildcardRule = "{\"zzz\": [{\"wildcard\": \"*z*\"}]}";
+        for (boolean additionalNameStateReuse : new boolean[] { false, true }) {
+            assertEquals(3, complexityOfRule(ruleBehindAbsentKey, additionalNameStateReuse));
+            assertEquals(3, complexityOfRule(ruleBehindPresentKey, additionalNameStateReuse));
+            assertEquals(3, complexityOfRule(wildcardRule, additionalNameStateReuse));
+        }
+    }
+
+    @Test
+    public void testEvaluateWildcardBehindNestedAbsentKey() throws Exception {
+        String rule = "{\"aaa\": {\"inner\": [{\"exists\": false}]}, \"zzz\": [{\"wildcard\": \"*z*\"}]}";
+        // "zz" is matched by 3 wildcard prefixes: "*", "*z", "*z*"
+        assertEquals(3, complexityOfRule(rule, false));
+        assertEquals(3, complexityOfRule(rule, true));
+    }
+
+    @Test
+    public void testEvaluateWildcardBehindAbsentKeyRespectsMaxComplexity() throws Exception {
+        String rule = "{\"aaa\": [{\"exists\": false}], \"zzz\": [{\"wildcard\": \"*z*\"}]}";
+        Machine machine = new Machine();
+        machine.addRule("rule", rule);
+        assertEquals(1, machine.evaluateComplexity(new MachineComplexityEvaluator(1)));
+        assertEquals(2, machine.evaluateComplexity(new MachineComplexityEvaluator(2)));
+    }
+
+    private int complexityOfRule(String rule, boolean additionalNameStateReuse) throws Exception {
+        Machine machine = new Machine.Builder().withAdditionalNameStateReuse(additionalNameStateReuse).build();
+        machine.addRule("rule", rule);
+        return machine.evaluateComplexity(evaluator);
+    }
+
     private void testPatternPermutations(int expectedComplexity, Patterns ... patterns) {
         ByteMachine machine = new ByteMachine();
         List<Patterns[]> patternPermutations = generateAllPermutations(patterns);
