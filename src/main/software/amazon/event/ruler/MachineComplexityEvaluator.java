@@ -1,9 +1,11 @@
 package software.amazon.event.ruler;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
@@ -101,19 +103,35 @@ public class MachineComplexityEvaluator {
 
         // Now that we have a maxSize for this ByteMachine, let's recursively get the maxSize for each next NameState
         // accessible via any of this ByteMachine's matches. We will return the maximum maxSize.
-        int maxSizeFromNextNameStates = 0;
-        Set<ByteMatch> uniqueMatches = new HashSet<>();
-        for (Set<ByteMatch> matches : matchesAccessibleFromEachTransition.values()) {
-            uniqueMatches.addAll(matches);
-        }
-        for (ByteMatch match : uniqueMatches) {
-            NameState nextNameState = match.getNextNameState();
-            if (nextNameState != null) {
-                maxSizeFromNextNameStates = Math.max(maxSizeFromNextNameStates, nextNameState.evaluateComplexity(this));
+        return Math.max(maxSize, evaluateNextNameStates(matchesAccessibleFromEachTransition.values()));
+    }
+
+    /**
+     * Returns the maximum complexity of the machines reachable through the next NameStates of the given matches, or
+     * zero when no match leads to a next NameState. Recursion happens once per distinct next NameState, not once per
+     * match: all values of an exact-match list lead to the same next NameState, so recursing per match would walk the
+     * machines behind a chain of value lists once per combination of values (the product of the list sizes). The result
+     * is the same either way, since a recursion's result depends only on the NameState it starts from and a maximum is
+     * insensitive to duplicates.
+     *
+     * @param matchesAccessibleFromEachTransition The sets of matches accessible from each transition of one machine.
+     * @return The lesser of maxComplexity and the maximum complexity of any machine reachable from any next NameState.
+     */
+    int evaluateNextNameStates(Collection<Set<ByteMatch>> matchesAccessibleFromEachTransition) {
+        Set<NameState> nextNameStates = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (Set<ByteMatch> matches : matchesAccessibleFromEachTransition) {
+            for (ByteMatch match : matches) {
+                NameState nextNameState = match.getNextNameState();
+                if (nextNameState != null) {
+                    nextNameStates.add(nextNameState);
+                }
             }
         }
-
-        return Math.max(maxSize, maxSizeFromNextNameStates);
+        int maxSizeFromNextNameStates = 0;
+        for (NameState nextNameState : nextNameStates) {
+            maxSizeFromNextNameStates = Math.max(maxSizeFromNextNameStates, nextNameState.evaluateComplexity(this));
+        }
+        return maxSizeFromNextNameStates;
     }
 
     /**

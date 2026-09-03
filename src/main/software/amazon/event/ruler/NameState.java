@@ -306,6 +306,18 @@ class NameState {
                 return maxComplexity;
             }
         }
+        // An absent-key pattern ({"exists": false}) leads to its next NameState through a NameMatcher instead of a
+        // ByteMachine. The machines behind that NameState are traversed by matching just like any other, so they
+        // count toward complexity just like any other.
+        for (NameMatcher<NameState> nameMatcher : mustNotExistMatchers.values()) {
+            NameState nextNameState = nameMatcher.getNextState();
+            if (nextNameState != null) {
+                complexity = Math.max(complexity, nextNameState.evaluateComplexity(evaluator));
+                if (complexity >= maxComplexity) {
+                    return maxComplexity;
+                }
+            }
+        }
         return complexity;
     }
 
