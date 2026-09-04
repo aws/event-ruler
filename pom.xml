@@ -71,24 +71,28 @@
   </developers>
 
   <dependencies>
+    <!-- JSON parsing for events and rules; JsonNode is part of the public API. -->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
       <version>${jackson.version}</version>
     </dependency>
 
+    <!-- Number parsing in ComparableNumber (JavaBigDecimalParser); no transitive dependencies. -->
     <dependency>
       <groupId>ch.randelshofer</groupId>
       <artifactId>fastdoubleparser</artifactId>
       <version>${fastdoubleparser.version}</version>
     </dependency>
 
+    <!-- Nullability and thread-safety annotations (javax.annotation.*); annotation-only. -->
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>jsr305</artifactId>
       <version>${jsr.version}</version>
     </dependency>
 
+    <!-- Unit tests. -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -96,6 +100,7 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- JMH microbenchmarks in src/test; run by the exec plugin and CI's JMH step. -->
     <dependency>
       <groupId>org.openjdk.jmh</groupId>
       <artifactId>jmh-core</artifactId>
@@ -103,6 +108,7 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- JMH annotation processor; pairs with jmh-core above. -->
     <dependency>
       <groupId>org.openjdk.jmh</groupId>
       <artifactId>jmh-generator-annprocess</artifactId>
