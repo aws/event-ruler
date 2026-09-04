@@ -940,7 +940,7 @@ Events are processed at over 220K/second except for:
 
 ### Running the benchmarks
 
-Two benchmark harnesses are available; both operate on the same `citylots2` dataset and the same fourteen rule types.
+Two matching-throughput harnesses are available; both operate on the same `citylots2` dataset and the same fourteen rule types. The complexity evaluator has its own pair of classes, described at the end of this section.
 
 **[`Benchmarks.java`](src/test/software/amazon/event/ruler/Benchmarks.java)** — single-shot per rule type. Fast, but JVM warmup cost makes single-pass variance between runs of the same code routinely hit 10-20%. Good for eyeballing a large change; not reliable for detecting small regressions.
 
@@ -1008,6 +1008,24 @@ mvn test -Dtest=StableBenchmarks -Druler.perf.run=true \
 ```
 
 `StableBenchmarks` is gated off by default (`-Druler.perf.run=true` required) so it doesn't run in CI. For publication-grade numbers, use the [JMH benchmarks in `src/test/.../jmh/`](src/test/software/amazon/event/ruler/jmh) — those measure steady-state throughput under a full JMH harness.
+
+#### Complexity evaluation
+
+`MachineComplexityEvaluator` has its own pair of test classes, over a shared corpus of machines whose evaluation cost is known ([`MachineComplexityEvaluatorCorpus.java`](src/test/software/amazon/event/ruler/MachineComplexityEvaluatorCorpus.java): the Quamina exploder set, leading-star anything-but sets, exact-match value lists ahead of a wildcard key, one multi-star wildcard up to the 4,096-character pattern limit, two machines hidden behind an `{"exists": false}` key, and leading-star pattern sets whose uncapped evaluation is exponential in the pattern count). Every machine is built through `Machine.addRule`, so an evaluation walks the NameState graph and not only one `ByteMachine`.
+
+**[`MachineComplexityEvaluatorRegressionTest.java`](src/test/software/amazon/event/ruler/MachineComplexityEvaluatorRegressionTest.java)** runs in every build, once per machine and cap: it pins the value every machine reports under a cap of 11 and the uncapped complexity of every fast machine, pins the number of `ByteMachine` walks each evaluation makes, and bounds each evaluation's time — the machines whose uncapped walk takes seconds or minutes are evaluated capped only, so a change that defeats the cap fails the build.
+
+**[`MachineComplexityEvaluatorBenchmarks.java`](src/test/software/amazon/event/ruler/MachineComplexityEvaluatorBenchmarks.java)** reports build time, evaluation time and allocation per machine, capped and uncapped, and is gated like `StableBenchmarks`:
+
+```
+# Default: 3 warmup + 10 measured evaluations per row, except the seconds-long machines' uncapped row (once);
+# the minutes-long machine runs capped only. About half a minute, and a 2 GB heap suffices
+mvn test -Dtest=MachineComplexityEvaluatorBenchmarks -Druler.perf.run=true
+
+# Same knobs as StableBenchmarks (-Druler.perf.warmup, -Druler.perf.measure, -Druler.perf.only, -Druler.perf.csv), plus:
+#   -Druler.perf.heavy=false   skip the seconds-long uncapped evaluations
+#   -Druler.perf.heavy=all     also run the minutes-long one (about 7 GB of live heap: -DargLine=-Xmx12g)
+```
 
 ### Suggestions for better performance
 
