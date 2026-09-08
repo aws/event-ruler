@@ -694,4 +694,43 @@ public class RuleCompilerTest {
         }
 
     }
+
+    private static final String VALID_RULE = "{\"orderId\":[{\"exists\":true}]}";
+
+    private static final String[] TRAILING_CONTENT = {
+            VALID_RULE + "}",
+            VALID_RULE + "]",
+            VALID_RULE + ",",
+            VALID_RULE + " garbage",
+            VALID_RULE + "{\"x\":[1]}",
+    };
+
+    @Test
+    public void testContentAfterRuleObjectIsRejected() throws Exception {
+        for (String rule : TRAILING_CONTENT) {
+            assertNotNull("check must reject: " + rule, RuleCompiler.check(rule));
+            assertNotNull("check(Reader) must reject: " + rule, RuleCompiler.check(new StringReader(rule)));
+            try {
+                RuleCompiler.compile(rule);
+                fail("compile must reject: " + rule);
+            } catch (JsonParseException e) {
+                assertNotNull(e.getMessage());
+            }
+            try {
+                RuleCompiler.ListBasedRuleCompiler.flattenRule(rule);
+                fail("flattenRule must reject: " + rule);
+            } catch (JsonParseException e) {
+                assertNotNull(e.getMessage());
+            }
+        }
+    }
+
+    @Test
+    public void testWhitespaceAfterRuleObjectStaysValid() throws Exception {
+        for (String rule : new String[] { VALID_RULE, VALID_RULE + " ", VALID_RULE + "\n\t \n" }) {
+            assertNull("check must accept: " + rule, RuleCompiler.check(rule));
+            assertEquals(1, RuleCompiler.compile(rule).size());
+            assertEquals(1, RuleCompiler.ListBasedRuleCompiler.flattenRule(rule).size());
+        }
+    }
 }

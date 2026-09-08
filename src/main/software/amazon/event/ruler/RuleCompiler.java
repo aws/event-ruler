@@ -181,6 +181,7 @@ public final class RuleCompiler {
             barf(parser, "Filter is not an object");
         }
         parseObject(rule, path, parser, true, withOverriding);
+        JsonRuleCompiler.requireEndOfInput(parser);
         parser.close();
         return rule;
     }
@@ -752,6 +753,7 @@ public final class RuleCompiler {
                 barf(parser, "Filter is not an object");
             }
             parseRuleObject(rule, stack, parser, true);
+            JsonRuleCompiler.requireEndOfInput(parser);
             parser.close();
             return rule;
         }

@@ -165,8 +165,21 @@ public class JsonRuleCompiler {
             barf(parser, "Filter is not an object");
         }
         parseObject(rules, path, parser, true, withOverriding);
+        requireEndOfInput(parser);
         parser.close();
         return rules;
+    }
+
+    /**
+     * Rejects any content after the rule's root object. Jackson's streaming parser only reads what it is asked
+     * for, so without this read a trailing brace, comma, bare word, or a whole second object would go unexamined
+     * and the rule would compile as if it were valid. A malformed trailer makes nextToken() throw with Jackson's
+     * own message; a well-formed second value returns a token, which is refused here.
+     */
+    static void requireEndOfInput(final JsonParser parser) throws IOException {
+        if (parser.nextToken() != null) {
+            barf(parser, "Filter must be a single JSON object; found content after it");
+        }
     }
 
     private static void parseObject(final List<Map<String, List<Patterns>>> rules,

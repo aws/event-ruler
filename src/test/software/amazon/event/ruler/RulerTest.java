@@ -1,5 +1,6 @@
 package software.amazon.event.ruler;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
@@ -13,6 +14,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class RulerTest {
 
@@ -650,6 +652,28 @@ public class RulerTest {
 
         for (int i = 0; i< events.length; i++) {
             assertEquals(events[i], result[i], Ruler.matchesRule(events[i], rule));
+        }
+    }
+
+    @Test
+    public void testRuleWithContentAfterItsObjectIsRejected() throws Exception {
+        String event = "{\"orderId\": \"abc\"}";
+        String rule = "{\"orderId\":[{\"exists\":true}]}";
+        assertTrue(Ruler.matchesRule(event, rule));
+        assertTrue(Ruler.matches(event, rule));
+        for (String bad : new String[] { rule + "}", rule + "{\"x\":[1]}" }) {
+            try {
+                Ruler.matchesRule(event, bad);
+                fail("matchesRule must reject: " + bad);
+            } catch (JsonParseException e) {
+                assertNotNull(e.getMessage());
+            }
+            try {
+                Ruler.matches(event, bad);
+                fail("matches must reject: " + bad);
+            } catch (JsonParseException e) {
+                assertNotNull(e.getMessage());
+            }
         }
     }
 }
