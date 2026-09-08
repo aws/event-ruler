@@ -653,6 +653,26 @@ Machine machine = Machine.builder()
     .build();
 ```
 
+#### withTrailingContentIgnored
+Default: false (since 2.2.0)
+
+A rule is one JSON object. Since 2.2.0, `addRule()` and `deleteRule()` reject a rule
+followed by anything other than whitespace — an extra `}` or `]`, a `,`, a bare word, a
+second object — with the parse error, and `RuleCompiler.check()` / `JsonRuleCompiler.check()`
+report it. Releases before 2.2.0 stopped reading at the rule's closing brace and ignored
+whatever came after it.
+
+Set this to true only for a machine rebuilt from rules that were stored while the old
+reading was in force and have not been re-validated yet; it restores that reading for
+`addRule()` and `deleteRule()` on that machine. `check()` is not affected — it always
+rejects trailing content, so it is the right tool for finding such rules in a store:
+
+```java
+Machine machine = Machine.builder()
+    .withTrailingContentIgnored(true)
+    .build();
+```
+
 ### addRule()
 
 All forms of this method have the same first argument, a String which provides

@@ -158,14 +158,46 @@ public class JsonRuleCompiler {
         return compile(source, true);
     }
 
+    /*
+     * The compile entry points GenericMachine uses. ignoreTrailingContent selects the pre-2.2.0 reading
+     * (stop at the rule object's closing brace) for machines rebuilt from rules that were accepted then;
+     * see GenericMachine.Builder#withTrailingContentIgnored. Nothing public ignores trailing content.
+     */
+    static List<Map<String, List<Patterns>>> compile(final String source, boolean withOverriding,
+                                                    boolean ignoreTrailingContent) throws IOException {
+        return doCompile(JSON_FACTORY.createParser(source), withOverriding, ignoreTrailingContent);
+    }
+
+    static List<Map<String, List<Patterns>>> compile(final Reader source, boolean withOverriding,
+                                                    boolean ignoreTrailingContent) throws IOException {
+        return doCompile(JSON_FACTORY.createParser(source), withOverriding, ignoreTrailingContent);
+    }
+
+    static List<Map<String, List<Patterns>>> compile(final byte[] source, boolean withOverriding,
+                                                    boolean ignoreTrailingContent) throws IOException {
+        return doCompile(JSON_FACTORY.createParser(source), withOverriding, ignoreTrailingContent);
+    }
+
+    static List<Map<String, List<Patterns>>> compile(final InputStream source, boolean withOverriding,
+                                                    boolean ignoreTrailingContent) throws IOException {
+        return doCompile(JSON_FACTORY.createParser(source), withOverriding, ignoreTrailingContent);
+    }
+
     private static List<Map<String, List<Patterns>>> doCompile(final JsonParser parser, boolean withOverriding) throws IOException {
+        return doCompile(parser, withOverriding, false);
+    }
+
+    private static List<Map<String, List<Patterns>>> doCompile(final JsonParser parser, boolean withOverriding,
+                                                             boolean ignoreTrailingContent) throws IOException {
         final Path path = new Path();
         final List<Map<String, List<Patterns>>> rules = new ArrayList<>();
         if (parser.nextToken() != JsonToken.START_OBJECT) {
             barf(parser, "Filter is not an object");
         }
         parseObject(rules, path, parser, true, withOverriding);
-        requireEndOfInput(parser);
+        if (!ignoreTrailingContent) {
+            requireEndOfInput(parser);
+        }
         parser.close();
         return rules;
     }

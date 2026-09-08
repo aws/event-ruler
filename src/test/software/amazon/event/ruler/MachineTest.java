@@ -3314,4 +3314,58 @@ public class MachineTest {
             assertEquals("event: " + event, expected, new HashSet<>(shared.rulesForJSONEvent(event)));
         }
     }
+
+    @Test
+    public void testTrailingContentIgnoredOnlyWhenConfigured() throws Exception {
+        String event = "{\"orderId\": \"abc\"}";
+        String rule = "{\"orderId\":[{\"exists\":true}]}";
+        String[] withTrailer = { rule + "}", rule + "]", rule + ",", rule + " garbage", rule + "{\"x\":[1]}" };
+
+        // The default reading is strict, for String, Reader, InputStream and byte[] alike.
+        Machine strict = Machine.builder().build();
+        for (String bad : withTrailer) {
+            try {
+                strict.addRule("r", bad);
+                fail("default machine must reject: " + bad);
+            } catch (IOException expected) {
+                assertNotNull(expected.getMessage());
+            }
+            try {
+                strict.addRule("r", new StringReader(bad));
+                fail("default machine (Reader) must reject: " + bad);
+            } catch (IOException expected) {
+                assertNotNull(expected.getMessage());
+            }
+            try {
+                strict.addRule("r", new ByteArrayInputStream(bad.getBytes(StandardCharsets.UTF_8)));
+                fail("default machine (InputStream) must reject: " + bad);
+            } catch (IOException expected) {
+                assertNotNull(expected.getMessage());
+            }
+            try {
+                strict.addRule("r", bad.getBytes(StandardCharsets.UTF_8));
+                fail("default machine (byte[]) must reject: " + bad);
+            } catch (IOException expected) {
+                assertNotNull(expected.getMessage());
+            }
+        }
+        assertTrue(strict.isEmpty());
+
+        // The option restores the pre-2.2.0 reading: the rule before the trailer is what gets added.
+        Machine lenient = Machine.builder().withTrailingContentIgnored(true).build();
+        for (String bad : withTrailer) {
+            lenient.addRule("r", bad);
+            assertEquals(Collections.singletonList("r"), lenient.rulesForJSONEvent(event));
+            lenient.deleteRule("r", bad);
+            assertTrue("deleteRule must accept the same trailer: " + bad, lenient.isEmpty());
+        }
+        lenient.addRule("r", new StringReader(rule + "}"));
+        lenient.addRule("r", new ByteArrayInputStream((rule + "}").getBytes(StandardCharsets.UTF_8)));
+        lenient.addRule("r", (rule + "}").getBytes(StandardCharsets.UTF_8));
+        assertEquals(Collections.singletonList("r"), lenient.rulesForJSONEvent(event));
+
+        // The validators do not take the option: check() rejects the same input whatever a machine is configured to do.
+        assertNotNull(JsonRuleCompiler.check(rule + "}"));
+        assertNotNull(RuleCompiler.check(rule + "}"));
+    }
 }
