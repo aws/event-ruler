@@ -727,4 +727,59 @@ public class JsonRuleCompilerTest {
         assertNull("", JsonRuleCompiler.check(jsonComplexRule2));
         assertNull("", JsonRuleCompiler.check(jsonComplexRule2, false));
     }
+
+    private static final String VALID_RULE = "{\"orderId\":[{\"exists\":true}]}";
+
+    // Every trailer here is invalid JSON after the rule object, or a second value; Jackson would reject each
+    // one on the next read, so the compiler has to make that read.
+    private static final String[] TRAILING_CONTENT = {
+            VALID_RULE + "}",
+            VALID_RULE + "]",
+            VALID_RULE + ",",
+            VALID_RULE + " garbage",
+            VALID_RULE + "{\"x\":[1]}",
+            VALID_RULE + "}}}}}}",
+            VALID_RULE + " // comment",
+            VALID_RULE + " \"tail\"",
+    };
+
+    @Test
+    public void testContentAfterRuleObjectIsRejected() throws Exception {
+        for (String rule : TRAILING_CONTENT) {
+            assertNotNull("check must reject: " + rule, JsonRuleCompiler.check(rule));
+            assertNotNull("check(Reader) must reject: " + rule, JsonRuleCompiler.check(new StringReader(rule)));
+            assertNotNull("check(byte[]) must reject: " + rule,
+                    JsonRuleCompiler.check(rule.getBytes(StandardCharsets.UTF_8)));
+            try {
+                JsonRuleCompiler.compile(rule);
+                fail("compile must reject: " + rule);
+            } catch (JsonParseException e) {
+                assertNotNull(e.getMessage());
+            }
+            try {
+                new Machine().addRule("r", rule);
+                fail("addRule must reject: " + rule);
+            } catch (JsonParseException e) {
+                assertNotNull(e.getMessage());
+            }
+        }
+    }
+
+    @Test
+    public void testSecondValueAfterRuleObjectNamesTheProblem() {
+        String message = JsonRuleCompiler.check(VALID_RULE + "{\"x\":[1]}");
+        assertNotNull(message);
+        assertTrue(message, message.contains("single JSON object"));
+    }
+
+    @Test
+    public void testWhitespaceAfterRuleObjectStaysValid() throws Exception {
+        for (String rule : new String[] { VALID_RULE, VALID_RULE + " ", VALID_RULE + "\n\t \n" }) {
+            assertNull("check must accept: " + rule, JsonRuleCompiler.check(rule));
+            assertEquals(1, JsonRuleCompiler.compile(rule).size());
+            Machine m = new Machine();
+            m.addRule("r", rule);
+            assertEquals(1, m.rulesForJSONEvent("{\"orderId\": \"abc\"}").size());
+        }
+    }
 }

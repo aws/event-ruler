@@ -451,9 +451,9 @@ public class GenericMachine<T> {
      */
     public void addRule(final T name, final String json) throws IOException {
         try {
-            JsonRuleCompiler.compile(json, configuration.isRuleOverriding()).forEach(rule -> addPatternRule(name, rule));
+            JsonRuleCompiler.compile(json, configuration.isRuleOverriding(), configuration.isIgnoreTrailingContent()).forEach(rule -> addPatternRule(name, rule));
         } catch (JsonParseException e) {
-            addPatternRule(name, RuleCompiler.compile(json, configuration.isRuleOverriding()));
+            addPatternRule(name, RuleCompiler.compile(json, configuration.isRuleOverriding(), configuration.isIgnoreTrailingContent()));
         }
     }
 
@@ -466,9 +466,9 @@ public class GenericMachine<T> {
      */
     public void addRule(final T name, final Reader json) throws IOException {
         try {
-            JsonRuleCompiler.compile(json, configuration.isRuleOverriding()).forEach(rule -> addPatternRule(name, rule));
+            JsonRuleCompiler.compile(json, configuration.isRuleOverriding(), configuration.isIgnoreTrailingContent()).forEach(rule -> addPatternRule(name, rule));
         } catch (JsonParseException e) {
-            addPatternRule(name, RuleCompiler.compile(json, configuration.isRuleOverriding()));
+            addPatternRule(name, RuleCompiler.compile(json, configuration.isRuleOverriding(), configuration.isIgnoreTrailingContent()));
         }
     }
 
@@ -481,9 +481,9 @@ public class GenericMachine<T> {
      */
     public void addRule(final T name, final InputStream json) throws IOException {
         try {
-            JsonRuleCompiler.compile(json, configuration.isRuleOverriding()).forEach(rule -> addPatternRule(name, rule));
+            JsonRuleCompiler.compile(json, configuration.isRuleOverriding(), configuration.isIgnoreTrailingContent()).forEach(rule -> addPatternRule(name, rule));
         } catch (JsonParseException e) {
-            addPatternRule(name, RuleCompiler.compile(json, configuration.isRuleOverriding()));
+            addPatternRule(name, RuleCompiler.compile(json, configuration.isRuleOverriding(), configuration.isIgnoreTrailingContent()));
         }
     }
 
@@ -496,9 +496,9 @@ public class GenericMachine<T> {
      */
     public void addRule(final T name, final byte[] json) throws IOException {
         try {
-            JsonRuleCompiler.compile(json, configuration.isRuleOverriding()).forEach(rule -> addPatternRule(name, rule));
+            JsonRuleCompiler.compile(json, configuration.isRuleOverriding(), configuration.isIgnoreTrailingContent()).forEach(rule -> addPatternRule(name, rule));
         } catch (JsonParseException e) {
-            addPatternRule(name, RuleCompiler.compile(json, configuration.isRuleOverriding()));
+            addPatternRule(name, RuleCompiler.compile(json, configuration.isRuleOverriding(), configuration.isIgnoreTrailingContent()));
         }
     }
 
@@ -511,9 +511,9 @@ public class GenericMachine<T> {
      */
     public void deleteRule(final T name, final String json) throws IOException {
         try {
-            JsonRuleCompiler.compile(json, configuration.isRuleOverriding()).forEach(rule -> deletePatternRule(name, rule));
+            JsonRuleCompiler.compile(json, configuration.isRuleOverriding(), configuration.isIgnoreTrailingContent()).forEach(rule -> deletePatternRule(name, rule));
         } catch (JsonParseException e) {
-            deletePatternRule(name, RuleCompiler.compile(json, configuration.isRuleOverriding()));
+            deletePatternRule(name, RuleCompiler.compile(json, configuration.isRuleOverriding(), configuration.isIgnoreTrailingContent()));
         }
     }
 
@@ -526,9 +526,9 @@ public class GenericMachine<T> {
      */
     public void deleteRule(final T name, final Reader json) throws IOException {
         try {
-            JsonRuleCompiler.compile(json, configuration.isRuleOverriding()).forEach(rule -> deletePatternRule(name, rule));
+            JsonRuleCompiler.compile(json, configuration.isRuleOverriding(), configuration.isIgnoreTrailingContent()).forEach(rule -> deletePatternRule(name, rule));
         } catch (JsonParseException e) {
-            deletePatternRule(name, RuleCompiler.compile(json, configuration.isRuleOverriding()));
+            deletePatternRule(name, RuleCompiler.compile(json, configuration.isRuleOverriding(), configuration.isIgnoreTrailingContent()));
         }
     }
 
@@ -541,9 +541,9 @@ public class GenericMachine<T> {
      */
     public void deleteRule(final T name, final InputStream json) throws IOException {
         try {
-            JsonRuleCompiler.compile(json, configuration.isRuleOverriding()).forEach(rule -> deletePatternRule(name, rule));
+            JsonRuleCompiler.compile(json, configuration.isRuleOverriding(), configuration.isIgnoreTrailingContent()).forEach(rule -> deletePatternRule(name, rule));
         } catch (JsonParseException e) {
-            deletePatternRule(name, RuleCompiler.compile(json, configuration.isRuleOverriding()));
+            deletePatternRule(name, RuleCompiler.compile(json, configuration.isRuleOverriding(), configuration.isIgnoreTrailingContent()));
         }
     }
 
@@ -837,6 +837,16 @@ public class GenericMachine<T> {
          */
         private boolean useStructuredMatching = true;
 
+        /**
+         * When true, {@code addRule} and {@code deleteRule} stop reading a rule at its root object's closing
+         * brace and ignore anything after it, as every release before 2.2.0 did. Since 2.2.0 the default
+         * rejects such rules: a trailing brace, bracket, comma, bare word, or second object after the rule
+         * is an error. This option is for a machine rebuilt from a store of rules that were accepted before
+         * 2.2.0 and have not yet been re-validated; new rules should be checked with
+         * {@link JsonRuleCompiler#check(String)}, which always rejects trailing content.
+         */
+        private boolean ignoreTrailingContent = false;
+
         Builder() {}
 
         public Builder<M,T> withAdditionalNameStateReuse(boolean additionalNameStateReuse) {
@@ -854,13 +864,18 @@ public class GenericMachine<T> {
             return this;
         }
 
+        public Builder<M, T> withTrailingContentIgnored(boolean ignoreTrailingContent) {
+            this.ignoreTrailingContent = ignoreTrailingContent;
+            return this;
+        }
+
         public M build() {
             return (M) new GenericMachine<T>(buildConfig());
         }
 
         protected GenericMachineConfiguration buildConfig() {
             return new GenericMachineConfiguration(additionalNameStateReuse, ruleOverriding,
-                    useStructuredMatching);
+                    useStructuredMatching, ignoreTrailingContent);
         }
     }
 }

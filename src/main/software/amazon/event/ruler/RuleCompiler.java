@@ -174,13 +174,44 @@ public final class RuleCompiler {
         return compile(source, true);
     }
 
+    /*
+     * The compile entry points GenericMachine uses; ignoreTrailingContent as in JsonRuleCompiler.
+     */
+    static Map<String, List<Patterns>> compile(final String source, final boolean withOverriding,
+                                               final boolean ignoreTrailingContent) throws IOException {
+        return doCompile(JSON_FACTORY.createParser(source), withOverriding, ignoreTrailingContent);
+    }
+
+    static Map<String, List<Patterns>> compile(final Reader source, final boolean withOverriding,
+                                               final boolean ignoreTrailingContent) throws IOException {
+        return doCompile(JSON_FACTORY.createParser(source), withOverriding, ignoreTrailingContent);
+    }
+
+    static Map<String, List<Patterns>> compile(final byte[] source, final boolean withOverriding,
+                                               final boolean ignoreTrailingContent) throws IOException {
+        return doCompile(JSON_FACTORY.createParser(source), withOverriding, ignoreTrailingContent);
+    }
+
+    static Map<String, List<Patterns>> compile(final InputStream source, final boolean withOverriding,
+                                               final boolean ignoreTrailingContent) throws IOException {
+        return doCompile(JSON_FACTORY.createParser(source), withOverriding, ignoreTrailingContent);
+    }
+
     private static Map<String, List<Patterns>> doCompile(final JsonParser parser, final boolean withOverriding) throws IOException {
+        return doCompile(parser, withOverriding, false);
+    }
+
+    private static Map<String, List<Patterns>> doCompile(final JsonParser parser, final boolean withOverriding,
+                                                        final boolean ignoreTrailingContent) throws IOException {
         final Path path = new Path();
         final Map<String, List<Patterns>> rule = new HashMap<>();
         if (parser.nextToken() != JsonToken.START_OBJECT) {
             barf(parser, "Filter is not an object");
         }
         parseObject(rule, path, parser, true, withOverriding);
+        if (!ignoreTrailingContent) {
+            JsonRuleCompiler.requireEndOfInput(parser);
+        }
         parser.close();
         return rule;
     }
@@ -752,6 +783,7 @@ public final class RuleCompiler {
                 barf(parser, "Filter is not an object");
             }
             parseRuleObject(rule, stack, parser, true);
+            JsonRuleCompiler.requireEndOfInput(parser);
             parser.close();
             return rule;
         }

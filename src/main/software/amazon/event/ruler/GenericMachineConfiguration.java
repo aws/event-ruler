@@ -8,6 +8,7 @@ class GenericMachineConfiguration {
     private final boolean additionalNameStateReuse;
     private final boolean ruleOverriding;
     private final boolean useStructuredMatching;
+    private final boolean ignoreTrailingContent;
 
     GenericMachineConfiguration(boolean additionalNameStateReuse, boolean ruleOverriding) {
         this(additionalNameStateReuse, ruleOverriding, false);
@@ -15,9 +16,15 @@ class GenericMachineConfiguration {
 
     GenericMachineConfiguration(boolean additionalNameStateReuse, boolean ruleOverriding,
                                 boolean useStructuredMatching) {
+        this(additionalNameStateReuse, ruleOverriding, useStructuredMatching, false);
+    }
+
+    GenericMachineConfiguration(boolean additionalNameStateReuse, boolean ruleOverriding,
+                                boolean useStructuredMatching, boolean ignoreTrailingContent) {
         this.additionalNameStateReuse = additionalNameStateReuse;
         this.ruleOverriding = ruleOverriding;
         this.useStructuredMatching = useStructuredMatching;
+        this.ignoreTrailingContent = ignoreTrailingContent;
     }
 
     boolean isAdditionalNameStateReuse() {
@@ -34,6 +41,14 @@ class GenericMachineConfiguration {
      */
     boolean isUseStructuredMatching() {
         return useStructuredMatching;
+    }
+
+    /**
+     * When true, {@code addRule} and {@code deleteRule} stop reading a rule at its root object's closing
+     * brace and ignore anything after it, as every release before 2.2.0 did.
+     */
+    boolean isIgnoreTrailingContent() {
+        return ignoreTrailingContent;
     }
 }
 
