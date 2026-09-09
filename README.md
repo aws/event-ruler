@@ -585,6 +585,29 @@ public class Validate {
 }
 ```
 
+**Machines behind absent-key patterns.** Since 2.1.0, the evaluator counts the machines a rule reaches only
+through an absent-key pattern (`{"exists": false}`). Matching always traversed those machines at their full
+cost, but releases before 2.1.0 left them out of the evaluation: the rule below evaluated to 0 while costing
+exactly what the same wildcard costs without the `aaa` key. Since 2.1.0 it evaluates to 7, like that wildcard
+alone.
+
+```javascript
+{ "aaa": [ { "exists": false } ], "zzz": [ { "wildcard": "*a*a*a*" } ] }
+```
+
+An application that limits complexity may hold rules that were admitted under the earlier evaluation.
+Calling `withComplexityBehindAbsentKeysIgnored(true)` on an evaluator returns a second evaluator, with the same
+cap, that evaluates the way releases before 2.1.0 did; the application can keep applying it to the rules
+admitted then while it re-validates them under the default. New rules must be evaluated with the default: a
+rule can place any wildcard pattern behind an absent-key pattern and evaluate to 0 under the earlier
+evaluation, so a cap applied through that evaluator bounds nothing for such a rule. Matching is not affected;
+the setting is read only while evaluating complexity.
+
+```java
+MachineComplexityEvaluator evaluator = new MachineComplexityEvaluator(maxComplexity)
+    .withComplexityBehindAbsentKeysIgnored(true);
+```
+
 The main class you'll interact with implements state-machine based rule
 matching.  The interesting methods are:
 

@@ -308,7 +308,11 @@ class NameState {
         }
         // An absent-key pattern ({"exists": false}) leads to its next NameState through a NameMatcher instead of a
         // ByteMachine. The machines behind that NameState are traversed by matching just like any other, so they
-        // count toward complexity just like any other.
+        // by default count toward complexity just like any other. An evaluator told to ignore them evaluates the
+        // machine the way releases before 2.1.0 did, which never followed these edges.
+        if (evaluator.isComplexityBehindAbsentKeysIgnored()) {
+            return complexity;
+        }
         for (NameMatcher<NameState> nameMatcher : mustNotExistMatchers.values()) {
             NameState nextNameState = nameMatcher.getNextState();
             if (nextNameState != null) {
