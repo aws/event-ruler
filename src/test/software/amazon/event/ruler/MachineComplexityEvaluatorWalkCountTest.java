@@ -2,6 +2,8 @@ package software.amazon.event.ruler;
 
 import org.junit.Test;
 
+import software.amazon.event.ruler.MachineComplexityEvaluatorCorpus.WalkCountingEvaluator;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,28 +31,6 @@ public class MachineComplexityEvaluatorWalkCountTest {
      */
     private static final String ANYTHING_BUT_WILDCARD_SET = "[{\"anything-but\": {\"wildcard\": " +
             "[\"*kiwi*\", \"*BASE_QuxB*\", \"*Delta*\", \"*a/example-lake-abc98765432*\"]}}]";
-
-    /**
-     * Counts how many times a ByteMachine walk is started. ByteMachine.evaluateComplexity invokes evaluate(ByteState)
-     * exactly once, so this counts ByteMachine evaluations.
-     */
-    private static class WalkCountingEvaluator extends MachineComplexityEvaluator {
-        private int walks = 0;
-
-        WalkCountingEvaluator(int maxComplexity) {
-            super(maxComplexity);
-        }
-
-        @Override
-        int evaluate(ByteState state) {
-            walks++;
-            return super.evaluate(state);
-        }
-
-        int getWalks() {
-            return walks;
-        }
-    }
 
     /**
      * Complexity of a machine holding only exact matches ahead of a wildcard key equals the complexity of the wildcard
