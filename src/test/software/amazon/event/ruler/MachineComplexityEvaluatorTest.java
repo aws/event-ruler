@@ -3,6 +3,7 @@ package software.amazon.event.ruler;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -10,6 +11,8 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static software.amazon.event.ruler.PermutationsGenerator.generateAllPermutations;
@@ -23,6 +26,12 @@ import static software.amazon.event.ruler.PermutationsGenerator.generateAllPermu
 public class MachineComplexityEvaluatorTest {
 
     private static final int MAX_COMPLEXITY = 100;
+
+    /**
+     * "aaa" is matched by 7 prefixes of this pattern: "*", "*a", "*a*", "*a*a", "*a*a*", "*a*a*a" and "*a*a*a*".
+     */
+    private static final String WILDCARD_OF_COMPLEXITY_7 = "{\"wildcard\": \"*a*a*a*\"}";
+
     private MachineComplexityEvaluator evaluator;
 
     @Before
@@ -583,10 +592,140 @@ public class MachineComplexityEvaluatorTest {
         assertEquals(2, machine.evaluateComplexity(new MachineComplexityEvaluator(2)));
     }
 
+    @Test
+    public void testComplexityBehindAbsentKeysIsCountedByDefault() {
+        assertFalse(new MachineComplexityEvaluator(MAX_COMPLEXITY).isComplexityBehindAbsentKeysIgnored());
+    }
+
+    @Test
+    public void testWithComplexityBehindAbsentKeysIgnoredReturnsNewEvaluatorWithSameCap() {
+        MachineComplexityEvaluator strict = new MachineComplexityEvaluator(5);
+        MachineComplexityEvaluator ignoring = strict.withComplexityBehindAbsentKeysIgnored(true);
+        assertNotSame(strict, ignoring);
+        assertFalse(strict.isComplexityBehindAbsentKeysIgnored());
+        assertTrue(ignoring.isComplexityBehindAbsentKeysIgnored());
+        assertEquals(5, ignoring.getMaxComplexity());
+        assertFalse(ignoring.withComplexityBehindAbsentKeysIgnored(false).isComplexityBehindAbsentKeysIgnored());
+    }
+
+    @Test
+    public void testSubclassTakesComplexityBehindAbsentKeysIgnoredThroughProtectedConstructor() throws Exception {
+        MachineComplexityEvaluator subclassIgnoring = new MachineComplexityEvaluator(MAX_COMPLEXITY, true) { };
+        assertTrue(subclassIgnoring.isComplexityBehindAbsentKeysIgnored());
+        String rule = "{\"aaa\": [{\"exists\": false}], \"zzz\": [" + WILDCARD_OF_COMPLEXITY_7 + "]}";
+        for (boolean additionalNameStateReuse : new boolean[] { false, true }) {
+            assertEquals("subclass ignoring, additionalNameStateReuse=" + additionalNameStateReuse, 0,
+                    complexityOfRule(rule, additionalNameStateReuse, subclassIgnoring));
+        }
+    }
+
+    @Test
+    public void testComplexityBehindAbsentKeysIgnoredRestoresPreviousEvaluation() throws Exception {
+        // Keys sort as aaa, zzz, so the wildcard machine on zzz sits behind aaa's absent-key pattern: the default
+        // evaluation counts it, the pre-2.1.0 evaluation never reached it.
+        assertComplexityUnderBothReadings(evaluator,
+                "{\"aaa\": [{\"exists\": false}], \"zzz\": [" + WILDCARD_OF_COMPLEXITY_7 + "]}", 7, 0);
+        // "abcdef" is matched by 2 wildcard prefixes: "abc*" and "abc*def".
+        assertComplexityUnderBothReadings(evaluator,
+                "{\"aaa\": [{\"exists\": false}], \"zzz\": [{\"wildcard\": \"abc*def\"}]}", 2, 0);
+        assertComplexityUnderBothReadings(evaluator,
+                "{\"aaa\": {\"inner\": [{\"exists\": false}]}, \"zzz\": [" + WILDCARD_OF_COMPLEXITY_7 + "]}", 7, 0);
+        // Without an absent-key pattern both evaluations walk the same machines.
+        assertComplexityUnderBothReadings(evaluator, "{\"zzz\": [" + WILDCARD_OF_COMPLEXITY_7 + "]}", 7, 7);
+        // The absent key sorts after the wildcard key, so the machine sits ahead of the edge the evaluations differ on.
+        assertComplexityUnderBothReadings(evaluator,
+                "{\"zzz\": [{\"exists\": false}], \"aaa\": [" + WILDCARD_OF_COMPLEXITY_7 + "]}", 7, 7);
+        // A wildcard machine on each side of the absent key: the pre-2.1.0 evaluation stops at the absent-key edge
+        // and reports the machine ahead of it ("aa" is matched by "*", "*a", "*a*"); the default walks past the edge.
+        assertComplexityUnderBothReadings(evaluator, "{\"aaa\": [{\"wildcard\": \"*a*\"}], "
+                + "\"mmm\": [{\"exists\": false}], \"zzz\": [" + WILDCARD_OF_COMPLEXITY_7 + "]}", 7, 3);
+        // Only machines reachable through nothing but an absent-key edge are ignored: aaa is absent OR "x" here, so
+        // the machine on zzz is also reachable through aaa's value and both evaluations count it.
+        assertComplexityUnderBothReadings(evaluator,
+                "{\"aaa\": [\"x\", {\"exists\": false}], \"zzz\": [" + WILDCARD_OF_COMPLEXITY_7 + "]}", 7, 7);
+    }
+
+    @Test
+    public void testComplexityBehindAbsentKeysIgnoredRespectsMaxComplexity() throws Exception {
+        // "aaaaaa" is matched by 13 prefixes of "*a*a*a*a*a*a*"; a cap of 11 stops the walk at 11.
+        String wildcardOfComplexity13 = "{\"wildcard\": \"*a*a*a*a*a*a*\"}";
+        MachineComplexityEvaluator cappedAt11 = new MachineComplexityEvaluator(11);
+        assertComplexityUnderBothReadings(cappedAt11,
+                "{\"aaa\": [{\"exists\": false}], \"zzz\": [" + wildcardOfComplexity13 + "]}", 11, 0);
+        assertComplexityUnderBothReadings(cappedAt11, "{\"zzz\": [" + wildcardOfComplexity13 + "]}", 11, 11);
+    }
+
+    @Test
+    public void testComplexityBehindAbsentKeysIgnoredDoesNotAffectMatching() throws Exception {
+        // The setting lives on the evaluator and is read only while evaluating complexity, so matching cannot depend
+        // on it; this pins that evaluating a machine under either evaluation leaves its matches unchanged.
+        String[] rules = {
+                "{\"aaa\": [{\"exists\": false}], \"zzz\": [" + WILDCARD_OF_COMPLEXITY_7 + "]}",
+                "{\"zzz\": [" + WILDCARD_OF_COMPLEXITY_7 + "]}",
+                "{\"aaa\": [{\"exists\": false}], \"zzz\": [{\"wildcard\": \"abc*def\"}]}",
+                "{\"zzz\": [{\"exists\": false}], \"aaa\": [" + WILDCARD_OF_COMPLEXITY_7 + "]}",
+        };
+        String[] events = {
+                "{\"zzz\": \"aaa\"}",
+                "{\"aaa\": 1, \"zzz\": \"aaa\"}",
+                "{\"zzz\": \"abcdef\"}",
+                "{\"aaa\": \"aaa\"}",
+                "{\"aaa\": \"aaa\", \"zzz\": 1}",
+        };
+        // Which events each rule matches, in the order of the events above.
+        boolean[][] expectedMatches = {
+                { true, false, false, false, false },
+                { true, true, false, false, false },
+                { false, false, true, false, false },
+                { false, false, false, true, false },
+        };
+        for (int i = 0; i < rules.length; i++) {
+            Machine machine = Machine.builder().build();
+            machine.addRule("rule", rules[i]);
+            List<Boolean> before = matches(machine, events);
+            for (int j = 0; j < events.length; j++) {
+                assertEquals(rules[i] + " on " + events[j], expectedMatches[i][j], before.get(j));
+            }
+            machine.evaluateComplexity(evaluator);
+            machine.evaluateComplexity(evaluator.withComplexityBehindAbsentKeysIgnored(true));
+            assertEquals("matches after evaluating " + rules[i], before, matches(machine, events));
+        }
+    }
+
+    private static List<Boolean> matches(Machine machine, String[] events) throws Exception {
+        List<Boolean> matches = new ArrayList<>();
+        for (String event : events) {
+            matches.add(!machine.rulesForJSONEvent(event).isEmpty());
+        }
+        return matches;
+    }
+
+    /**
+     * Asserts the complexity of a single-rule machine under the given evaluator and under the same evaluator with the
+     * complexity behind absent keys ignored, in both additionalNameStateReuse configurations.
+     */
+    private void assertComplexityUnderBothReadings(MachineComplexityEvaluator base, String rule,
+                                                   int expectedByDefault, int expectedWhenIgnored) throws Exception {
+        MachineComplexityEvaluator ignoring = base.withComplexityBehindAbsentKeysIgnored(true);
+        for (boolean additionalNameStateReuse : new boolean[] { false, true }) {
+            String configuration = " (cap " + base.getMaxComplexity() + ", additionalNameStateReuse="
+                    + additionalNameStateReuse + ")";
+            assertEquals("default evaluation of " + rule + configuration, expectedByDefault,
+                    complexityOfRule(rule, additionalNameStateReuse, base));
+            assertEquals("complexity behind absent keys ignored for " + rule + configuration, expectedWhenIgnored,
+                    complexityOfRule(rule, additionalNameStateReuse, ignoring));
+        }
+    }
+
     private int complexityOfRule(String rule, boolean additionalNameStateReuse) throws Exception {
+        return complexityOfRule(rule, additionalNameStateReuse, evaluator);
+    }
+
+    private int complexityOfRule(String rule, boolean additionalNameStateReuse,
+                                 MachineComplexityEvaluator complexityEvaluator) throws Exception {
         Machine machine = new Machine.Builder().withAdditionalNameStateReuse(additionalNameStateReuse).build();
         machine.addRule("rule", rule);
-        return machine.evaluateComplexity(evaluator);
+        return machine.evaluateComplexity(complexityEvaluator);
     }
 
     private void testPatternPermutations(int expectedComplexity, Patterns ... patterns) {

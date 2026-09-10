@@ -1,5 +1,6 @@
 package software.amazon.event.ruler;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,12 +29,56 @@ public class MachineComplexityEvaluator {
      */
     private final int maxComplexity;
 
+    /**
+     * When true, a machine reachable only through an absent-key pattern ({@code {"exists": false}}) is left out of
+     * the evaluation, as releases before 2.1.0 left it out. See
+     * {@link #withComplexityBehindAbsentKeysIgnored(boolean)}.
+     */
+    private final boolean complexityBehindAbsentKeysIgnored;
+
     public MachineComplexityEvaluator(int maxComplexity) {
+        this(maxComplexity, false);
+    }
+
+    /**
+     * @param maxComplexity Cap evaluation of complexity at this threshold.
+     * @param complexityBehindAbsentKeysIgnored Whether machines reachable only through an absent-key pattern are left
+     *                                          out of the evaluation; see
+     *                                          {@link #withComplexityBehindAbsentKeysIgnored(boolean)}.
+     */
+    protected MachineComplexityEvaluator(int maxComplexity, boolean complexityBehindAbsentKeysIgnored) {
         this.maxComplexity = maxComplexity;
+        this.complexityBehindAbsentKeysIgnored = complexityBehindAbsentKeysIgnored;
+    }
+
+    /**
+     * Returns an evaluator with the same cap and the given setting. With {@code true} it evaluates machines the way
+     * releases before 2.1.0 did: a machine reachable only through an absent-key pattern ({@code {"exists": false}}) is
+     * left out of the evaluation, so the complexity it adds is not counted. Matching traverses such a machine like
+     * any other, so the complexity the default evaluator reports is the one matching pays. The earlier evaluation
+     * exists for an application that limits complexity and still holds rules admitted under it: the application can
+     * keep applying it to those rules while it re-validates them under the default. Do not admit new rules with it: a
+     * rule can place any wildcard pattern behind an absent-key pattern and evaluate to 0 under the earlier
+     * evaluation, so a cap applied through that evaluator bounds nothing for such a rule. Matching is not affected;
+     * the setting is read only while evaluating complexity.
+     *
+     * @param ignored true to leave the complexity behind absent-key patterns out of the evaluation; false, the
+     *                default, to count it like any other.
+     * @return A new, plain {@code MachineComplexityEvaluator} with this evaluator's cap and the given setting. This
+     *         evaluator is unchanged, and a subclass's overrides do not carry over: a subclass constructs its own
+     *         through the protected constructor.
+     */
+    @CheckReturnValue
+    public MachineComplexityEvaluator withComplexityBehindAbsentKeysIgnored(boolean ignored) {
+        return new MachineComplexityEvaluator(maxComplexity, ignored);
     }
 
     int getMaxComplexity() {
         return maxComplexity;
+    }
+
+    boolean isComplexityBehindAbsentKeysIgnored() {
+        return complexityBehindAbsentKeysIgnored;
     }
 
     /**
