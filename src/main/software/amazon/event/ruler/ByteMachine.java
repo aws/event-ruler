@@ -981,13 +981,13 @@ class ByteMachine {
             return asSet(findRangePattern((Range) pattern));
         case ANYTHING_BUT:
             assert pattern instanceof AnythingBut;
-            return asSet(findAnythingButPattern((AnythingBut) pattern));
+            return findAnythingButPattern((AnythingBut) pattern);
         case ANYTHING_BUT_IGNORE_CASE:
         case ANYTHING_BUT_SUFFIX:
         case ANYTHING_BUT_PREFIX:
         case ANYTHING_BUT_WILDCARD:
             assert pattern instanceof AnythingButValuesSet;
-            return asSet(findAnythingButValuesSetPattern((AnythingButValuesSet) pattern));
+            return findAnythingButValuesSetPattern((AnythingButValuesSet) pattern);
         default:
             throw new AssertionError(pattern + " is not implemented yet");
         }
@@ -1002,41 +1002,28 @@ class ByteMachine {
         return nameState == null ? Collections.emptySet() : Collections.singleton(nameState);
     }
 
-    private NameState findAnythingButPattern(AnythingBut pattern) {
+    // Returns EVERY NameState the anything-but pattern leads to. A shared anything-but transition can
+    // produce one NameState per sub-rule branch, and the delete path (GenericMachine.deleteStep) must
+    // visit all of them; collapsing to a single NameState strands the others (issue #259). This mirrors
+    // the value-pattern union semantics of findAllMatchPattern.
+    private Set<NameState> findAnythingButPattern(AnythingBut pattern) {
 
-        Set<NameState> nextNameStates = new HashSet<>(pattern.getValues().size());
+        Set<NameState> nextNameStates = new HashSet<>();
         for (String value : pattern.getValues()) {
-            NameState matchPattern = findMatchPattern(getParser().parse(pattern.type(), value), pattern);
-            if (matchPattern != null) {
-                nextNameStates.add(matchPattern);
-            }
+            nextNameStates.addAll(findAllMatchPattern(getParser().parse(pattern.type(), value), pattern));
         }
-        if (!nextNameStates.isEmpty()) {
-            assert nextNameStates.size() == 1 : "nextNameStates.size() == 1";
-            return nextNameStates.iterator().next();
-        }
-        return null;
+        return nextNameStates;
     }
 
-    private NameState findAnythingButValuesSetPattern(AnythingButValuesSet pattern) {
+    // See findAnythingButPattern: returns the full NameState union so delete does not strand shared
+    // anything-but branches (issue #259, the ANYTHING_BUT_WILDCARD/PREFIX/SUFFIX/IGNORE_CASE types).
+    private Set<NameState> findAnythingButValuesSetPattern(AnythingButValuesSet pattern) {
 
-        Set<NameState> nextNameStates = new HashSet<>(pattern.getValues().size());
+        Set<NameState> nextNameStates = new HashSet<>();
         for (String value : pattern.getValues()) {
-            NameState matchPattern = findMatchPattern(getParser().parse(pattern.type(), value), pattern);
-            if (matchPattern != null) {
-                nextNameStates.add(matchPattern);
-            }
+            nextNameStates.addAll(findAllMatchPattern(getParser().parse(pattern.type(), value), pattern));
         }
-        if (!nextNameStates.isEmpty()) {
-            assert nextNameStates.size() == 1 : "nextNameStates.size() == 1";
-            return nextNameStates.iterator().next();
-        }
-        return null;
-    }
-
-    private NameState findMatchPattern(final InputCharacter[] characters, final Patterns pattern) {
-        Set<NameState> nameStates = findAllMatchPattern(characters, pattern);
-        return nameStates.isEmpty() ? null : nameStates.iterator().next();
+        return nextNameStates;
     }
 
     private Set<NameState> findAllMatchPattern(final InputCharacter[] characters, final Patterns pattern) {
