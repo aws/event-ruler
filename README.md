@@ -1090,6 +1090,20 @@ From performance consideration, Ruler is sensitive on below items, so, when you 
 
 See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
 
+### Rule values are not secrets
+
+Ruler compiles rule values into a byte-by-byte state machine and stops reading an event value at the first byte
+that no rule's value continues with. The time `rulesForEvent()` and `rulesForJSONEvent()` take therefore grows with
+the number of bytes an event value shares with the rule values on the same field. `prefix`, `wildcard`,
+`equals-ignore-case` and `anything-but` values are read one byte at a time from the start of the event value, and
+`suffix` values from its end. An exact value is read one byte at a time until it diverges from every other value on
+its field. Matching is not a constant-time comparison.
+
+Do not use a rule to check a secret such as a password, a token or a signature. Although technically difficult due to
+the inaccuracy of remote timing, in theory, someone who controls event values and can accurately time many matches
+could use the time differences to learn a rule value one character at a time. Check secrets with a constant-time
+comparison, for example `java.security.MessageDigest.isEqual`, before or instead of matching.
+
 ## License
 
 This project is licensed under the Apache-2.0 License. See [LICENSE](LICENSE) for more information.
