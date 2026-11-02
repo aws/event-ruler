@@ -56,7 +56,7 @@ import static software.amazon.event.ruler.Benchmarks.readCityLots2;
  * <p>Gated off by default. Flip it on with {@code -Druler.perf.run=true}:
  *
  * <pre>
- *   # Full run, all 14 rule types, default 3 warmup + 5 measure
+ *   # Full run, all 15 rule types, default 3 warmup + 5 measure
  *   mvn test -Dtest=StableBenchmarks -Druler.perf.run=true
  *
  *   # Tighter error bars (slower, ~6 min)
@@ -114,7 +114,11 @@ import static software.amazon.event.ruler.Benchmarks.readCityLots2;
  * <h2>Scope</h2>
  *
  * <p>Covers the same fourteen rule types as
- * {@link Benchmarks#CL2Benchmark}. Not a replacement for the JMH benchmarks in
+ * {@link Benchmarks#CL2Benchmark}, plus {@code MULTI_BYTE_WILDCARD_EIC}: one
+ * {@code "*é"} wildcard rule and 2,000 {@code "éx<k>"} equals-ignore-case
+ * rules in one machine on one field, scanned with synthetic events. No
+ * citylots2 rule bank puts a wildcard rule and equals-ignore-case rules in the
+ * same machine. Not a replacement for the JMH benchmarks in
  * {@code jmh/} — those are the right tool for publication numbers. This is
  * the right tool for <em>"did my change regress anything?"</em> during CR.
  */
@@ -146,6 +150,12 @@ public class StableBenchmarks {
     private static final int[] ANYTHING_BUT_SUFFIX_MATCHES = { 211136, 210411, 94908, 0, 209055 };
     private static final int[] ANYTHING_BUT_WILDCARD_MATCHES = { 212578, 212355, 213025, 210528, 213067 };
     private static final int[] COMPLEX_ARRAYS_MATCHES = { 218, 1, 149446, 64368, 127485 };
+
+    private static final int MULTI_BYTE_EIC_RULE_COUNT = 2000;
+    private static final int MULTI_BYTE_EVENT_REPEATS = 50;
+    private static final String[] MULTI_BYTE_WILDCARD_EIC_RULES = multiByteWildcardEicRules();
+    private static final int[] MULTI_BYTE_WILDCARD_EIC_MATCHES = multiByteWildcardEicMatches();
+    private static final List<String> MULTI_BYTE_WILDCARD_EIC_EVENTS = multiByteWildcardEicEvents();
 
     private final List<String> citylots2 = new ArrayList<>();
 
@@ -200,6 +210,9 @@ public class StableBenchmarks {
                 only, warmup, measure, verbose);
         maybeRun("COMPLEX_ARRAYS",
                 COMPLEX_ARRAYS_RULES, COMPLEX_ARRAYS_MATCHES, only, warmup, measure, verbose);
+        maybeRun("MULTI_BYTE_WILDCARD_EIC",
+                MULTI_BYTE_WILDCARD_EIC_RULES, MULTI_BYTE_WILDCARD_EIC_MATCHES,
+                MULTI_BYTE_WILDCARD_EIC_EVENTS, only, warmup, measure, verbose);
 
         maybeWriteCsv();
     }
@@ -236,19 +249,27 @@ public class StableBenchmarks {
                           List<String> only, int warmupPasses, int measurePasses,
                           boolean verbose)
             throws Exception {
+        maybeRun(label, rules, expectedMatches, citylots2, only, warmupPasses, measurePasses,
+                verbose);
+    }
+
+    private void maybeRun(String label, String[] rules, int[] expectedMatches, List<String> events,
+                          List<String> only, int warmupPasses, int measurePasses,
+                          boolean verbose)
+            throws Exception {
         if (only != null && !matchesOnlyFilter(label, only)) {
             return;
         }
-        runRuleType(label, rules, expectedMatches, warmupPasses, measurePasses, verbose);
+        runRuleType(label, rules, expectedMatches, events, warmupPasses, measurePasses, verbose);
     }
 
-    private void runRuleType(String label, String[] rules, int[] expectedMatches,
+    private void runRuleType(String label, String[] rules, int[] expectedMatches, List<String> events,
                              int warmupPasses, int measurePasses, boolean verbose)
             throws Exception {
         List<Double> samples = new ArrayList<>(measurePasses);
 
         for (int i = 0; i < warmupPasses; i++) {
-            double eps = timeOnePass(rules, expectedMatches);
+            double eps = timeOnePass(rules, expectedMatches, events);
             if (verbose) {
                 System.out.printf(Locale.ROOT,
                         "  [%s] warmup %d/%d: %.1f events/sec%n",
@@ -257,7 +278,7 @@ public class StableBenchmarks {
         }
 
         for (int i = 0; i < measurePasses; i++) {
-            double eps = timeOnePass(rules, expectedMatches);
+            double eps = timeOnePass(rules, expectedMatches, events);
             samples.add(eps);
             if (verbose) {
                 System.out.printf(Locale.ROOT,
@@ -284,10 +305,11 @@ public class StableBenchmarks {
 
     /**
      * Build a fresh machine for this rule set and time a single scan of
-     * citylots2. Each pass compiles the rules from scratch, so compile cost
+     * the events. Each pass compiles the rules from scratch, so compile cost
      * is included. Returns events/sec for the scan.
      */
-    private double timeOnePass(String[] rules, int[] expectedMatches) throws Exception {
+    private double timeOnePass(String[] rules, int[] expectedMatches, List<String> events)
+            throws Exception {
         Machine machine = new Machine();
         int[] gotCounts = new int[rules.length];
         for (int i = 0; i < rules.length; i++) {
@@ -295,7 +317,7 @@ public class StableBenchmarks {
         }
 
         long before = System.nanoTime();
-        for (String event : citylots2) {
+        for (String event : events) {
             List<String> matches = machine.rulesForJSONEvent(event);
             for (String match : matches) {
                 int idx = Integer.parseInt(match.substring(1));
@@ -313,7 +335,34 @@ public class StableBenchmarks {
             }
         }
 
-        return (1_000_000_000.0 * citylots2.size()) / afterNs;
+        return (1_000_000_000.0 * events.size()) / afterNs;
+    }
+
+    private static String[] multiByteWildcardEicRules() {
+        String[] rules = new String[MULTI_BYTE_EIC_RULE_COUNT + 1];
+        rules[0] = "{\"a\": [{\"wildcard\": \"*é\"}]}";
+        for (int k = 0; k < MULTI_BYTE_EIC_RULE_COUNT; k++) {
+            rules[k + 1] = "{\"a\": [{\"equals-ignore-case\": \"éx" + k + "\"}]}";
+        }
+        return rules;
+    }
+
+    private static int[] multiByteWildcardEicMatches() {
+        int[] matches = new int[MULTI_BYTE_EIC_RULE_COUNT + 1];
+        for (int k = 0; k < MULTI_BYTE_EIC_RULE_COUNT; k++) {
+            matches[k + 1] = MULTI_BYTE_EVENT_REPEATS;
+        }
+        return matches;
+    }
+
+    private static List<String> multiByteWildcardEicEvents() {
+        List<String> events = new ArrayList<>(MULTI_BYTE_EIC_RULE_COUNT * MULTI_BYTE_EVENT_REPEATS);
+        for (int repeat = 0; repeat < MULTI_BYTE_EVENT_REPEATS; repeat++) {
+            for (int k = 0; k < MULTI_BYTE_EIC_RULE_COUNT; k++) {
+                events.add("{\"a\": \"éx" + k + "\"}");
+            }
+        }
+        return events;
     }
 
     // --- CSV output ----------------------------------------------------
