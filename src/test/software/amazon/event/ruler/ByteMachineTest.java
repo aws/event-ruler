@@ -1544,6 +1544,72 @@ public class ByteMachineTest {
     }
 
     @Test
+    public void testSuffixEqualsIgnoreCaseWithMultiByteWildcardDoesNotMatchOtherSuffix() {
+        String[] noMatches = new String[] { "", "x", "É", "éy", "éxq", "zéxq", "zéy" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.wildcardMatch("*é"),
+                        "é", "zé", "xé"),
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("éx"),
+                        "éx", "ÉX", "zéx", "zÉX")
+        );
+    }
+
+    @Test
+    public void testEqualsIgnoreCaseWithMultiByteWildcardDoesNotMatchValueWithExtraPrefix() {
+        String[] noMatches = new String[] { "", "x", "É", "éy", "éxq", "zéx", "zéxq" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.wildcardMatch("*é"),
+                        "é", "zé", "xé"),
+                new PatternMatch(Patterns.equalsIgnoreCaseMatch("éx"),
+                        "éx", "ÉX", "Éx", "éX")
+        );
+    }
+
+    @Test
+    public void testPrefixEqualsIgnoreCaseWithMultiByteWildcardDoesNotMatchOtherPrefix() {
+        String[] noMatches = new String[] { "", "x", "É", "éy", "zéx", "zéxq" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.wildcardMatch("*é"),
+                        "é", "zé", "xé"),
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("éx"),
+                        "éx", "ÉX", "éxq", "ÉXq")
+        );
+    }
+
+    @Test
+    public void testEqualsIgnoreCaseWithMultiSegmentWildcardLeavesEmptyMachineAfterDelete() {
+        String[] noMatches = new String[] { "", "é", "z", "éy", "zéx", "zzéx" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.wildcardMatch("*zé"),
+                        "zé", "zzé", "xzé"),
+                new PatternMatch(Patterns.equalsIgnoreCaseMatch("éx"),
+                        "éx", "ÉX", "Éx", "éX")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseWithTwoStarWildcardLeavesEmptyMachineAfterDelete() {
+        String[] noMatches = new String[] { "", "é", "a", "éy", "aéy", "zé", "aéxq" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.wildcardMatch("*a*é"),
+                        "aé", "azé", "xaé"),
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("éx"),
+                        "éx", "ÉX", "aéx", "zÉX")
+        );
+    }
+
+    @Test
+    public void testAnythingButIgnoreCaseWithMultiByteWildcardMatchesValueContainingExcludedValue() {
+        String[] noMatches = new String[] { "éx", "ÉX", "Éx" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.wildcardMatch("*é"),
+                        "é", "zé"),
+                new PatternMatch(Patterns.anythingButIgnoreCaseMatch("éx"),
+                        "é", "zé", "zéx", "éy", "éxq", "a")
+        );
+    }
+
+    @Test
     public void testSuffixEqualsIgnoreCaseWithPrefixEqualsIgnoreCaseMatchBeingAddedLater() {
         String[] noMatches = new String[] { "", "ab", "bcȺ", "bcⱥ" };
         testPatternPermutations(noMatches,

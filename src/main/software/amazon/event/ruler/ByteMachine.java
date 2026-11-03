@@ -818,6 +818,8 @@ class ByteMachine {
         //                   -----> B
         //         With a byteState of A, and a current char of y, we would be unable to re-use B as nextByteState,
         //         since A has a second transition to B using char Y.
+        } else if (isMultiByteSet(characters[i])) {
+            return !isNextByteStateAlsoReachedThroughWildcardState(byteState, nextByteState, characters[i]);
         } else {
             return !doMultipleTransitionsConvergeForInputByte(byteState, characters, i);
         }
@@ -859,6 +861,19 @@ class ByteMachine {
         InputCharacter[] inputCharacters = getParser().parse(matchType, value);
         ByteTransition transition = getTransition(byteState, inputCharacters[0]);
         return inputCharacters[0] instanceof InputMultiByteSet && transition != null;
+    }
+
+    private static boolean isNextByteStateAlsoReachedThroughWildcardState(final ByteState byteState,
+                                                                          final ByteState nextByteState,
+                                                                          final InputCharacter character) {
+        for (final SingleByteTransition allBytesTransition : byteState.getTransitionForAllBytes().expand()) {
+            final ByteState wildcardState = allBytesTransition.getNextByteState();
+            if (wildcardState != null && wildcardState != byteState
+                    && getTransitionHavingNextByteState(wildcardState, nextByteState, character) != null) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isNextCharacterFirstByteOfMultiByte(InputCharacter[] characters, int i) {
