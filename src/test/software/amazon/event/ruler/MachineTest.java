@@ -3316,6 +3316,26 @@ public class MachineTest {
     }
 
     @Test
+    public void WHEN_SuffixRuleAddedAfterLeadingStarWildcardWithTwoByteCharacter_THEN_OnlyWildcardMatches()
+            throws Exception {
+        Machine machine = new Machine();
+        machine.addRule("wildcard", "{\"a\": [{\"wildcard\": \"*é\"}]}");
+        machine.addRule("suffix", "{\"a\": [{\"suffix\": \"É\"}]}");
+
+        assertEquals(Collections.singletonList("wildcard"), machine.rulesForJSONEvent("{\"a\": \"é\"}"));
+    }
+
+    @Test
+    public void WHEN_SuffixRuleAddedAfterLeadingStarWildcardWithThreeByteCharacter_THEN_OnlyWildcardMatches()
+            throws Exception {
+        Machine machine = new Machine();
+        machine.addRule("wildcard", "{\"a\": [{\"wildcard\": \"*次\"}]}");
+        machine.addRule("suffix", "{\"a\": [{\"suffix\": \"x次\"}]}");
+
+        assertEquals(Collections.singletonList("wildcard"), machine.rulesForJSONEvent("{\"a\": \"x次次\"}"));
+    }
+
+    @Test
     public void testTrailingContentIgnoredOnlyWhenConfigured() throws Exception {
         String event = "{\"orderId\": \"abc\"}";
         String rule = "{\"orderId\":[{\"exists\":true}]}";
