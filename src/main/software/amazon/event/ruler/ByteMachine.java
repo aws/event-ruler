@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -1376,16 +1377,13 @@ class ByteMachine {
         return nextNameState;
     }
 
-    // If we meet shortcut trans, that means Range have byte overlapped with shortcut matches,
-    // To simplify the logic, we extend the shortcut to normal byte state chain, then decide whether need create
-    // new byte state for current call.
-    private ByteTransition extendShortcutTransition(final ByteState state, final ByteTransition trans,
-                                                    final InputCharacter character, final int currentIndex) {
-        if (!trans.isShortcutTrans()) {
+    private ByteTransition expandShortcutIntoByteStates(final ByteState state, final ByteTransition trans,
+                                                        final InputCharacter character, final int currentIndex) {
+        final ShortcutTransition shortcut = findShortcut(trans);
+        if (shortcut == null) {
             return trans;
         }
 
-        ShortcutTransition shortcut = (ShortcutTransition) trans;
         Patterns shortcutPattern = shortcut.getMatch().getPattern();
         String valueInCurrentPos = ((ValuePatterns) shortcutPattern).pattern();
         final InputCharacter[] charactersInCurrentPos = getParser().parse(shortcutPattern.type(), valueInCurrentPos);
@@ -1431,7 +1429,7 @@ class ByteMachine {
                                               int currentIndex, Patterns pattern, NameState nameState) {
         final InputCharacter character = characters[currentIndex];
         ByteTransition trans = getTransition(state, character);
-        trans = extendShortcutTransition(state, trans, character, currentIndex);
+        trans = expandShortcutIntoByteStates(state, trans, character, currentIndex);
 
         ByteState nextState = trans.getNextByteState();
         if (nextState == null || nextState.hasIndeterminatePrefix() ||
@@ -1441,8 +1439,7 @@ class ByteMachine {
             // 2. Next state has an indeterminate prefix, so using it would create unintended matches.
             // 3. We're on second last char and last char is wildcard: next state will be composite with match so empty
             //    substring satisfies wildcard. The composite will self-reference and would create unintended matches.
-            nextState = new ByteState();
-            nextState.setIndeterminatePrefix(state.hasIndeterminatePrefix());
+            nextState = newNextByteState(state, character);
             addTransitionNextState(state, character, characters, currentIndex, prevState, pattern, nextState,
                     nameState);
         }
@@ -1479,15 +1476,14 @@ class ByteMachine {
 
         if (length == 1 && isWildcard(characters[0])) {
             // Only character is '*'. Make the start state a match so empty input is matched.
-            startStateMatch = new ByteMatch(pattern, nameState);
+            startStateMatch = new ByteMatch(pattern, nameState, false);
             return nameState;
         }
 
         ByteTransition trans = getTransition(state, characters[charIndex]);
 
-        // If it is shortcut transition, we need do adjustment first.
-        if (!trans.isEmpty() && trans.isShortcutTrans()) {
-            ShortcutTransition shortcut = (ShortcutTransition) trans;
+        final ShortcutTransition shortcut = findShortcut(trans);
+        if (shortcut != null) {
             ByteMatch match = shortcut.getMatch();
             // In add/delete rule path, match must not be null and must not have other match
             assert match != null && SHORTCUT_MATCH_TYPES.contains(match.getPattern().type());
@@ -1535,9 +1531,7 @@ class ByteMachine {
             removeTransition(currentState, charactersInCurrentPos[indexToBeChange], shortcut);
 
             // At last, we link the new created chain to the byte state path, so no uncompleted change can be felt by
-            // reading thread. Note: we already confirmed there is only old shortcut transition at charIndex position,
-            // now we have move it to new position, so we can directly replace previous transition with new transition
-            // pointed to new byte state chain.
+            // reading thread.
             putTransitionNextState(state, characters[charIndex], shortcut, firstNewState);
         }
 
@@ -1573,11 +1567,12 @@ class ByteMachine {
             } else {
                 // trans has match but no next state, we need prepare a next next state to add trans for either last
                 // character or shortcut byte.
-                final ByteState newByteState = new ByteState();
-                newByteState.setIndeterminatePrefix(state.hasIndeterminatePrefix());
-                // Stream will not be empty since trans has been verified as non-empty
-                SingleByteTransition single = trans.expand().iterator().next();
-                putTransitionNextState(state, characters[j], single, newByteState);
+                final ByteState newByteState = newNextByteState(state, characters[j]);
+                if (isByte(characters[j]) && hasMatchOnMultiByteSet(trans)) {
+                    addTransition(state, characters[j], newByteState);
+                } else {
+                    putTransitionNextState(state, characters[j], trans.expand().iterator().next(), newByteState);
+                }
                 prevState = state;
                 state = newByteState;
             }
@@ -1593,7 +1588,7 @@ class ByteMachine {
                 return insertMatch(characters, j, state, nameState, pattern, prevState);
             } else if (isEligibleForShortcut) {
                 // If current character is not last character, create the shortcut transition with the next
-                ByteMatch byteMatch = new ByteMatch(pattern, nameState);
+                ByteMatch byteMatch = new ByteMatch(pattern, nameState, false);
                 addTransition(state, characters[j], new ShortcutTransition().setMatch(byteMatch));
                 addMatchReferences(byteMatch);
                 return nameState;
@@ -1629,7 +1624,7 @@ class ByteMachine {
         // we make a new NameState and hook it up
         NameState nameState = nextNameState == null ? new NameState() : nextNameState;
 
-        match = new ByteMatch(pattern, nameState);
+        match = new ByteMatch(pattern, nameState, isMultiByteSet(character));
         addMatchReferences(match);
 
         if (isWildcard(character)) {
@@ -1885,10 +1880,8 @@ class ByteMachine {
             // the transition (turning it into a composite) before adding transitions from state and prevState.
             SingleByteTransition single = nextState;
             if (isWildcard(characters[characters.length - 1]) && currentIndex == characters.length - 2) {
-                ByteMatch match = new ByteMatch(pattern, nameState);
+                ByteMatch match = new ByteMatch(pattern, nameState, false);
                 single = nextState.setMatch(match);
-                nextState.setIndeterminatePrefix(true);
-            } else if (isMultiByteSet(character)) {
                 nextState.setIndeterminatePrefix(true);
             }
 
@@ -1942,6 +1935,32 @@ class ByteMachine {
 
         // Add * transition from current state (A) to next state (B).
         state.addTransitionForAllBytes(nextState);
+    }
+
+    private static boolean hasMatchOnMultiByteSet(final ByteTransition transition) {
+        for (final SingleByteTransition single : transition.expand()) {
+            final ByteMatch match = single.getMatch();
+            if (match != null && match.isOnMultiByteSet()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static ShortcutTransition findShortcut(final ByteTransition transition) {
+        final Iterator<ShortcutTransition> shortcuts = transition.getShortcuts().iterator();
+        if (!shortcuts.hasNext()) {
+            return null;
+        }
+        final ShortcutTransition shortcut = shortcuts.next();
+        assert !shortcuts.hasNext() : "A byte must not have more than one shortcut transition";
+        return shortcut;
+    }
+
+    private static ByteState newNextByteState(final ByteState state, final InputCharacter character) {
+        final ByteState nextState = new ByteState();
+        nextState.setIndeterminatePrefix(state.hasIndeterminatePrefix() || isMultiByteSet(character));
+        return nextState;
     }
 
     private static void putTransitionNextState(ByteState state, InputCharacter character,
@@ -2050,6 +2069,10 @@ class ByteMachine {
 
     private static boolean isMultiByteSet(InputCharacter character) {
         return character.getType() == InputCharacterType.MULTI_BYTE_SET;
+    }
+
+    ByteState getStartState() {
+        return startState;
     }
 
     public int evaluateComplexity(MachineComplexityEvaluator evaluator) {

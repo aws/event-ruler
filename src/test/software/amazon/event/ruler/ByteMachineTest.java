@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -537,9 +538,9 @@ public class ByteMachineTest {
         };
 
         NameState ns = new NameState();
-        ByteMatch cut = new ByteMatch(Range.lessThan(data[0]), ns);
-        ByteMatch cc = new ByteMatch(Range.lessThan(data[1]), ns);
-        ByteMatch s2 = new ByteMatch(Range.lessThan(data[2]), ns);
+        ByteMatch cut = new ByteMatch(Range.lessThan(data[0]), ns, false);
+        ByteMatch cc = new ByteMatch(Range.lessThan(data[1]), ns, false);
+        ByteMatch s2 = new ByteMatch(Range.lessThan(data[2]), ns, false);
 
         Range range1 = (Range) cut.getPattern().clone();
         Range range2 = (Range) cc.getPattern().clone();
@@ -1099,6 +1100,226 @@ public class ByteMachineTest {
                         "java", "jAVa", "JavA", "JAVA", "javax"),
                 new PatternMatch(Patterns.exactMatch("jav"),
                         "jav")
+        );
+    }
+
+    @Test
+    public void testPrefixEqualsIgnoreCasePatternAsPrefixOfExactMatch() {
+        final String[] noMatches = new String[] { "", "1", "x", "2x" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("1x"),
+                        "1x", "1X", "1xy", "1Xy"),
+                new PatternMatch(Patterns.exactMatch("1xy"),
+                        "1xy")
+        );
+    }
+
+    @Test
+    public void testPrefixEqualsIgnoreCasePatternAsPrefixOfExactMatchWithMultiByteCharacter() {
+        final String[] noMatches = new String[] { "", "次", "x", "欠x" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("次x"),
+                        "次x", "次X", "次xy", "次Xy"),
+                new PatternMatch(Patterns.exactMatch("次xy"),
+                        "次xy")
+        );
+    }
+
+    @Test
+    public void testExactPatternWithWildcardPatternOnSamePath() {
+        final String[] noMatches = new String[] { "", "b", "bc" };
+        for (final String wildcard : new String[] { "a*", "*c", "ab*" }) {
+            testPatternPermutations(noMatches,
+                    new PatternMatch(Patterns.exactMatch("abc"),
+                            "abc"),
+                    new PatternMatch(Patterns.wildcardMatch(wildcard),
+                            "abc")
+            );
+        }
+    }
+
+    @Test
+    public void testExactPatternAddedAgainAfterWildcardPatternOnSamePath() {
+        for (final String wildcard : new String[] { "a*", "*c", "ab*" }) {
+            assertExactPatternAddedAgainAfterOtherPattern("\"abc\"",
+                    Patterns.wildcardMatch("\"" + wildcard + "\""), true);
+        }
+    }
+
+    @Test
+    public void testExactNumericPatternAddedAgainAfterRangePatternOnSamePath() {
+        for (final String exactValue : new String[] { "10", "1.5" }) {
+            for (final Range range : new Range[] { Range.lessThanOrEqualTo("1.5"), Range.lessThan("10") }) {
+                final ByteMachine cut = new ByteMachine();
+                final Patterns exact = Patterns.exactMatch(exactValue);
+                final NameState exactNameState = cut.addPattern(exact);
+                cut.addPattern(range);
+
+                assertSame(exactValue + " " + range, exactNameState, cut.addPattern(exact));
+
+                cut.deletePattern(exact);
+                cut.deletePattern(range);
+                assertTrue(exactValue + " " + range, cut.isEmpty());
+            }
+        }
+    }
+
+    @Test
+    public void testExactPatternAddedAgainAfterEqualsIgnoreCasePatternOnFirstCharacter() {
+        assertExactPatternAddedAgainAfterIgnoreCasePatternOnFirstCharacter(Patterns::equalsIgnoreCaseMatch, false);
+    }
+
+    @Test
+    public void testExactPatternAddedAgainAfterPrefixEqualsIgnoreCasePatternOnFirstCharacter() {
+        assertExactPatternAddedAgainAfterIgnoreCasePatternOnFirstCharacter(Patterns::prefixEqualsIgnoreCaseMatch,
+                true);
+    }
+
+    private static void assertExactPatternAddedAgainAfterIgnoreCasePatternOnFirstCharacter(
+            final Function<String, Patterns> ignoreCasePatternFactory, final boolean ignoreCasePatternMatchesValue) {
+        final String[][] sharedAndFirstCharacterValues = { { "zx", "z" }, { "éx", "é" } };
+        for (final String[] values : sharedAndFirstCharacterValues) {
+            assertExactPatternAddedAgainAfterOtherPattern(values[0], ignoreCasePatternFactory.apply(values[1]),
+                    ignoreCasePatternMatchesValue);
+        }
+    }
+
+    private static void assertExactPatternAddedAgainAfterOtherPattern(final String exactValue, final Patterns other,
+                                                                      final boolean otherMatchesExactValue) {
+        final ByteMachine cut = new ByteMachine();
+        final Patterns exact = Patterns.exactMatch(exactValue);
+        final NameState exactNameState = cut.addPattern(exact);
+        final NameState otherNameState = cut.addPattern(other);
+
+        assertSame(exactValue, exactNameState, cut.addPattern(exact));
+        final Set<NameStateWithPattern> expected = new HashSet<>();
+        expected.add(new NameStateWithPattern(exactNameState, exact));
+        if (otherMatchesExactValue) {
+            expected.add(new NameStateWithPattern(otherNameState, other));
+        }
+        assertEquals(exactValue, expected, cut.transitionOn(exactValue));
+
+        cut.deletePattern(exact);
+        cut.deletePattern(other);
+        assertTrue(exactValue, cut.isEmpty());
+    }
+
+    @Test
+    public void testPatternContinuingPastMatchOnOneByteUsesOneCompositeTransition() {
+        final ByteMachine exactMachine = machineWithPatterns(Patterns.exactMatch("ab"), Patterns.exactMatch("abc"));
+        assertTrue(transitionOnSecondByte(exactMachine, 'a', 'b') instanceof CompositeByteTransition);
+
+        final ByteMachine caselessMachine = machineWithPatterns(Patterns.prefixEqualsIgnoreCaseMatch("x1"),
+                Patterns.prefixEqualsIgnoreCaseMatch("x12"));
+        assertTrue(transitionOnSecondByte(caselessMachine, 'x', '1') instanceof CompositeByteTransition);
+    }
+
+    @Test
+    public void testIgnoreCasePatternContinuingPastMatchOnIgnoreCaseSetKeepsOneCompositeOnEveryByte() {
+        final ByteMachine cut = machineWithPatterns(Patterns.prefixEqualsIgnoreCaseMatch("1x"),
+                Patterns.prefixEqualsIgnoreCaseMatch("1xy"));
+        final ByteTransition transitionOnLowerCase = transitionOnSecondByte(cut, '1', 'x');
+        assertTrue(transitionOnLowerCase instanceof CompositeByteTransition);
+        assertSame(transitionOnLowerCase, transitionOnSecondByte(cut, '1', 'X'));
+    }
+
+    @Test
+    public void testExactPatternContinuingPastMatchOnIgnoreCaseSetAddsNextStateBesideMatch() {
+        final Patterns ignoreCase = Patterns.prefixEqualsIgnoreCaseMatch("1x");
+        final ByteMachine cut = machineWithPatterns(ignoreCase, Patterns.exactMatch("1xy"));
+        final ByteTransition transitionOnUpperCase = transitionOnSecondByte(cut, '1', 'X');
+        assertTrue(transitionOnUpperCase instanceof ByteMatch);
+        final Set<SingleByteTransition> transitionsOnLowerCase = new HashSet<>();
+        transitionOnSecondByte(cut, '1', 'x').expand().forEach(transitionsOnLowerCase::add);
+        assertTrue(transitionsOnLowerCase.contains(transitionOnUpperCase));
+        assertEquals(2, transitionsOnLowerCase.size());
+    }
+
+    private static ByteMachine machineWithPatterns(final Patterns... patterns) {
+        final ByteMachine cut = new ByteMachine();
+        for (final Patterns pattern : patterns) {
+            cut.addPattern(pattern);
+        }
+        return cut;
+    }
+
+    private static ByteTransition transitionOnSecondByte(final ByteMachine cut, final char firstByte,
+                                                         final char secondByte) {
+        final ByteTransition transition = cut.getStartState().getTransition((byte) firstByte).getNextByteState()
+                .getTransition((byte) secondByte);
+        assertNotNull(transition);
+        return transition;
+    }
+
+    @Test
+    public void testExactPatternContinuingPastMatchSharedWithKelvinSign() {
+        final String[] noMatches = new String[] { "", "x", "K", "Kx" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("\u212A"),
+                        "k", "kx", "\u212A", "\u212Ax"),
+                new PatternMatch(Patterns.exactMatch("kx"),
+                        "kx")
+        );
+    }
+
+    @Test
+    public void testExactPatternContinuingPastMatchSharedWithLongS() {
+        final String[] noMatches = new String[] { "", "x", "s", "sx" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("\u017F"),
+                        "S", "Sx", "\u017F", "\u017Fx"),
+                new PatternMatch(Patterns.exactMatch("Sx"),
+                        "Sx")
+        );
+    }
+
+    @Test
+    public void testExactPatternContinuingPastMatchSharedWithDotlessI() {
+        final String[] noMatches = new String[] { "", "x", "i", "ix" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("\u0131"),
+                        "I", "Ix", "\u0131", "\u0131x"),
+                new PatternMatch(Patterns.exactMatch("Ix"),
+                        "Ix")
+        );
+    }
+
+    @Test
+    public void testExactPatternContinuingPastSharedEqualsIgnoreCaseMatch() {
+        final String[] noMatches = new String[] { "", "y", "xz" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("x"),
+                        "x", "X", "xy", "Xy", "xY", "XY"),
+                new PatternMatch(Patterns.equalsIgnoreCaseMatch("xy"),
+                        "xy", "Xy", "xY", "XY"),
+                new PatternMatch(Patterns.exactMatch("xy"),
+                        "xy")
+        );
+    }
+
+    @Test
+    public void testPrefixPatternContinuingPastSharedEqualsIgnoreCaseMatch() {
+        final String[] noMatches = new String[] { "", "z", "yxz" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("x"),
+                        "x", "X", "xy", "Xy", "xz", "Xz", "xzq", "Xzq"),
+                new PatternMatch(Patterns.equalsIgnoreCaseMatch("xy"),
+                        "xy", "Xy"),
+                new PatternMatch(Patterns.prefixMatch("xz"),
+                        "xz", "xzq")
+        );
+    }
+
+    @Test
+    public void testSuffixPatternContinuingPastSharedSuffixEqualsIgnoreCaseMatch() {
+        final String[] noMatches = new String[] { "", "1", "x1y" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("x"),
+                        "x", "X", "1x", "1X", "a1x", "a1X", "éx", "éX"),
+                new PatternMatch(Patterns.equalsIgnoreCaseMatch("x1"),
+                        "x1", "X1"),
+                new PatternMatch(Patterns.suffixMatch("1x"),
+                        "1x", "a1x")
         );
     }
 
