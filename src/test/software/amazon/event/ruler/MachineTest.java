@@ -36,6 +36,14 @@ import static org.junit.Assert.fail;
  */
 public class MachineTest {
 
+    private static final String DESERET_CAPITAL_LONG_I = new String(Character.toChars(0x10400));
+    private static final String DESERET_SMALL_LONG_I = new String(Character.toChars(0x10428));
+    private static final String GRINNING_FACE = new String(Character.toChars(0x1F600));
+    private static final String DESERET_CAPITAL_LONG_E = new String(Character.toChars(0x10401));
+    private static final String DESERET_SMALL_LONG_E = new String(Character.toChars(0x10429));
+    private static final String SURROGATE_PAIR_ENCODED_PER_CHAR = "??";
+    private static final int FRESH_MACHINES_TO_COVER_HASH_ORDER = 50;
+
     private String toIP(int ip) {
         String sb = String.valueOf((ip >> 24) & 0xFF) + '.' +
                 ((ip >> 16) & 0xFF) + '.' +
@@ -3312,6 +3320,167 @@ public class MachineTest {
                 expected.addAll(single.rulesForJSONEvent(event));
             }
             assertEquals("event: " + event, expected, new HashSet<>(shared.rulesForJSONEvent(event)));
+        }
+    }
+
+    @Test
+    public void WHEN_EqualsIgnoreCaseValueHasSupplementaryChar_THEN_BothCasesMatch() throws Exception {
+        Machine machine = new Machine();
+        machine.addRule("r", "{\"k\": [{\"equals-ignore-case\": \"" + DESERET_CAPITAL_LONG_I + "\"}]}");
+
+        assertEquals(Collections.singletonList("r"),
+                machine.rulesForJSONEvent("{\"k\": \"" + DESERET_CAPITAL_LONG_I + "\"}"));
+        assertEquals(Collections.singletonList("r"),
+                machine.rulesForJSONEvent("{\"k\": \"" + DESERET_SMALL_LONG_I + "\"}"));
+        assertTrue(machine.rulesForJSONEvent("{\"k\": \"" + SURROGATE_PAIR_ENCODED_PER_CHAR + "\"}").isEmpty());
+        assertTrue(machine.rulesForJSONEvent("{\"k\": \"x\"}").isEmpty());
+    }
+
+    @Test
+    public void WHEN_EqualsIgnoreCaseValueHasCaselessSupplementaryChar_THEN_ItMatchesItself() throws Exception {
+        Machine machine = new Machine();
+        machine.addRule("r", "{\"k\": [{\"equals-ignore-case\": \"" + GRINNING_FACE + "\"}]}");
+
+        assertEquals(Collections.singletonList("r"),
+                machine.rulesForJSONEvent("{\"k\": \"" + GRINNING_FACE + "\"}"));
+        assertTrue(machine.rulesForJSONEvent("{\"k\": \"" + SURROGATE_PAIR_ENCODED_PER_CHAR + "\"}").isEmpty());
+    }
+
+    @Test
+    public void WHEN_PrefixEqualsIgnoreCaseValueHasSupplementaryChar_THEN_BothCasesMatch() throws Exception {
+        Machine machine = new Machine();
+        machine.addRule("r",
+                "{\"k\": [{\"prefix\": {\"equals-ignore-case\": \"a" + DESERET_CAPITAL_LONG_I + "\"}}]}");
+
+        assertEquals(Collections.singletonList("r"),
+                machine.rulesForJSONEvent("{\"k\": \"a" + DESERET_CAPITAL_LONG_I + "zz\"}"));
+        assertEquals(Collections.singletonList("r"),
+                machine.rulesForJSONEvent("{\"k\": \"A" + DESERET_SMALL_LONG_I + "zz\"}"));
+        assertTrue(machine.rulesForJSONEvent("{\"k\": \"a" + SURROGATE_PAIR_ENCODED_PER_CHAR + "zz\"}").isEmpty());
+        assertTrue(machine.rulesForJSONEvent("{\"k\": \"b" + DESERET_CAPITAL_LONG_I + "zz\"}").isEmpty());
+    }
+
+    @Test
+    public void WHEN_SuffixEqualsIgnoreCaseValueHasSupplementaryChar_THEN_BothCasesMatch() throws Exception {
+        Machine machine = new Machine();
+        machine.addRule("r",
+                "{\"k\": [{\"suffix\": {\"equals-ignore-case\": \"a" + DESERET_CAPITAL_LONG_I + "\"}}]}");
+
+        assertEquals(Collections.singletonList("r"),
+                machine.rulesForJSONEvent("{\"k\": \"zza" + DESERET_CAPITAL_LONG_I + "\"}"));
+        assertEquals(Collections.singletonList("r"),
+                machine.rulesForJSONEvent("{\"k\": \"zzA" + DESERET_SMALL_LONG_I + "\"}"));
+        assertTrue(machine.rulesForJSONEvent("{\"k\": \"zza" + SURROGATE_PAIR_ENCODED_PER_CHAR + "\"}").isEmpty());
+        assertTrue(machine.rulesForJSONEvent("{\"k\": \"zzb" + DESERET_CAPITAL_LONG_I + "\"}").isEmpty());
+    }
+
+    @Test
+    public void WHEN_AnythingButEqualsIgnoreCaseValueHasSupplementaryChar_THEN_BothCasesAreExcluded()
+            throws Exception {
+        Machine machine = new Machine();
+        machine.addRule("r",
+                "{\"k\": [{\"anything-but\": {\"equals-ignore-case\": \"" + DESERET_CAPITAL_LONG_I + "\"}}]}");
+
+        assertTrue(machine.rulesForJSONEvent("{\"k\": \"" + DESERET_CAPITAL_LONG_I + "\"}").isEmpty());
+        assertTrue(machine.rulesForJSONEvent("{\"k\": \"" + DESERET_SMALL_LONG_I + "\"}").isEmpty());
+        assertEquals(Collections.singletonList("r"),
+                machine.rulesForJSONEvent("{\"k\": \"" + SURROGATE_PAIR_ENCODED_PER_CHAR + "\"}"));
+        assertEquals(Collections.singletonList("r"), machine.rulesForJSONEvent("{\"k\": \"x\"}"));
+    }
+
+    @Test
+    public void WHEN_ExactRuleSharesFourByteCharWithPrefixEqualsIgnoreCaseRule_THEN_ExactRuleMatchesOnlyItsOwnCase()
+            throws Exception {
+        String prefixRule = "{\"k\": [{\"prefix\": {\"equals-ignore-case\": \"" + DESERET_CAPITAL_LONG_I + "a\"}}]}";
+        String exactRule = "{\"k\": [\"" + DESERET_SMALL_LONG_I + "\"]}";
+        for (int attempt = 0; attempt < FRESH_MACHINES_TO_COVER_HASH_ORDER; attempt++) {
+            Machine machine = new Machine();
+            machine.addRule("prefix", prefixRule);
+            machine.addRule("exact", exactRule);
+
+            assertTrue(machine.rulesForJSONEvent("{\"k\": \"" + DESERET_CAPITAL_LONG_I + "\"}").isEmpty());
+            assertEquals(Collections.singletonList("exact"),
+                    machine.rulesForJSONEvent("{\"k\": \"" + DESERET_SMALL_LONG_I + "\"}"));
+            assertEquals(Collections.singletonList("prefix"),
+                    machine.rulesForJSONEvent("{\"k\": \"" + DESERET_SMALL_LONG_I + "Az\"}"));
+
+            machine.deleteRule("prefix", prefixRule);
+            machine.deleteRule("exact", exactRule);
+            assertTrue(machine.isEmpty());
+        }
+    }
+
+    @Test
+    public void WHEN_WildcardRuleSharesFourByteCharWithEqualsIgnoreCaseRule_THEN_WildcardMatchesOnlyItsOwnCase()
+            throws Exception {
+        String equalsIgnoreCaseRule = "{\"k\": [{\"equals-ignore-case\": \"" + DESERET_SMALL_LONG_I + "\"}]}";
+        String wildcardRule = "{\"k\": [{\"wildcard\": \"" + DESERET_CAPITAL_LONG_I + "*\"}]}";
+        for (int attempt = 0; attempt < FRESH_MACHINES_TO_COVER_HASH_ORDER; attempt++) {
+            Machine machine = new Machine();
+            machine.addRule("eic", equalsIgnoreCaseRule);
+            machine.addRule("wildcard", wildcardRule);
+
+            assertTrue(machine.rulesForJSONEvent("{\"k\": \"" + DESERET_SMALL_LONG_I + "a\"}").isEmpty());
+            assertEquals(Collections.singletonList("wildcard"),
+                    machine.rulesForJSONEvent("{\"k\": \"" + DESERET_CAPITAL_LONG_I + "a\"}"));
+            assertEquals(Collections.singletonList("eic"),
+                    machine.rulesForJSONEvent("{\"k\": \"" + DESERET_SMALL_LONG_I + "\"}"));
+            assertEquals(new HashSet<>(asList("eic", "wildcard")),
+                    new HashSet<>(machine.rulesForJSONEvent("{\"k\": \"" + DESERET_CAPITAL_LONG_I + "\"}")));
+
+            machine.deleteRule("eic", equalsIgnoreCaseRule);
+            machine.deleteRule("wildcard", wildcardRule);
+            assertTrue(machine.isEmpty());
+        }
+    }
+
+    @Test
+    public void WHEN_ManyRulesShareFourByteChars_THEN_EachMatchesOnlyItsOwnValuesAndDeletesCleanly()
+            throws Exception {
+        String[][] rules = {
+                {"suffix-a-I", "{\"k\": [{\"suffix\": {\"equals-ignore-case\": \"a" + DESERET_CAPITAL_LONG_I + "\"}}]}"},
+                {"suffix-b-I", "{\"k\": [{\"suffix\": {\"equals-ignore-case\": \"b" + DESERET_CAPITAL_LONG_I + "\"}}]}"},
+                {"suffix-a-E", "{\"k\": [{\"suffix\": {\"equals-ignore-case\": \"a" + DESERET_CAPITAL_LONG_E + "\"}}]}"},
+                {"exact-I", "{\"k\": [\"" + DESERET_CAPITAL_LONG_I + "\"]}"},
+                {"eic-I", "{\"k\": [{\"equals-ignore-case\": \"" + DESERET_CAPITAL_LONG_I + "\"}]}"},
+        };
+        String[] events = {
+                "{\"k\": \"zza" + DESERET_CAPITAL_LONG_I + "\"}", "{\"k\": \"zzA" + DESERET_SMALL_LONG_I + "\"}",
+                "{\"k\": \"zzb" + DESERET_CAPITAL_LONG_I + "\"}", "{\"k\": \"zzB" + DESERET_SMALL_LONG_I + "\"}",
+                "{\"k\": \"zza" + DESERET_CAPITAL_LONG_E + "\"}", "{\"k\": \"zzA" + DESERET_SMALL_LONG_E + "\"}",
+                "{\"k\": \"" + DESERET_CAPITAL_LONG_I + "\"}", "{\"k\": \"" + DESERET_SMALL_LONG_I + "\"}",
+                "{\"k\": \"zzc" + DESERET_CAPITAL_LONG_I + "\"}",
+                "{\"k\": \"" + SURROGATE_PAIR_ENCODED_PER_CHAR + "\"}",
+        };
+
+        Machine machine = new Machine();
+        for (String[] rule : rules) {
+            machine.addRule(rule[0], rule[1]);
+        }
+        assertMatchesEqualSingleRuleMachines(machine, rules, events);
+
+        String[][] remainingRules = {rules[1], rules[3]};
+        for (String[] rule : new String[][] {rules[0], rules[2], rules[4]}) {
+            machine.deleteRule(rule[0], rule[1]);
+        }
+        assertMatchesEqualSingleRuleMachines(machine, remainingRules, events);
+
+        for (String[] rule : remainingRules) {
+            machine.deleteRule(rule[0], rule[1]);
+        }
+        assertTrue(machine.isEmpty());
+    }
+
+    private static void assertMatchesEqualSingleRuleMachines(Machine machine, String[][] rules, String[] events)
+            throws Exception {
+        for (String event : events) {
+            Set<String> expected = new HashSet<>();
+            for (String[] rule : rules) {
+                Machine single = new Machine();
+                single.addRule(rule[0], rule[1]);
+                expected.addAll(single.rulesForJSONEvent(event));
+            }
+            assertEquals("event: " + event, expected, new HashSet<>(machine.rulesForJSONEvent(event)));
         }
     }
 

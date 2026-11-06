@@ -29,10 +29,12 @@ import software.amazon.event.ruler.input.InputCharacterType;
 import software.amazon.event.ruler.input.InputMultiByteSet;
 import software.amazon.event.ruler.input.MultiByte;
 import static software.amazon.event.ruler.input.MultiByte.MAX_CONTINUATION_BYTE;
+import static software.amazon.event.ruler.input.MultiByte.MAX_FIRST_BYTE_FOR_FOUR_BYTE_CHAR;
 import static software.amazon.event.ruler.input.MultiByte.MAX_FIRST_BYTE_FOR_ONE_BYTE_CHAR;
 import static software.amazon.event.ruler.input.MultiByte.MAX_FIRST_BYTE_FOR_TWO_BYTE_CHAR;
 import static software.amazon.event.ruler.input.MultiByte.MAX_NON_FIRST_BYTE;
 import static software.amazon.event.ruler.input.MultiByte.MIN_CONTINUATION_BYTE;
+import static software.amazon.event.ruler.input.MultiByte.MIN_FIRST_BYTE_FOR_FOUR_BYTE_CHAR;
 import static software.amazon.event.ruler.input.MultiByte.MIN_FIRST_BYTE_FOR_ONE_BYTE_CHAR;
 import static software.amazon.event.ruler.input.MultiByte.MIN_FIRST_BYTE_FOR_TWO_BYTE_CHAR;
 
@@ -929,29 +931,33 @@ class ByteMachine {
     }
 
     private static String extractNextJavaCharacterFromInputCharactersForForwardArrays(InputCharacter[] characters, int i) {
-        byte firstByte = InputByte.cast(characters[i]).getByte();
-        if (firstByte >= MIN_FIRST_BYTE_FOR_ONE_BYTE_CHAR && firstByte <= MAX_FIRST_BYTE_FOR_ONE_BYTE_CHAR) {
-            return new String(new byte[] { firstByte } , StandardCharsets.UTF_8);
-        } else if (firstByte >= MIN_FIRST_BYTE_FOR_TWO_BYTE_CHAR && firstByte <= MAX_FIRST_BYTE_FOR_TWO_BYTE_CHAR) {
-            // A continuation position can hold a non-byte InputCharacter (e.g. an
-            // InputMultiByteSet from an equals-ignore-case value). Stop before
-            // casting to InputByte, as the backward walker does.
-            if (!isByteAtIndex(characters, i + 1)) {
-                return new String(new byte[] { firstByte }, StandardCharsets.UTF_8);
-            }
-            return new String(new byte[] { firstByte, InputByte.cast(characters[i + 1]).getByte() },
-                    StandardCharsets.UTF_8);
-        } else {
-            if (!isByteAtIndex(characters, i + 1)) {
-                return new String(new byte[] { firstByte }, StandardCharsets.UTF_8);
-            }
-            if (!isByteAtIndex(characters, i + 2)) {
-                return new String(new byte[] { firstByte, InputByte.cast(characters[i + 1]).getByte() },
-                        StandardCharsets.UTF_8);
-            }
-            return new String(new byte[] { firstByte, InputByte.cast(characters[i + 1]).getByte(),
-                    InputByte.cast(characters[i + 2]).getByte() }, StandardCharsets.UTF_8);
+        final byte firstByte = InputByte.cast(characters[i]).getByte();
+        final int charLength = getUtf8CharLengthForFirstByte(firstByte);
+        final int end = endOfLeadingInputBytes(characters, i, charLength);
+        final byte[] charBytes = new byte[end - i];
+        for (int index = i; index < end; index++) {
+            charBytes[index - i] = InputByte.cast(characters[index]).getByte();
         }
+        return new String(charBytes, StandardCharsets.UTF_8);
+    }
+
+    private static int endOfLeadingInputBytes(final InputCharacter[] characters, final int start, final int maxLength) {
+        int end = start + 1;
+        while (end < start + maxLength && isByteAtIndex(characters, end)) {
+            end++;
+        }
+        return end;
+    }
+
+    private static int getUtf8CharLengthForFirstByte(final byte firstByte) {
+        if (firstByte >= MIN_FIRST_BYTE_FOR_ONE_BYTE_CHAR && firstByte <= MAX_FIRST_BYTE_FOR_ONE_BYTE_CHAR) {
+            return 1;
+        } else if (firstByte >= MIN_FIRST_BYTE_FOR_TWO_BYTE_CHAR && firstByte <= MAX_FIRST_BYTE_FOR_TWO_BYTE_CHAR) {
+            return 2;
+        } else if (firstByte >= MIN_FIRST_BYTE_FOR_FOUR_BYTE_CHAR && firstByte <= MAX_FIRST_BYTE_FOR_FOUR_BYTE_CHAR) {
+            return 4;
+        }
+        return 3;
     }
 
     // Bounds-checked byte test so a non-byte continuation position never reaches

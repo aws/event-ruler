@@ -10,13 +10,13 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
- * A parser to be used specifically for equals-ignore-case rules. For Java characters where lower and upper case UTF-8
+ * A parser to be used specifically for equals-ignore-case rules. For code points where lower and upper case UTF-8
  * representations do not differ, we will parse into InputBytes. Otherwise, we will use InputMultiByteSet.
  *
  * Note that there are actually characters whose upper-case/lower-case UTF-8 representations differ in number of bytes.
  * One example where length differs by 1: ⱥ, Ⱥ
  * One example where length differs by 4: ΰ, Ϋ́
- * InputMultiByteSet handles differing byte lengths per Java character.
+ * InputMultiByteSet handles differing byte lengths per code point.
  */
 public class EqualsIgnoreCaseParser {
 
@@ -26,28 +26,35 @@ public class EqualsIgnoreCaseParser {
         return parse(value, false);
     }
 
-    protected InputCharacter[] parse(String value, boolean reverseCharBytes) {
+    protected InputCharacter[] parse(String value, boolean reverseCodePointBytes) {
         List<InputCharacter> result = new ArrayList<>(value.length());
-        for (char c : value.toCharArray()) {
-            byte[] lowerCaseUtf8bytes = getCharUtfBytes(c, (ch) -> ch.toLowerCase(Locale.ROOT), reverseCharBytes);
-            byte[] upperCaseUtf8bytes = getCharUtfBytes(c, (ch) -> ch.toUpperCase(Locale.ROOT), reverseCharBytes);
-            if (Arrays.equals(lowerCaseUtf8bytes, upperCaseUtf8bytes)) {
-                for (int i = 0; i < lowerCaseUtf8bytes.length; i++) {
-                    result.add(new InputByte(lowerCaseUtf8bytes[i]));
+        for (int offset = 0; offset < value.length(); ) {
+            final int codePoint = value.codePointAt(offset);
+            offset += Character.charCount(codePoint);
+            final String codePointString = new String(Character.toChars(codePoint));
+            final byte[] lowerCaseUtf8Bytes = getCodePointUtf8Bytes(codePointString, (s) -> s.toLowerCase(Locale.ROOT),
+                    reverseCodePointBytes);
+            final byte[] upperCaseUtf8Bytes = getCodePointUtf8Bytes(codePointString, (s) -> s.toUpperCase(Locale.ROOT),
+                    reverseCodePointBytes);
+            if (Arrays.equals(lowerCaseUtf8Bytes, upperCaseUtf8Bytes)) {
+                for (int i = 0; i < lowerCaseUtf8Bytes.length; i++) {
+                    result.add(new InputByte(lowerCaseUtf8Bytes[i]));
                 }
             } else {
                 Set<MultiByte> multiBytes = new HashSet<>();
-                multiBytes.add(new MultiByte(lowerCaseUtf8bytes));
-                multiBytes.add(new MultiByte(upperCaseUtf8bytes));
+                multiBytes.add(new MultiByte(lowerCaseUtf8Bytes));
+                multiBytes.add(new MultiByte(upperCaseUtf8Bytes));
                 result.add(new InputMultiByteSet(multiBytes));
             }
         }
         return result.toArray(new InputCharacter[0]);
     }
 
-    private static byte[] getCharUtfBytes(char c, Function<String, String> stringTransformer, boolean reverseCharBytes) {
-        byte[] byteArray = stringTransformer.apply(String.valueOf(c)).getBytes(StandardCharsets.UTF_8);
-        if (reverseCharBytes) {
+    private static byte[] getCodePointUtf8Bytes(final String codePointString,
+                                                final Function<String, String> stringTransformer,
+                                                final boolean reverseCodePointBytes) {
+        final byte[] byteArray = stringTransformer.apply(codePointString).getBytes(StandardCharsets.UTF_8);
+        if (reverseCodePointBytes) {
             return reverseByteArray(byteArray);
         }
         return byteArray;
