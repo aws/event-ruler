@@ -17,7 +17,7 @@ public class ByteMatchTest {
 
     @Before
     public void setUp() {
-        match = new ByteMatch(Patterns.exactMatch("abc"), new NameState());
+        match = new ByteMatch(Patterns.exactMatch("abc"), new NameState(), false);
     }
 
     @Test
@@ -61,7 +61,7 @@ public class ByteMatchTest {
 
     @Test
     public void setMatchShouldReturnGivenMatchWhenGivenMatchIsNotNull() {
-        ByteMatch newMatch = new ByteMatch(Patterns.exactMatch("xyz"), new NameState());
+        ByteMatch newMatch = new ByteMatch(Patterns.exactMatch("xyz"), new NameState(), false);
         ByteTransition transition = match.setMatch(newMatch);
         assertSame(newMatch, transition);
     }
@@ -104,7 +104,7 @@ public class ByteMatchTest {
     @Test
     public void WHEN_MatchIsInitialized_THEN_GettersWork() {
         NameState ns = new NameState();
-        ByteMatch cut = new ByteMatch(Patterns.anythingButMatch("foo"), ns);
+        ByteMatch cut = new ByteMatch(Patterns.anythingButMatch("foo"), ns, false);
         assertEquals(ns, cut.getNextNameState());
         assertEquals(Patterns.anythingButMatch("foo"), cut.getPattern());
     }

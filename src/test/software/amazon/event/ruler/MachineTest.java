@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -3367,5 +3368,138 @@ public class MachineTest {
         // The validators do not take the option: check() rejects the same input whatever a machine is configured to do.
         assertNotNull(JsonRuleCompiler.check(rule + "}"));
         assertNotNull(RuleCompiler.check(rule + "}"));
+    }
+
+    @Test
+    public void WHEN_RuleSharingValueIsDeletedWithEqualsIgnoreCaseRuleOnSameFirstByte_THEN_ItNoLongerMatches()
+            throws Exception {
+        assertDeleteOfRuleSharingValueWithIgnoreCaseRuleOnSameFirstByte(MachineTest::equalsIgnoreCasePattern, "r0");
+    }
+
+    @Test
+    public void WHEN_RuleSharingValueIsDeletedWithPrefixEqualsIgnoreCaseRuleOnSameFirstByte_THEN_ItNoLongerMatches()
+            throws Exception {
+        assertDeleteOfRuleSharingValueWithIgnoreCaseRuleOnSameFirstByte(MachineTest::prefixEqualsIgnoreCasePattern,
+                "r0", "r1");
+    }
+
+    @Test
+    public void WHEN_PrefixEqualsIgnoreCaseRuleSharingValueWithExactRuleIsDeleted_THEN_ItNoLongerMatches()
+            throws Exception {
+        for (final String sharedValue : new String[] { "次x", "1x" }) {
+            final List<NamedRule> rules = asList(
+                    new NamedRule("prefix", prefixEqualsIgnoreCasePattern(sharedValue)),
+                    new NamedRule("exact", exactPattern(sharedValue)));
+            assertDeleteOneRuleThenDeleteAll(rules, "prefix", sharedValue, "exact");
+        }
+    }
+
+    @Test
+    public void WHEN_RuleSharingValueIsDeletedWithoutIgnoreCaseRuleOnSameFirstByte_THEN_ItNoLongerMatches()
+            throws Exception {
+        assertDeleteOneRuleThenDeleteAll(asList(
+                new NamedRule("r0", exactPattern("éx")),
+                new NamedRule("r2", exactPattern("éx"))), "r2", "éx", "r0");
+        assertDeleteOneRuleThenDeleteAll(asList(
+                new NamedRule("r0", exactPattern("zz")),
+                new NamedRule("r1", equalsIgnoreCasePattern("é")),
+                new NamedRule("r2", exactPattern("zz"))), "r2", "zz", "r0");
+    }
+
+    @Test
+    public void WHEN_RuleSharingValueIsDeletedWithWildcardRuleOnSamePath_THEN_ItNoLongerMatches() throws Exception {
+        for (final String wildcard : new String[] { "a*", "*c", "ab*" }) {
+            final List<NamedRule> rules = asList(
+                    new NamedRule("r0", exactPattern("abc")),
+                    new NamedRule("w", wildcardPattern(wildcard)),
+                    new NamedRule("r2", exactPattern("abc")));
+            assertDeleteOneRuleThenDeleteAll(rules, "r2", "abc", "r0", "w");
+        }
+    }
+
+    @Test
+    public void WHEN_RuleSharingValueIsDeletedAfterRuleWentThroughShortcutByteBesideWildcard_THEN_ItNoLongerMatches()
+            throws Exception {
+        final List<NamedRule> rules = asList(
+                new NamedRule("r0", exactPattern("abc")),
+                new NamedRule("w", wildcardPattern("a*")),
+                new NamedRule("p", "{\"prefix\": \"abd\"}"),
+                new NamedRule("r2", exactPattern("abc")));
+        assertDeleteOneRuleThenDeleteAll(rules, "r2", "abc", "r0", "w");
+    }
+
+    @Test
+    public void WHEN_RuleSharingValueIsDeletedWithLeadingWildcardRule_THEN_ItNoLongerMatches() throws Exception {
+        assertDeleteOneRuleThenDeleteAll(asList(
+                new NamedRule("r0", exactPattern("10")),
+                new NamedRule("w", wildcardPattern("*10")),
+                new NamedRule("r2", exactPattern("10"))), "r2", "10", "r0", "w");
+        final List<NamedRule> rules = asList(
+                new NamedRule("r0", exactPattern("1x")),
+                new NamedRule("w", wildcardPattern("*x1")),
+                new NamedRule("r2", exactPattern("1x")));
+        assertDeleteOneRuleThenDeleteAll(rules, "r2", "1x", "r0");
+    }
+
+    private static void assertDeleteOfRuleSharingValueWithIgnoreCaseRuleOnSameFirstByte(
+            final Function<String, String> ignoreCasePattern, final String... expectedRules) throws Exception {
+        final String[][] sharedAndFirstCharacterValues = { { "éx", "é" }, { "zx", "z" } };
+        for (final String[] values : sharedAndFirstCharacterValues) {
+            final String sharedValue = values[0];
+            final String firstCharacter = values[1];
+            final List<NamedRule> rules = asList(
+                    new NamedRule("r0", exactPattern(sharedValue)),
+                    new NamedRule("r1", ignoreCasePattern.apply(firstCharacter)),
+                    new NamedRule("r2", exactPattern(sharedValue)));
+            assertDeleteOneRuleThenDeleteAll(rules, "r2", sharedValue, expectedRules);
+        }
+    }
+
+    private static String wildcardPattern(final String value) {
+        return "{\"wildcard\": \"" + value + "\"}";
+    }
+
+    private static String exactPattern(final String value) {
+        return "\"" + value + "\"";
+    }
+
+    private static String equalsIgnoreCasePattern(final String value) {
+        return "{\"equals-ignore-case\": \"" + value + "\"}";
+    }
+
+    private static String prefixEqualsIgnoreCasePattern(final String value) {
+        return "{\"prefix\": {\"equals-ignore-case\": \"" + value + "\"}}";
+    }
+
+    private static void assertDeleteOneRuleThenDeleteAll(final List<NamedRule> rules, final String deletedRule,
+                                                         final String value, final String... expectedRules)
+            throws Exception {
+        final Machine machine = new Machine();
+        for (final NamedRule rule : rules) {
+            machine.addRule(rule.name, rule.json);
+        }
+        for (final NamedRule rule : rules) {
+            if (rule.name.equals(deletedRule)) {
+                machine.deleteRule(rule.name, rule.json);
+            }
+        }
+        assertEquals(value, new HashSet<>(asList(expectedRules)),
+                new HashSet<>(machine.rulesForJSONEvent("{\"a\": \"" + value + "\"}")));
+        for (final NamedRule rule : rules) {
+            if (!rule.name.equals(deletedRule)) {
+                machine.deleteRule(rule.name, rule.json);
+            }
+        }
+        assertTrue(value, machine.isEmpty());
+    }
+
+    private static final class NamedRule {
+        private final String name;
+        private final String json;
+
+        private NamedRule(final String name, final String pattern) {
+            this.name = name;
+            this.json = "{\"a\": [" + pattern + "]}";
+        }
     }
 }

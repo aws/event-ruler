@@ -34,9 +34,7 @@ import java.util.Set;
 // we update existing path only once new proposal is ready.
 // Note:
 // 1) the adjustment will ensure the shortcut transition will be always at the tail position in the traverse path.
-// 2) the byte which has the shortcut transition must be always the next byte in the match which doesn't exist in existing
-//    byte path.
-// 3) shortcut Transition will only work for exactly match and should only have one match in one shortcut transition.
+// 2) shortcut Transition will only work for exactly match and should only have one match in one shortcut transition.
 public class ShortcutTransition extends SingleByteTransition {
 
     private ByteMatch match;
