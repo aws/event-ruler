@@ -762,7 +762,7 @@ class ByteMachine {
             ByteState stateToReuse = null;
             for (SingleByteTransition single : trans.expand()) {
                 ByteState nextByteState = single.getNextByteState();
-                if (canReuseNextByteState(byteState, nextByteState, characters, i)) {
+                if (canReuseNextByteState(byteState, nextByteState, characters, i, pattern.type())) {
                     stateToReuse = nextByteState;
                     break;
                 }
@@ -779,7 +779,7 @@ class ByteMachine {
     }
 
     private boolean canReuseNextByteState(ByteState byteState, ByteState nextByteState, InputCharacter[] characters,
-                                          int i) {
+                                          int i, MatchType matchType) {
         // We cannot re-use nextByteState if it is non-existent (null) or if it is the same as the current byteState,
         // meaning we are looping on a self-referencing transition.
         if (nextByteState == null || nextByteState == byteState) {
@@ -819,7 +819,7 @@ class ByteMachine {
         //         With a byteState of A, and a current char of y, we would be unable to re-use B as nextByteState,
         //         since A has a second transition to B using char Y.
         } else {
-            return !doMultipleTransitionsConvergeForInputByte(byteState, characters, i);
+            return !doMultipleTransitionsConvergeForInputByte(byteState, characters, i, matchType);
         }
     }
 
@@ -831,14 +831,17 @@ class ByteMachine {
      * @param byteState State where we look for at least two transitions that eventually converge to a common state.
      * @param characters The array of InputCharacters.
      * @param i The current index in the characters array.
+     * @param matchType The match type of the pattern being added. It tells if characters is in reverse byte order.
      * @return True if and only if multiple transitions eventually converge to a common state.
      */
-    private boolean doMultipleTransitionsConvergeForInputByte(ByteState byteState, InputCharacter[] characters, int i) {
+    private boolean doMultipleTransitionsConvergeForInputByte(ByteState byteState, InputCharacter[] characters, int i,
+                                                              MatchType matchType) {
         if (!isByte(characters[i])) {
             return false;
         }
 
-        boolean isNextCharacterForSuffixMatch = isNextCharacterFirstContinuationByteForSuffixMatch(characters, i);
+        boolean isNextCharacterForSuffixMatch =
+                isNextCharacterFirstContinuationByteForSuffixMatch(characters, i, matchType);
         if (!isNextCharacterFirstByteOfMultiByte(characters, i) && !isNextCharacterForSuffixMatch) {
             // If we are in the midst of a multi-byte sequence, we know that we are dealing with single transitions.
             return false;
@@ -855,8 +858,8 @@ class ByteMachine {
         // Parse the next Java character into lower and upper case representations. Check if there are multiple
         // multibytes (paths) and that there exists a transition that both lead to.
         String value = extractNextJavaCharacterFromInputCharacters(characters, i);
-        MatchType matchType = isNextCharacterForSuffixMatch ? SUFFIX_EQUALS_IGNORE_CASE : EQUALS_IGNORE_CASE;
-        InputCharacter[] inputCharacters = getParser().parse(matchType, value);
+        MatchType ignoreCaseMatchType = isNextCharacterForSuffixMatch ? SUFFIX_EQUALS_IGNORE_CASE : EQUALS_IGNORE_CASE;
+        InputCharacter[] inputCharacters = getParser().parse(ignoreCaseMatchType, value);
         ByteTransition transition = getTransition(byteState, inputCharacters[0]);
         return inputCharacters[0] instanceof InputMultiByteSet && transition != null;
     }
@@ -868,12 +871,17 @@ class ByteMachine {
         return firstByte > MAX_NON_FIRST_BYTE;
     }
 
-    private boolean isNextCharacterFirstContinuationByteForSuffixMatch(InputCharacter[] characters, int i) {
-        if (hasSuffix.get() <= 0) {
+    private boolean isNextCharacterFirstContinuationByteForSuffixMatch(InputCharacter[] characters, int i,
+                                                                       MatchType matchType) {
+        if (!isParsedInReverse(matchType)) {
             return false;
         }
         // If the previous byte is a continuation byte, this means that we're in the middle of a multi-byte sequence.
         return isContinuationByte(characters, i) && !isContinuationByte(characters, i - 1);
+    }
+
+    static boolean isParsedInReverse(MatchType matchType) {
+        return matchType == SUFFIX || matchType == SUFFIX_EQUALS_IGNORE_CASE || matchType == ANYTHING_BUT_SUFFIX;
     }
 
     private boolean isContinuationByte(InputCharacter[] characters, int i) {

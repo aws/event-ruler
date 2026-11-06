@@ -1,6 +1,8 @@
 package software.amazon.event.ruler;
 
 import org.junit.Test;
+import software.amazon.event.ruler.input.DefaultParser;
+import software.amazon.event.ruler.input.InputCharacter;
 import software.amazon.event.ruler.input.ParseException;
 
 import java.util.Arrays;
@@ -1540,6 +1542,65 @@ public class ByteMachineTest {
                         "!b", "b"),
                 new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("b!"),
                         "b!", "B!", "cdb!", "CdEB!")
+        );
+    }
+
+    @Test
+    public void testIsParsedInReverseMatchesDefaultParser() {
+        DefaultParser parser = DefaultParser.getParser();
+        String value = "次";
+        InputCharacter[] forward = parser.parse(MatchType.EXACT, value);
+        InputCharacter[] reversed = parser.parse(MatchType.SUFFIX, value);
+        for (MatchType matchType : MatchType.values()) {
+            InputCharacter[] parsed = parser.parse(matchType, value);
+            boolean isReversed = Arrays.equals(reversed, parsed);
+            assertTrue("Unexpected parser output for " + matchType, isReversed || Arrays.equals(forward, parsed));
+            assertEquals(matchType.toString(), isReversed, ByteMachine.isParsedInReverse(matchType));
+        }
+    }
+
+    @Test
+    public void testSuffixWithLeadingStarWildcardEndingWithThreeByteCharacter() {
+        String[] noMatches = new String[] { "", "x", "次x" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.wildcardMatch("*次"),
+                        "次", "次次", "x次次", "x次", "yx次"),
+                new PatternMatch(Patterns.suffixMatch("x次"),
+                        "x次", "yx次")
+        );
+    }
+
+    @Test
+    public void testSuffixWithLeadingStarWildcardAndUnrelatedSuffix() {
+        String[] noMatches = new String[] { "", "e", "E", "x", "z" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixMatch("zz"),
+                        "zz", "xzz"),
+                new PatternMatch(Patterns.wildcardMatch("*é"),
+                        "é", "xé", "Éé"),
+                new PatternMatch(Patterns.suffixMatch("É"),
+                        "É", "xÉ", "éÉ")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseWithLeadingStarWildcardEndingWithThreeByteCharacter() {
+        String[] noMatches = new String[] { "", "x", "次x" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.wildcardMatch("*次"),
+                        "次", "次次", "x次次", "X次次", "x次", "X次", "yx次"),
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("x次"),
+                        "x次", "X次", "yx次")
+        );
+    }
+
+    @Test
+    public void testAnythingButSuffixWithLeadingStarWildcardEndingWithThreeByteCharacter() {
+        testPatternPermutations(
+                new PatternMatch(Patterns.wildcardMatch("*次"),
+                        "次", "次次", "x次次", "x次", "yx次"),
+                new PatternMatch(Patterns.anythingButSuffix("x次"),
+                        "", "x", "次", "次次", "x次次", "次x")
         );
     }
 
