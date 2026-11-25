@@ -798,9 +798,17 @@ class ByteMachine {
         if (!nextByteState.hasIndeterminatePrefix()) {
             return !(i == characters.length - 2 && isWildcard(characters[i + 1]));
 
-        // Case 2: nextByteState has an indeterminate prefix and current character is not a wildcard. We can re-use
-        //         nextByteState only if byteState does not have at least two transitions, one using the next
-        //         InputCharacter, that eventually converge to a common state.
+        // Case 2: nextByteState has an indeterminate prefix and current character is not a wildcard. The check
+        //         depends on the type of the current character.
+        //
+        //         For a byte, we can re-use nextByteState only if byteState does not have at least two transitions,
+        //         one using the next InputCharacter, that eventually converge to a common state. See Examples 2a and
+        //         2b.
+        //
+        //         For an InputMultiByteSet, we can re-use nextByteState only if no non-self-referencing all-bytes
+        //         transition from byteState leads to a state that has a transition to nextByteState using the same
+        //         InputMultiByteSet. This check looks exactly one InputCharacter past each all-bytes transition. See
+        //         Example 2c.
         //
         //         Example 2a: Take the following machine representing a wildcard pattern.
         //                             ____
@@ -818,6 +826,21 @@ class ByteMachine {
         //                   -----> B
         //         With a byteState of A, and a current char of y, we would be unable to re-use B as nextByteState,
         //         since A has a second transition to B using char Y.
+        //
+        //         Example 2c: Take the following machine representing the wildcard pattern *é.
+        //                    ____
+        //              *    | *  |
+        //            A -----> B <--
+        //            | é    é |
+        //            --> M <--
+        //         M is the match of *é. Each transition using é is a path of two bytes. Now add the
+        //         equals_ignore_case pattern éx. With a byteState of A, and a current InputMultiByteSet for é and É,
+        //         the only candidate is B, because the É path from A goes only through the all-bytes transition. We
+        //         would be unable to re-use B as nextByteState, since A has an all-bytes transition to B, and B has a
+        //         transition to B using the same InputMultiByteSet. If we re-use B, the match of éx goes on the
+        //         transition from B using x, so the values zéx and ax match éx.
+        } else if (isMultiByteSet(characters[i])) {
+            return !isNextByteStateAlsoReachedThroughWildcardState(byteState, nextByteState, characters[i]);
         } else {
             return !doMultipleTransitionsConvergeForInputByte(byteState, characters, i);
         }
@@ -859,6 +882,39 @@ class ByteMachine {
         InputCharacter[] inputCharacters = getParser().parse(matchType, value);
         ByteTransition transition = getTransition(byteState, inputCharacters[0]);
         return inputCharacters[0] instanceof InputMultiByteSet && transition != null;
+    }
+
+    /**
+     * Returns true if byteState has a non-self-referencing all-bytes transition to a state that has a transition to
+     * nextByteState using the current InputMultiByteSet. The check looks exactly one InputCharacter past each
+     * all-bytes transition.
+     *
+     * A simpler rule refuses re-use whenever byteState has a non-self-referencing all-bytes transition, as Scenario 1
+     * of doMultipleTransitionsConvergeForInputByte does for bytes. That rule also gives correct matches. But it stops
+     * equals_ignore_case patterns on the same field as a wildcard pattern from sharing states. The tests
+     * ByteMachineTest.testEqualsIgnoreCaseWithMultiByteWildcardSharesStates and
+     * ByteMachineTest.testEqualsIgnoreCaseWithAsciiWildcardSharesStates fail if this sharing stops.
+     *
+     * This method uses the next state of each all-bytes transition to find self-reference. Scenario 1 compares the
+     * all-bytes transition object to byteState.
+     *
+     * @param byteState State where we look for all-bytes transitions.
+     * @param nextByteState The state that we want to re-use.
+     * @param character The current InputCharacter, which is an InputMultiByteSet.
+     * @return True if and only if a state that a non-self-referencing all-bytes transition leads to has a transition
+     *         to nextByteState using character.
+     */
+    private static boolean isNextByteStateAlsoReachedThroughWildcardState(final ByteState byteState,
+                                                                          final ByteState nextByteState,
+                                                                          final InputCharacter character) {
+        for (final SingleByteTransition allBytesTransition : byteState.getTransitionForAllBytes().expand()) {
+            final ByteState wildcardState = allBytesTransition.getNextByteState();
+            if (wildcardState != null && wildcardState != byteState
+                    && getTransitionHavingNextByteState(wildcardState, nextByteState, character) != null) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isNextCharacterFirstByteOfMultiByte(InputCharacter[] characters, int i) {
