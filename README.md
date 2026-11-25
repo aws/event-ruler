@@ -696,6 +696,31 @@ Machine machine = Machine.builder()
     .build();
 ```
 
+#### withOverridesForDuplicateRules
+Default: true
+
+Controls what `addRule()` and `deleteRule()` do when a rule names the same path twice in one rule (or in one `$or`
+branch), for example:
+
+```javascript
+machine.addRule("0", "{\"key1\": [\"a\"], \"key1\": [\"b\"]}");
+```
+
+With the default of true, the later occurrence replaces the earlier one, so the rule above matches only events where
+`key1` is `"b"`. Set this to false to reject such a rule with the parse error
+``Path `key1` cannot be allowed multiple times``; `JsonRuleCompiler.check(rule, false)` reports the same error:
+
+```java
+Machine machine = Machine.builder()
+    .withOverridesForDuplicateRules(false)
+    .build();
+```
+
+Paths in different `$or` branches are handled separately and are not duplicates of each other. A key at the top level of a rule that is repeated inside an `$or` branch does count as a duplicate: it is rejected when this setting is false, and otherwise the value in the branch overrides the top-level one.
+
+This setting applies to rules only. When an event is matched with `rulesForJSONEvent()` or `Ruler.matchesRule()`, a repeated field name is not merged or overridden: each occurrence is seen, so a rule matches if any one occurrence matches. With the rule `{"key1": ["a"]}`, both
+`{"key1": "a", "key1": "b"}` and `{"key1": "b", "key1": "a"}` match.
+
 ### addRule()
 
 All forms of this method have the same first argument, a String which provides

@@ -635,6 +635,23 @@ public class JsonRuleCompilerTest {
 
 
     @Test
+    public void testDuplicateKeysInEventMatchOnAnyOccurrence() throws Exception {
+        Machine machine = Machine.builder().build();
+        machine.addRule("r1", "{\"key1\": [\"a\"]}");
+        assertEquals(1, machine.rulesForJSONEvent("{\"key1\": \"a\", \"key1\": \"b\"}").size());
+        assertEquals(1, machine.rulesForJSONEvent("{\"key1\": \"b\", \"key1\": \"a\"}").size());
+        assertEquals(0, machine.rulesForJSONEvent("{\"key1\": \"b\", \"key1\": \"c\"}").size());
+    }
+
+    @Test
+    public void testDuplicateKeysInRuleLaterOccurrenceWinsByDefault() throws Exception {
+        Machine machine = Machine.builder().build();
+        machine.addRule("r1", "{\"key1\": [\"a\"], \"key1\": [\"b\"]}");
+        assertEquals(0, machine.rulesForJSONEvent("{\"key1\": \"a\"}").size());
+        assertEquals(1, machine.rulesForJSONEvent("{\"key1\": \"b\"}").size());
+    }
+
+    @Test
     public void testWithRuleOverride() throws Exception {
         // Simple rule with the same name path twice
         String jsonSimpleRule = "{\n" +
