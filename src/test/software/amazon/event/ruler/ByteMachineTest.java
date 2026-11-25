@@ -3,9 +3,12 @@ package software.amazon.event.ruler;
 import org.junit.Test;
 import software.amazon.event.ruler.input.ParseException;
 
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -1544,6 +1547,84 @@ public class ByteMachineTest {
     }
 
     @Test
+    public void testSuffixEqualsIgnoreCaseWithMultiByteWildcardDoesNotMatchOtherSuffix() {
+        String[] noMatches = new String[] { "", "x", "É", "éy", "éxq", "zéxq", "zéy" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.wildcardMatch("*é"),
+                        "é", "zé", "xé"),
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("éx"),
+                        "éx", "ÉX", "zéx", "zÉX")
+        );
+    }
+
+    @Test
+    public void testEqualsIgnoreCaseWithMultiByteWildcardDoesNotMatchValueWithExtraPrefix() {
+        String[] noMatches = new String[] { "", "x", "É", "éy", "éxq", "zéx", "zéxq" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.wildcardMatch("*é"),
+                        "é", "zé", "xé"),
+                new PatternMatch(Patterns.equalsIgnoreCaseMatch("éx"),
+                        "éx", "ÉX", "Éx", "éX")
+        );
+    }
+
+    @Test
+    public void testPrefixEqualsIgnoreCaseWithMultiByteWildcardDoesNotMatchOtherPrefix() {
+        String[] noMatches = new String[] { "", "x", "É", "éy", "zéx", "zéxq" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.wildcardMatch("*é"),
+                        "é", "zé", "xé"),
+                new PatternMatch(Patterns.prefixEqualsIgnoreCaseMatch("éx"),
+                        "éx", "ÉX", "éxq", "ÉXq")
+        );
+    }
+
+    @Test
+    public void testEqualsIgnoreCaseWithMultiSegmentWildcardLeavesEmptyMachineAfterDelete() {
+        String[] noMatches = new String[] { "", "é", "z", "éy", "zéx", "zzéx" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.wildcardMatch("*zé"),
+                        "zé", "zzé", "xzé"),
+                new PatternMatch(Patterns.equalsIgnoreCaseMatch("éx"),
+                        "éx", "ÉX", "Éx", "éX")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseWithTwoStarWildcardLeavesEmptyMachineAfterDelete() {
+        String[] noMatches = new String[] { "", "é", "a", "éy", "aéy", "zé", "aéxq" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.wildcardMatch("*a*é"),
+                        "aé", "azé", "xaé"),
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("éx"),
+                        "éx", "ÉX", "aéx", "zÉX")
+        );
+    }
+
+    @Test
+    public void testAnythingButIgnoreCaseWithMultiByteWildcardMatchesValueContainingExcludedValue() {
+        String[] noMatches = new String[] { "éx", "ÉX", "Éx" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.wildcardMatch("*é"),
+                        "é", "zé"),
+                new PatternMatch(Patterns.anythingButIgnoreCaseMatch("éx"),
+                        "é", "zé", "zéx", "éy", "éxq", "a")
+        );
+    }
+
+    @Test
+    public void testEqualsIgnoreCaseWithMultiByteWildcardSharesStates() {
+        assertEquals(9, countStatesAddedByNineMoreEqualsIgnoreCaseRules("éx"));
+        assertEquals(9, countStatesAddedByNineMoreEqualsIgnoreCaseRules("éx", Patterns.wildcardMatch("*é")));
+    }
+
+    @Test
+    public void testEqualsIgnoreCaseWithAsciiWildcardSharesStates() {
+        assertEquals(9, countStatesAddedByNineMoreEqualsIgnoreCaseRules("ax"));
+        assertEquals(9, countStatesAddedByNineMoreEqualsIgnoreCaseRules("ax", Patterns.wildcardMatch("*a")));
+    }
+
+    @Test
     public void testSuffixEqualsIgnoreCaseWithPrefixEqualsIgnoreCaseMatchBeingAddedLater() {
         String[] noMatches = new String[] { "", "ab", "bcȺ", "bcⱥ" };
         testPatternPermutations(noMatches,
@@ -2675,8 +2756,7 @@ public class ByteMachineTest {
      * Any match specified by one PatternMatch will be evaluated against all patterns. So if you specify that one
      * pattern has matched a certain value, you need to specify that same value for all other patterns that match it as
      * well. Provide values that will not match any patterns in the noMatches array and this function will verify that
-     * they are never matched. If you provide a value in the noMatches array that is present in one of the PatternMatch
-     * objects, it will have no effect; i.e. the value will still be expected to match the pattern.
+     * they are never matched.
      *
      * @param noMatches Array of values that do not match any of the given patterns.
      * @param patternMatches Array where each element contains a pattern and values that will match the pattern.
@@ -2726,6 +2806,7 @@ public class ByteMachineTest {
                 assertEquals("Failed on " + match.value,
                         match.getNumPatternsRegistered(), cut.transitionOn(match.value).size());
             }
+            assertNoMatches(cut, matches);
         }
         for (PatternMatch patternMatch : deletionPermutation) {
             cut.deletePattern(matches.deregisterPattern(patternMatch));
@@ -2733,9 +2814,70 @@ public class ByteMachineTest {
                 assertEquals("Failed on " + match.value, match.getNumPatternsRegistered(),
                         cut.transitionOn(match.value).size());
             }
+            assertNoMatches(cut, matches);
         }
         assertTrue(cut.isEmpty());
         matches.assertNoPatternsRegistered();
+    }
+
+    private static void assertNoMatches(final ByteMachine cut, final Matches matches) {
+        for (final Match noMatch : matches.getNoMatches()) {
+            assertEquals("Unexpected match on " + noMatch.value, 0, cut.transitionOn(noMatch.value).size());
+        }
+    }
+
+    private static int countStatesAddedByNineMoreEqualsIgnoreCaseRules(final String prefix,
+                                                                       final Patterns... initialPatterns) {
+        final ByteMachine cut = new ByteMachine();
+        for (final Patterns pattern : initialPatterns) {
+            cut.addPattern(pattern);
+        }
+        cut.addPattern(Patterns.equalsIgnoreCaseMatch(prefix + 0 + "y"));
+        final int statesWithFirstRule = countByteStates(cut);
+        for (int digit = 1; digit <= 9; digit++) {
+            cut.addPattern(Patterns.equalsIgnoreCaseMatch(prefix + digit + "y"));
+        }
+        return countByteStates(cut) - statesWithFirstRule;
+    }
+
+    private static int countByteStates(final ByteMachine machine) {
+        final StartStateCapturingEvaluator evaluator = new StartStateCapturingEvaluator();
+        machine.evaluateComplexity(evaluator);
+        final Set<ByteState> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+        final Deque<ByteState> toVisit = new ArrayDeque<>();
+        visited.add(evaluator.getStartState());
+        toVisit.add(evaluator.getStartState());
+        while (!toVisit.isEmpty()) {
+            for (final ByteTransition transition : toVisit.remove().getTransitions()) {
+                for (final SingleByteTransition single : transition.expand()) {
+                    final ByteState nextByteState = single.getNextByteState();
+                    if (nextByteState != null && visited.add(nextByteState)) {
+                        toVisit.add(nextByteState);
+                    }
+                }
+            }
+        }
+        return visited.size();
+    }
+
+    private static final class StartStateCapturingEvaluator extends MachineComplexityEvaluator {
+        private ByteState startState;
+
+        StartStateCapturingEvaluator() {
+            super(Integer.MAX_VALUE);
+        }
+
+        @Override
+        int evaluate(final ByteState state) {
+            if (startState == null) {
+                startState = state;
+            }
+            return 0;
+        }
+
+        ByteState getStartState() {
+            return startState;
+        }
     }
 
     private static class Matches {
@@ -2749,6 +2891,10 @@ public class ByteMachineTest {
 
         public Match[] get() {
             return matches;
+        }
+
+        public Match[] getNoMatches() {
+            return noMatches;
         }
 
         public Patterns registerPattern(PatternMatch patternMatch) {
