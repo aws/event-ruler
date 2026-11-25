@@ -11,6 +11,9 @@ import static org.junit.Assert.assertEquals;
 
 public class EqualsIgnoreCaseParserTest {
 
+    private static final String DESERET_CAPITAL_LONG_I = new String(Character.toChars(0x10400));
+    private static final String GRINNING_FACE = new String(Character.toChars(0x1F600));
+
     private EqualsIgnoreCaseParser parser;
 
     @Before
@@ -55,6 +58,41 @@ public class EqualsIgnoreCaseParserTest {
                 set(new MultiByte((byte) -61, (byte) -87), new MultiByte((byte) -61, (byte) -119)),
                 set(new MultiByte((byte) -30, (byte) -79, (byte) -91), new MultiByte((byte) -56, (byte) -70))
         }, parser.parse("1aA*†Éⱥ"));
+    }
+
+    @Test
+    public void testParseSupplementaryCharacterWithCaseVariants() {
+        assertArrayEquals(new InputCharacter[] {
+                deseretLongISet()
+        }, parser.parse(DESERET_CAPITAL_LONG_I));
+    }
+
+    @Test
+    public void testParseSupplementaryCharacterWithoutCaseVariants() {
+        assertArrayEquals(grinningFaceBytes(), parser.parse(GRINNING_FACE));
+    }
+
+    @Test
+    public void testParseStringMixingSingleByteAndSupplementaryCharacters() {
+        InputCharacter[] grinningFaceBytes = grinningFaceBytes();
+        assertArrayEquals(new InputCharacter[] {
+                set(new MultiByte((byte) 97), new MultiByte((byte) 65)),
+                deseretLongISet(),
+                new InputByte((byte) 49),
+                grinningFaceBytes[0], grinningFaceBytes[1], grinningFaceBytes[2], grinningFaceBytes[3]
+        }, parser.parse("a" + DESERET_CAPITAL_LONG_I + "1" + GRINNING_FACE));
+    }
+
+    private static InputMultiByteSet deseretLongISet() {
+        return set(new MultiByte((byte) 0xF0, (byte) 0x90, (byte) 0x90, (byte) 0x80),
+                new MultiByte((byte) 0xF0, (byte) 0x90, (byte) 0x90, (byte) 0xA8));
+    }
+
+    private static InputCharacter[] grinningFaceBytes() {
+        return new InputCharacter[] {
+                new InputByte((byte) 0xF0), new InputByte((byte) 0x9F), new InputByte((byte) 0x98),
+                new InputByte((byte) 0x80)
+        };
     }
 
     private static InputMultiByteSet set(MultiByte ... multiBytes) {
