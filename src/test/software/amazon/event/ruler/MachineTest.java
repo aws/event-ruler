@@ -3316,6 +3316,77 @@ public class MachineTest {
     }
 
     @Test
+    public void WHEN_SuffixRuleAddedAfterLeadingStarWildcardWithTwoByteCharacter_THEN_OnlyWildcardMatches()
+            throws Exception {
+        Machine machine = new Machine();
+        machine.addRule("wildcard", "{\"a\": [{\"wildcard\": \"*é\"}]}");
+        machine.addRule("suffix", "{\"a\": [{\"suffix\": \"É\"}]}");
+
+        assertEquals(Collections.singletonList("wildcard"), machine.rulesForJSONEvent("{\"a\": \"é\"}"));
+    }
+
+    @Test
+    public void WHEN_SuffixRuleAddedAfterLeadingStarWildcardWithThreeByteCharacter_THEN_OnlyWildcardMatches()
+            throws Exception {
+        Machine machine = new Machine();
+        machine.addRule("wildcard", "{\"a\": [{\"wildcard\": \"*次\"}]}");
+        machine.addRule("suffix", "{\"a\": [{\"suffix\": \"x次\"}]}");
+
+        assertEquals(Collections.singletonList("wildcard"), machine.rulesForJSONEvent("{\"a\": \"x次次\"}"));
+    }
+
+    @Test
+    public void WHEN_SuffixRuleAddedAfterLeadingStarWildcardWithAsciiCharacters_THEN_SuffixRuleMatchesOnlyValuesEndingWithSuffix()
+            throws Exception {
+        final Machine machine = new Machine();
+        machine.addRule("wildcard", "{\"a\": [{\"wildcard\": \"*.txt\"}]}");
+        machine.addRule("suffix", "{\"a\": [{\"suffix\": \"É\"}]}");
+
+        assertEquals(Collections.emptyList(), machine.rulesForJSONEvent("{\"a\": \"Zürich\"}"));
+        assertEquals(Collections.singletonList("suffix"), machine.rulesForJSONEvent("{\"a\": \"xÉ\"}"));
+        assertEquals(Collections.singletonList("wildcard"), machine.rulesForJSONEvent("{\"a\": \"a.txt\"}"));
+    }
+
+    @Test
+    public void WHEN_SuffixRuleAddedAfterTrailingStarWildcard_THEN_SuffixRuleMatchesOnlyValuesEndingWithSuffix()
+            throws Exception {
+        final Machine machine = new Machine();
+        machine.addRule("wildcard", "{\"a\": [{\"wildcard\": \"ab*\"}]}");
+        machine.addRule("suffix", "{\"a\": [{\"suffix\": \"éba\"}]}");
+
+        assertEquals(Collections.emptyList(), machine.rulesForJSONEvent("{\"a\": \"èba\"}"));
+        assertEquals(Collections.singletonList("suffix"), machine.rulesForJSONEvent("{\"a\": \"éba\"}"));
+        assertEquals(Collections.singletonList("wildcard"), machine.rulesForJSONEvent("{\"a\": \"abc\"}"));
+    }
+
+    @Test
+    public void WHEN_SuffixRuleAddedAfterAnythingButWildcard_THEN_SuffixRuleMatchesOnlyValuesEndingWithSuffix()
+            throws Exception {
+        final Machine machine = new Machine();
+        machine.addRule("anythingButWildcard", "{\"a\": [{\"anything-but\": {\"wildcard\": \"*x\"}}]}");
+        machine.addRule("suffix", "{\"a\": [{\"suffix\": \"é\"}]}");
+
+        assertEquals(Collections.singletonList("anythingButWildcard"), machine.rulesForJSONEvent("{\"a\": \"è\"}"));
+        assertEquals(new HashSet<>(Arrays.asList("anythingButWildcard", "suffix")),
+                new HashSet<>(machine.rulesForJSONEvent("{\"a\": \"zé\"}")));
+    }
+
+    @Test
+    public void WHEN_SuffixRuleAddedAfterOtherSuffixRuleIsDeleted_THEN_SuffixRuleMatchesOnlyValuesEndingWithSuffix()
+            throws Exception {
+        final Machine machine = new Machine();
+        final String otherSuffixRule = "{\"a\": [{\"suffix\": \"zz\"}]}";
+        machine.addRule("otherSuffix", otherSuffixRule);
+        machine.addRule("wildcard", "{\"a\": [{\"wildcard\": \"*x\"}]}");
+        machine.deleteRule("otherSuffix", otherSuffixRule);
+        machine.addRule("suffix", "{\"a\": [{\"suffix\": \"é\"}]}");
+
+        assertEquals(Collections.emptyList(), machine.rulesForJSONEvent("{\"a\": \"è\"}"));
+        assertEquals(Collections.singletonList("suffix"), machine.rulesForJSONEvent("{\"a\": \"zé\"}"));
+        assertEquals(Collections.singletonList("wildcard"), machine.rulesForJSONEvent("{\"a\": \"zx\"}"));
+    }
+
+    @Test
     public void testTrailingContentIgnoredOnlyWhenConfigured() throws Exception {
         String event = "{\"orderId\": \"abc\"}";
         String rule = "{\"orderId\":[{\"exists\":true}]}";

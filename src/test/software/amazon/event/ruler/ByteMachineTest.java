@@ -1,6 +1,8 @@
 package software.amazon.event.ruler;
 
 import org.junit.Test;
+import software.amazon.event.ruler.input.DefaultParser;
+import software.amazon.event.ruler.input.InputCharacter;
 import software.amazon.event.ruler.input.ParseException;
 
 import java.util.ArrayDeque;
@@ -1625,6 +1627,80 @@ public class ByteMachineTest {
     }
 
     @Test
+    public void testIsParsedInReverseMatchesDefaultParser() {
+        DefaultParser parser = DefaultParser.getParser();
+        String value = "次";
+        InputCharacter[] forward = parser.parse(MatchType.EXACT, value);
+        InputCharacter[] reversed = parser.parse(MatchType.SUFFIX, value);
+        for (MatchType matchType : MatchType.values()) {
+            InputCharacter[] parsed = parser.parse(matchType, value);
+            boolean isReversed = Arrays.equals(reversed, parsed);
+            assertTrue("Unexpected parser output for " + matchType, isReversed || Arrays.equals(forward, parsed));
+            assertEquals(matchType.toString(), isReversed, ByteMachine.isParsedInReverse(matchType));
+        }
+    }
+
+    @Test
+    public void testSuffixWithLeadingStarWildcardEndingWithThreeByteCharacter() {
+        String[] noMatches = new String[] { "", "x", "次x" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.wildcardMatch("*次"),
+                        "次", "次次", "x次次", "x次", "yx次"),
+                new PatternMatch(Patterns.suffixMatch("x次"),
+                        "x次", "yx次")
+        );
+    }
+
+    @Test
+    public void testSuffixWithLeadingStarWildcardAndUnrelatedSuffix() {
+        String[] noMatches = new String[] { "", "e", "E", "x", "z" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.suffixMatch("zz"),
+                        "zz", "xzz"),
+                new PatternMatch(Patterns.wildcardMatch("*é"),
+                        "é", "xé", "Éé"),
+                new PatternMatch(Patterns.suffixMatch("É"),
+                        "É", "xÉ", "éÉ")
+        );
+    }
+
+    @Test
+    public void testSuffixEqualsIgnoreCaseWithLeadingStarWildcardEndingWithThreeByteCharacter() {
+        String[] noMatches = new String[] { "", "x", "次x" };
+        testPatternPermutations(noMatches,
+                new PatternMatch(Patterns.wildcardMatch("*次"),
+                        "次", "次次", "x次次", "X次次", "x次", "X次", "yx次"),
+                new PatternMatch(Patterns.suffixEqualsIgnoreCaseMatch("x次"),
+                        "x次", "X次", "yx次")
+        );
+    }
+
+    @Test
+    public void testAnythingButSuffixWithLeadingStarWildcardEndingWithThreeByteCharacter() {
+        testPatternPermutations(
+                new PatternMatch(Patterns.wildcardMatch("*次"),
+                        "次", "次次", "x次次", "x次", "yx次"),
+                new PatternMatch(Patterns.anythingButSuffix("x次"),
+                        "", "x", "次", "次次", "x次次", "次x")
+        );
+    }
+
+    @Test
+    public void testWildcardsWithThreeByteCharacterOnFieldWithoutSuffixRuleShareStates() {
+        assertEquals(6, countByteStates(machineWith(
+                Patterns.wildcardMatch("*次x"),
+                Patterns.wildcardMatch("*次xy"))));
+    }
+
+    @Test
+    public void testWildcardsWithThreeByteCharacterOnFieldWithSuffixRuleKeepStatesApart() {
+        assertEquals(9, countByteStates(machineWith(
+                Patterns.suffixMatch("zz"),
+                Patterns.wildcardMatch("*次x"),
+                Patterns.wildcardMatch("*次xy"))));
+    }
+
+    @Test
     public void testSuffixEqualsIgnoreCaseWithPrefixEqualsIgnoreCaseMatchBeingAddedLater() {
         String[] noMatches = new String[] { "", "ab", "bcȺ", "bcⱥ" };
         testPatternPermutations(noMatches,
@@ -2828,16 +2904,21 @@ public class ByteMachineTest {
 
     private static int countStatesAddedByNineMoreEqualsIgnoreCaseRules(final String prefix,
                                                                        final Patterns... initialPatterns) {
-        final ByteMachine cut = new ByteMachine();
-        for (final Patterns pattern : initialPatterns) {
-            cut.addPattern(pattern);
-        }
+        final ByteMachine cut = machineWith(initialPatterns);
         cut.addPattern(Patterns.equalsIgnoreCaseMatch(prefix + 0 + "y"));
         final int statesWithFirstRule = countByteStates(cut);
         for (int digit = 1; digit <= 9; digit++) {
             cut.addPattern(Patterns.equalsIgnoreCaseMatch(prefix + digit + "y"));
         }
         return countByteStates(cut) - statesWithFirstRule;
+    }
+
+    private static ByteMachine machineWith(final Patterns... patterns) {
+        final ByteMachine cut = new ByteMachine();
+        for (final Patterns pattern : patterns) {
+            cut.addPattern(pattern);
+        }
+        return cut;
     }
 
     private static int countByteStates(final ByteMachine machine) {
