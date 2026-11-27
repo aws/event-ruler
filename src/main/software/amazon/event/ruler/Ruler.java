@@ -76,7 +76,6 @@ public class Ruler {
     private static boolean matchesOneOf(final JsonNode val, final List<Patterns> patterns) {
         for (Patterns pattern : patterns) {
             if (val == null) {
-                // a non existent value matches the absent pattern,
                 if (pattern.type() == MatchType.ABSENT) {
                     return true;
                 }
@@ -100,7 +99,6 @@ public class Ruler {
         switch (pattern.type()) {
             case EXACT:
                 ValuePatterns valuePattern = (ValuePatterns) pattern;
-                // if it's a string we match the "-quoted form, otherwise (true, false, null) as-is.
                 final String compareTo = (val.isTextual()) ? '"' + val.asText() + '"' : val.asText();
                 return compareTo.equals(valuePattern.pattern());
 

@@ -14,7 +14,6 @@ class Path {
 
     private final Deque<String> path = new ArrayDeque<>();
 
-    // memo-ize
     private String memo = null;
 
     void push(final String s) {
@@ -51,11 +50,6 @@ class Path {
         return memo;
     }
 
-    /**
-     * return the pathname as a segmented-string with the indicated separator
-     * @param lastStep The next step, which we want to use but not to push on to the path
-     * @return the pathname
-     */
     String extendedName(final String lastStep) {
         String base = name();
         if (!base.isEmpty()) {

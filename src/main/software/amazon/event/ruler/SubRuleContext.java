@@ -41,9 +41,6 @@ public final class SubRuleContext {
         return Long.hashCode(id);
     }
 
-    /**
-     * Generator for SubRuleContexts.
-     */
     static final class Generator {
 
         private final Map<Object, Set<SubRuleContext>> nameToContext = new ConcurrentHashMap<>();
@@ -59,9 +56,6 @@ public final class SubRuleContext {
             return nameToContext.get(ruleName);
         }
 
-        /**
-         * Returns the number of distinct rule names that have been registered.
-         */
         int getRuleCount() {
             return nameToContext.size();
         }

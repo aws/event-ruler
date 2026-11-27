@@ -36,19 +36,10 @@ final class IntIntMap implements Cloneable {
      */
     private final float loadFactor;
 
-    /**
-     * We will resize a map once it reaches this size
-     */
     private int threshold;
 
-    /**
-     * Current map size
-     */
     private int size;
 
-    /**
-     * Mask to calculate the position in the table for a key.
-     */
     private int mask;
 
     IntIntMap() {
@@ -75,26 +66,16 @@ final class IntIntMap implements Cloneable {
         this.threshold = (int) (initialCapacity * loadFactor);
     }
 
-    /**
-     * Gets the value for {@code key}.
-     *
-     * @param key
-     *            the non-negative key
-     * @return the value present at {@code key}, or {@link #NO_VALUE} if none is present.
-     */
     int get(final int key) {
         int idx = getStartIndex(key);
         do {
             long cell = table[idx];
             if (cell == EMPTY_CELL) {
-                // end of the chain, key does not exist
                 return NO_VALUE;
             }
             if (((int) (cell & KEY_MASK)) == key) {
-                // found the key
                 return (int) (cell >> 32);
             }
-            // continue walking the chain
             idx = getNextIndex(idx);
         } while (true);
     }
@@ -125,7 +106,6 @@ final class IntIntMap implements Cloneable {
         do {
             long cell = table[idx];
             if (cell == EMPTY_CELL) {
-                // found an empty cell
                 table[idx] = cellToPut;
                 if (size >= threshold) {
                     rehash(table.length * 2);
@@ -136,11 +116,9 @@ final class IntIntMap implements Cloneable {
                 return NO_VALUE;
             }
             if (((int) (cell & KEY_MASK)) == key) {
-                // found a non-empty cell with a key matching the one we're writing, so overwrite it
                 table[idx] = cellToPut;
                 return (int) (cell >> 32);
             }
-            // continue walking the chain
             idx = getNextIndex(idx);
         } while (true);
     }
@@ -150,25 +128,17 @@ final class IntIntMap implements Cloneable {
         do {
             long cell = table[idx];
             if (cell == EMPTY_CELL) {
-                // end of the chain, key does not exist
                 return NO_VALUE;
             }
             if (((int) (cell & KEY_MASK)) == key) {
-                // found the key
                 size--;
                 shiftKeys(idx);
                 return (int) (cell >> 32);
             }
-            // continue walking the chain
             idx = getNextIndex(idx);
         } while (true);
     }
 
-    /**
-     * Returns the number of key-value mappings in this map.
-     *
-     * @return the number of key-value mappings in this map
-     */
     int size() {
         return size;
     }
@@ -201,9 +171,6 @@ final class IntIntMap implements Cloneable {
         return result;
     }
 
-    /**
-     * Shifts entries with the same hash.
-     */
     private void shiftKeys(final int index) {
         int last;
         int pos = index;
@@ -274,12 +241,6 @@ final class IntIntMap implements Cloneable {
         return (currentIndex + 1) & mask;
     }
 
-    /**
-     * Computes hashcode for {@code val}.
-     *
-     * @param val
-     * @return the hashcode for {@code val}
-     */
     private static int phiMix(final int val) {
         final int h = val * INT_PHI;
         return h ^ (h >> 16);

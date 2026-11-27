@@ -85,14 +85,6 @@ public final class Range extends Patterns {
         return new Range(range);
     }
 
-    /**
-     * Ensures that the given byte arrays representing the bottom and top of a range
-     * are valid, where the bottom array's hex representation is less than the top array.
-     *
-     * @param byteBottom the byte array representing the bottom of the range
-     * @param byteTops   the byte array representing the top of the range
-     * @throws IllegalArgumentException if the bottom array is not lexicographically less than the top array
-     */
     private static void ensureValidRange(byte[] byteBottom, byte[] byteTops) {
         int equals = 0;
         for(int i = 0; i < byteBottom.length; i++) {
@@ -101,7 +93,7 @@ public final class Range extends Patterns {
             } else if(byteBottom[i] > byteTops[i]) {
                 throw new IllegalArgumentException("Bottom must be less than top");
             } else {
-                break; // found one to be bigger than the other
+                break;
             }
         }
         if(equals == byteBottom.length) {
@@ -159,13 +151,10 @@ public final class Range extends Patterns {
         return bytes;
     }
 
-    // quickly find the index of chars within Constants.HEX_DIGITS
     private static int getHexByteIndex(byte value) {
-        // ['0'-'9'] maps to [0-9] indexes
         if (value >= '0' && value <= '9') {
             return value - '0';
         }
-        // ['A'-'F'] maps to [10-15] indexes
         return (value - 'A') + HEX_DIGIT_A_DECIMAL_VALUE;
     }
 

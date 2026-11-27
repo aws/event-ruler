@@ -8,10 +8,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/**
- * Represents a state in a state machine and maps utf-8 bytes to transitions. One byte can have many transitions,
- * meaning this is an NFA state as opposed to a DFA state.
- */
 @ThreadSafe
 class ByteState extends SingleByteTransition {
 
@@ -52,11 +48,6 @@ class ByteState extends SingleByteTransition {
         return Collections.emptySet();
     }
 
-    /**
-     * Returns {@code true} if this state contains no transitions.
-     *
-     * @return {@code true} if this state contains no transitions
-     */
     boolean hasNoTransitions() {
         return transitionStore == null;
     }
@@ -195,12 +186,6 @@ class ByteState extends SingleByteTransition {
         this.transitionStore = map;
     }
 
-    /**
-     * Removes provided transition for the given byte value from this state.
-     *
-     * @param utf8byte the byte value for which to remove transition from the state
-     * @param transition remove this transition for provided byte value from the state
-     */
     void removeTransition(byte utf8byte, SingleByteTransition transition) {
         // Saving the value to avoid reading an updated value
         Object transitionStore = this.transitionStore;
@@ -222,11 +207,6 @@ class ByteState extends SingleByteTransition {
         }
     }
 
-    /**
-     * Removes the given transition for all possible byte values from this state.
-     *
-     * @param transition the transition to be removed for all possible byte values
-     */
     void removeTransitionForAllBytes(final SingleByteTransition transition) {
         // Saving the value to avoid reading an updated value
         Object transitionStore = this.transitionStore;
@@ -257,11 +237,6 @@ class ByteState extends SingleByteTransition {
         this.hasIndeterminatePrefix = hasIndeterminatePrefix;
     }
 
-    /**
-     * Return true if this state has a self-referential transition and no others.
-     *
-     * @return True if this state has a self-referential transition and no others, false otherwise.
-     */
     boolean hasOnlySelfReferentialTransition() {
         // Saving the value to avoid reading an updated value
         Object transitionStore = this.transitionStore;
@@ -275,11 +250,6 @@ class ByteState extends SingleByteTransition {
         return map.numberOfTransitions() == 1 && map.hasTransition(this);
     }
 
-    /**
-     * Gets all the ceiling values contained in the ByteMap or SingleByteTransitionEntry.
-     *
-     * @return All the ceiling values contained in the ByteMap or SingleByteTransitionEntry.
-     */
     Set<Integer> getCeilings() {
         // Saving the value to avoid reading an updated value
         Object transitionStore = this.transitionStore;

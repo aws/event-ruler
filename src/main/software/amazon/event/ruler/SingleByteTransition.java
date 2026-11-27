@@ -5,10 +5,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-/**
- * This class represents a singular ByteTransition. This is in contrast to a compound ByteTransition that represents
- * having taken multiple distinct transitions simultaneously (i.e. for NFA traversal).
- */
 abstract class SingleByteTransition extends ByteTransition implements Iterable {
 
     /**
@@ -45,11 +41,6 @@ abstract class SingleByteTransition extends ByteTransition implements Iterable {
         return match;
     }
 
-    /**
-     * Get all transitions represented by this transition, which is simply this as this is a single byte transition.
-     *
-     * @return An iterable of all transitions represented by this transition.
-     */
     @Override
     Iterable<SingleByteTransition> expand() {
         return this;
@@ -82,7 +73,7 @@ abstract class SingleByteTransition extends ByteTransition implements Iterable {
     }
 
     public void gatherObjects(Set<Object> objectSet, int maxObjectCount) {
-        if (!objectSet.contains(this) && objectSet.size() < maxObjectCount) { // stops looping
+        if (!objectSet.contains(this) && objectSet.size() < maxObjectCount) {
             objectSet.add(this);
             final ByteMatch match = getMatch();
             if (match != null) {

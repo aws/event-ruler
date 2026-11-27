@@ -51,42 +51,27 @@ final class Event {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final JsonFactory JSON_FACTORY = new JsonFactory();
 
-    // the fields of the event
     final List<Field> fields = new ArrayList<>();
 
-    /**
-     * represents the current state of an Event-constructor project
-     */
     static class Progress {
         final ArrayMembership membership = new ArrayMembership();
         int arrayCount = 0;
         final Path path = new Path();
-        // final Stack<String> path = new Stack<>();
         final GenericMachine<?> machine;
         Progress(final GenericMachine<?> m) {
             machine = m;
         }
     }
 
-    /**
-     * represents a field value during Event construction
-     */
     static class Value {
         final String val;
         final ArrayMembership membership;
         Value(String val, ArrayMembership membership) {
             this.val = val;
-            this.membership = new ArrayMembership(membership); // clones the argument
+            this.membership = new ArrayMembership(membership);
         }
     }
 
-    /**
-     * Generates an Event with a structure that supports checking for consistent array membership.
-     *
-     * @param json JSON representation of the event
-     * @throws IOException if the JSON can't be parsed
-     * @throws IllegalArgumentException if the top level of the Event is not a JSON object
-     */
     Event(@Nonnull final String json, @Nonnull final GenericMachine<?> machine) throws IOException, IllegalArgumentException {
         final JsonParser parser = JSON_FACTORY.createParser(json);
         final Progress progress = new Progress(machine);
@@ -104,7 +89,6 @@ final class Event {
         }
     }
 
-    // as above, only with the JSON already parsed into a ObjectMapper tree
     Event(@Nonnull final JsonNode eventRoot, @Nonnull final GenericMachine<?> machine) throws IllegalArgumentException {
         if (!eventRoot.isObject()) {
             throw new IllegalArgumentException("Event must be a JSON object");
@@ -122,11 +106,9 @@ final class Event {
 
     private void traverseObject(final JsonParser parser, final TreeMap<String, List<Value>> fieldMap, final Progress progress) throws IOException {
         while (parser.nextToken() != JsonToken.END_OBJECT) {
-            // step name
             final String stepName = parser.getCurrentName();
             JsonToken nextToken = parser.nextToken();
 
-            // If we know current step name hasn't been used by any rules, we don't parse into this step.
             if (!progress.machine.isFieldStepUsed(stepName)) {
                 ignoreCurrentStep(parser);
                 continue;
@@ -179,31 +161,19 @@ final class Event {
         }
     }
 
-    /**
-     * Flattens a json String for matching rules in the state machine.
-     * @param json the json string
-     * @return flattened json event
-     */
     static List<String> flatten(@Nonnull final String json) throws IllegalArgumentException {
         try {
             final JsonNode eventRoot = OBJECT_MAPPER.readTree(json);
             return doFlatten(eventRoot);
         } catch (Throwable e) { // should be IOException, but the @Nonnull annotation doesn't work in some scenarios
-                                // catch all throwable exceptions
             throw new IllegalArgumentException(e);
         }
     }
 
-    /**
-     * Flattens a parsed json for matching rules in the state machine.
-     * @param eventRoot root node for the parsed json
-     * @return flattened json event
-     */
     static List<String> flatten(@Nonnull final JsonNode eventRoot) throws IllegalArgumentException {
         try {
             return doFlatten(eventRoot);
         } catch (Throwable e) { // the @Nonnull annotation doesn't work in some scenarios
-                                // catch all throwable exceptions
             throw new IllegalArgumentException(e);
         }
     }
@@ -250,7 +220,6 @@ final class Event {
             final Map.Entry<String, JsonNode> field = fields.next();
             final JsonNode val = field.getValue();
 
-            // If we know current step name hasn't been used by any rules, we don't parse into this step.
             if (!progress.machine.isFieldStepUsed(field.getKey())) {
                 continue;
             }

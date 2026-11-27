@@ -20,7 +20,6 @@ final class Constants {
   final static String NUMERIC = "numeric";
   final static String CIDR = "cidr";
 
-  // This is Ruler reserved words to represent the $or relationship among the fields.
   final static String OR_RELATIONSHIP_KEYWORD = "$or";
 
   final static String EQ = "=";
@@ -35,8 +34,8 @@ final class Constants {
       '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
       'A', 'B', 'C', 'D', 'E', 'F'
   };
-  final static byte MAX_HEX_DIGIT = HEX_DIGITS[HEX_DIGITS.length - 1]; // F
-  final static byte MIN_HEX_DIGIT = HEX_DIGITS[0]; // 0
+  final static byte MAX_HEX_DIGIT = HEX_DIGITS[HEX_DIGITS.length - 1];
+  final static byte MIN_HEX_DIGIT = HEX_DIGITS[0];
 
   static final byte[] BASE128_DIGITS = new byte[128];
 
@@ -59,15 +58,11 @@ final class Constants {
       WILDCARD,
       NUMERIC,
       CIDR,
-      // Numeric comparisons
       EQ, LT, LE, GT, GE,
       // reserve below keywords for future extension
       "regex",
-      // String Comparisons
       "not-wildcard", "not-equals-ignore-case",
-      // Date/Time comparisons
       "date-after", "date-on-or-after", "date-before", "date-on-or-before", "in-date-range",
-      // IP Address Comparison
       "ip-address-in-range", "ip-address-not-in-range"
   );
 }

@@ -33,7 +33,7 @@ import java.util.List;
 class ComparableNumber {
 
     static final int MAX_LENGTH_IN_BYTES = 10;
-    static final int BASE_128_BITMASK = 0x7f; // 127 or 01111111
+    static final int BASE_128_BITMASK = 0x7f;
 
     private ComparableNumber() {}
 
@@ -50,7 +50,6 @@ class ComparableNumber {
         final BigDecimal bigDecimal = JavaBigDecimalParser.parseBigDecimal(str);
         final double doubleValue = bigDecimal.doubleValue();
 
-        // make sure we have the comparable numbers and haven't eaten up decimals values
         if(Double.isNaN(doubleValue) || Double.isInfinite(doubleValue) ||
                 BigDecimal.valueOf(doubleValue).compareTo(bigDecimal) != 0) {
             throw new IllegalArgumentException("Cannot compare number : " + str);
@@ -97,7 +96,6 @@ class ComparableNumber {
 
         byte[] result = new byte[MAX_LENGTH_IN_BYTES];
 
-        // Populate the byte array with the Base128 encoded bytes of the input value
         for(; index >= 0; index--) {
             result[index] = (byte)(value & BASE_128_BITMASK);
             value >>= 7;

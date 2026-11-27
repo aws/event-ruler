@@ -2,9 +2,6 @@ package software.amazon.event.ruler;
 
 import java.util.Set;
 
-/**
- * Represents a transition (on a particular byte value) from a state to a state.
- */
 abstract class ByteTransition implements Cloneable {
 
     /**
@@ -67,11 +64,6 @@ abstract class ByteTransition implements Cloneable {
      */
     abstract ByteTransition getTransitionForNextByteStates();
 
-    /**
-     * Tell if current transition is a shortcut transition or not.
-     *
-     * @return True if and only if this is a shortcut transition.
-     */
     boolean isShortcutTrans() {
         return false;
     }
@@ -86,10 +78,6 @@ abstract class ByteTransition implements Cloneable {
         return false;
     }
 
-    /**
-     * Tell if current transition is empty which means doesn't has match nor next state.
-     * @return boolean
-     */
     boolean isEmpty() {
         return !getMatches().iterator().hasNext() && getNextByteState() == null;
     }
@@ -105,7 +93,7 @@ abstract class ByteTransition implements Cloneable {
     }
 
     public void gatherObjects(Set<Object> objectSet, int maxObjectCount) {
-        if (!objectSet.contains(this) && objectSet.size() < maxObjectCount) { // stops looping
+        if (!objectSet.contains(this) && objectSet.size() < maxObjectCount) {
             objectSet.add(this);
             for (ByteMatch match : getMatches()) {
                 match.gatherObjects(objectSet, maxObjectCount);

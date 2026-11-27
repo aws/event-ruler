@@ -224,14 +224,10 @@ public class JsonRuleCompiler {
         while (parser.nextToken() != JsonToken.END_OBJECT) {
             fieldsPresent = true;
 
-            // field name
             final String stepName = parser.getCurrentName();
 
-            // If it is "$or" primitive, we should bypass that primitive itself in the path as it is not
-            // a real field name, it is just used to describe the "$or" relationship among object in the followed array.
             if (stepName.equals(Constants.OR_RELATIONSHIP_KEYWORD)) {
                 parseIntoOrRelationship(rules, path, parser, withQuotes, withOverriding);
-                // all Objects in $or array have been handled in above function, just bypass below logic.
                 continue;
             }
 
@@ -265,11 +261,8 @@ public class JsonRuleCompiler {
         while (parser.nextToken() != JsonToken.END_OBJECT) {
             fieldsPresent = true;
 
-            // field name
             final String stepName = parser.getCurrentName();
 
-            // If it is "$or" primitive, we should bypass the "$or" primitive itself in the path as it is not
-            // a real step name, it is just used to describe the "$or" relationship among object in the followed Array.
             if (stepName.equals(Constants.OR_RELATIONSHIP_KEYWORD)) {
                 parseIntoOrRelationship(rules, path, parser, withQuotes, withOverriding);
                 continue;
@@ -301,29 +294,6 @@ public class JsonRuleCompiler {
         }
     }
 
-    /**
-     * This function is to parse the "$or" relationship described as an array, each object in the array will be
-     * interpreted as "$or" relationship, for example:
-     * {
-     *     "detail": {
-     *         "$or" : [
-     *             {"c-count": [ { "numeric": [ ">", 0, "<=", 5 ] } ]},
-     *             {"d-count": [ { "numeric": [ "<", 10 ] } ]},
-     *             {"x-limit": [ { "numeric": [ "=", 3.018e2 ] } ]}
-     *         ]
-     *     }
-     * }
-     * above rule will be interpreted as or effect: ("detail.c-count" || "detail.d-count" || detail.x-limit"),
-     * The result will be described as the list of Map, each Map represents a sub rule composed of fields of patterns in
-     * that or condition path, for example:
-     * [
-     *   {detail.c-count=[38D7EA4C68000/38D7EA512CB40:true/false]},
-     *   {detail.d-count=[0000000000000/38D7EA55F1680:false/true]},
-     *   {detail.x-limit=[VP:38D7EB6C39A40]}
-     * ]
-     * This List will be added into Ruler with the same rule name to demonstrate the "or" effects inside Ruler state
-     * machine.
-     */
     private static void parseIntoOrRelationship(final List<Map<String, List<Patterns>>> rules,
                                                 final Path path,
                                                 final JsonParser parser,
@@ -421,7 +391,6 @@ public class JsonRuleCompiler {
             barf(parser, "Empty arrays are not allowed");
         }
 
-        // If the rules list is empty, add the first rule
         if (rules.isEmpty()) {
             rules.add(new HashMap<>());
         }
@@ -463,7 +432,7 @@ public class JsonRuleCompiler {
             if (prefixToken != JsonToken.VALUE_STRING) {
                 barf(parser, "prefix match pattern must be a string");
             }
-            final Patterns pattern = Patterns.prefixMatch('"' + parser.getText()); // note no trailing quote
+            final Patterns pattern = Patterns.prefixMatch('"' + parser.getText());
             if (parser.nextToken() != JsonToken.END_OBJECT) {
                 barf(parser, "Only one key allowed in match expression");
             }
@@ -477,7 +446,7 @@ public class JsonRuleCompiler {
             if (suffixToken != JsonToken.VALUE_STRING) {
                 barf(parser, "suffix match pattern must be a string");
             }
-            final Patterns pattern = Patterns.suffixMatch(parser.getText() + '"'); // note no beginning quote
+            final Patterns pattern = Patterns.suffixMatch(parser.getText() + '"');
             if (parser.nextToken() != JsonToken.END_OBJECT) {
                 barf(parser, "Only one key allowed in match expression");
             }
@@ -498,7 +467,6 @@ public class JsonRuleCompiler {
             JsonToken anythingButExpressionToken = parser.nextToken();
             if (anythingButExpressionToken == JsonToken.START_OBJECT) {
 
-                // there are a limited set of things we can apply Anything-But to
                 final JsonToken anythingButObject = parser.nextToken();
                 if (anythingButObject != JsonToken.FIELD_NAME) {
                     barf(parser, "Anything-But expression name not found");
@@ -521,7 +489,6 @@ public class JsonRuleCompiler {
                         barf(parser, "Unsupported anything-but pattern: " + anythingButObjectOp);
                 }
 
-                // Step into anything-but's equals-ignore-case/prefix/suffix/wildcard
                 anythingButExpressionToken = parser.nextToken();
             }
 
@@ -551,7 +518,6 @@ public class JsonRuleCompiler {
             if (parser.nextToken() != JsonToken.END_OBJECT) {
                 tooManyElements(parser);
             }
-            // Complete the object closure when a set is present
             if (matchType != MatchType.ANYTHING_BUT && parser.nextToken() != JsonToken.END_OBJECT) {
                 tooManyElements(parser);
             }

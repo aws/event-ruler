@@ -143,7 +143,6 @@ public class Patterns implements Cloneable  {
         return new Patterns(MatchType.ABSENT);
     }
 
-    // Implement equals-ignore-case by doing lower-case comparisons
     public static ValuePatterns equalsIgnoreCaseMatch(final String value) {
         return new ValuePatterns(MatchType.EQUALS_IGNORE_CASE, value);
     }

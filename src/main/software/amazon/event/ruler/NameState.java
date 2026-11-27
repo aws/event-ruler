@@ -7,15 +7,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.concurrent.ThreadSafe;
 
-/**
- * Represents a state in the machine.
- *
- * The "valueTransitions" map is keyed by field name and yields a ByteMachine
- * that is used to match values.
- *
- * The "keyTransitions" map is keyed by field name and yields a NameMatcher
- * that is used to match keys for [ { exists: false } ].
- */
 @ThreadSafe
 class NameState {
 
@@ -33,16 +24,12 @@ class NameState {
     // Only used when Configuration is set for additionalNameStateReuse.
     private final Map<String, NameState> keyToNextNameState = new ConcurrentHashMap<>();
 
-    // All rules, both terminal and non-terminal, keyed by pattern, that led to this NameState.
     private final Map<Patterns, Set<Object>> patternToRules = new ConcurrentHashMap<>();
 
-    // All terminal sub-rule IDs, keyed by pattern, that led to this NameState.
     private final Map<Patterns, Set<SubRuleContext>> patternToTerminalSubRuleIds = new ConcurrentHashMap<>();
 
-    // All non-terminal sub-rule IDs, keyed by pattern, that led to this NameState.
     private final Map<Patterns, Set<SubRuleContext>> patternToNonTerminalSubRuleIds = new ConcurrentHashMap<>();
 
-    // All sub-rule IDs mapped to the number of times that sub-rule has been added to this NameState.
     private final Map<SubRuleContext, Integer> subRuleIdToCount = new ConcurrentHashMap<>();
 
     ByteMachine getTransitionOn(final String token) {
@@ -193,13 +180,6 @@ class NameState {
         return ((Set) map.get(pattern)).add(setElement);
     }
 
-    /**
-     * Determines whether this NameState contains the provided rule accessible via the provided pattern.
-     *
-     * @param rule The rule, which may have multiple sub-rules.
-     * @param pattern The pattern used by the rule to transition to this NameState.
-     * @return True indicates that this NameState the provided rule for the provided pattern.
-     */
     boolean containsRule(final Object rule, final Patterns pattern) {
         Set<Object> rules = patternToRules.get(pattern);
         return rules != null && rules.contains(rule);
@@ -319,7 +299,7 @@ class NameState {
     }
 
     public void gatherObjects(Set<Object> objectSet, int maxObjectCount) {
-        if (!objectSet.contains(this) && objectSet.size() < maxObjectCount) { // stops looping
+        if (!objectSet.contains(this) && objectSet.size() < maxObjectCount) {
             objectSet.add(this);
             for (ByteMachine byteMachine : valueTransitions.values()) {
                 byteMachine.gatherObjects(objectSet, maxObjectCount);

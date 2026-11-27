@@ -32,14 +32,12 @@ class ACFinder {
 
     private static List<Object> find(final ACTask task, final SubRuleContext.Generator subRuleContextGenerator) {
 
-        // bootstrap the machine: Start state, first field
         NameState startState = task.startState();
         if (startState == null) {
             return Collections.emptyList();
         }
         moveFrom(null, startState, 0, task, new ArrayMembership(), subRuleContextGenerator);
 
-        // each iteration removes a Step and adds zero or more new ones
         while (task.stepsRemain()) {
             tryStep(task, subRuleContextGenerator);
         }
@@ -47,29 +45,22 @@ class ACFinder {
         return task.getMatchedRules();
     }
 
-    // remove a step from the work queue and see if there's a transition
     private static void tryStep(final ACTask task, final SubRuleContext.Generator subRuleContextGenerator) {
         final ACStep step = task.nextStep();
         final Field field = task.event.fields.get(step.fieldIndex);
 
-        // if we can step from where we are to the new field without violating array consistency
         final ArrayMembership newMembership = ArrayMembership.checkArrayConsistency(step.membershipSoFar, field.arrayMembership);
         if (newMembership != null) {
 
-            // if there are some possible value pattern matches for this key
             final ByteMachine valueMatcher = step.nameState.getTransitionOn(field.name);
             if (valueMatcher != null) {
 
-                // loop through the value pattern matches, if any
                 final int nextFieldIndex = step.fieldIndex + 1;
                 for (NameStateWithPattern nextNameStateWithPattern : valueMatcher.transitionOn(field.val)) {
 
-                    // we have moved to a new NameState
-                    // this NameState might imply a rule match
                     task.collectRules(step.candidateSubRuleIds, nextNameStateWithPattern.getNameState(),
                             nextNameStateWithPattern.getPattern(), subRuleContextGenerator);
 
-                    // set up for attempting to move on from the new state
                     moveFromWithPriorCandidates(step.candidateSubRuleIds, nextNameStateWithPattern.getNameState(),
                             nextNameStateWithPattern.getPattern(), nextFieldIndex, task, newMembership,
                             subRuleContextGenerator);
@@ -93,7 +84,6 @@ class ACFinder {
         }
     }
 
-    // Move from a state. Give all the remaining event fields a chance to transition from it.
     private static void moveFrom(final Set<SubRuleContext> candidateSubRuleIdsForNextStep, final NameState nameState,
                                  int fieldIndex, final ACTask task, final ArrayMembership arrayMembership,
                                  final SubRuleContext.Generator subRuleContextGenerator) {
@@ -128,7 +118,6 @@ class ACFinder {
         Set<SubRuleContext> candidateSubRuleIdsForNextStep = calculateCandidateSubRuleIdsForNextStep(candidateSubRuleIds,
                 fromState, fromPattern);
 
-        // If there are no more candidate sub-rules, there is no need to proceed further.
         if (candidateSubRuleIdsForNextStep != null && !candidateSubRuleIdsForNextStep.isEmpty()) {
             moveFrom(candidateSubRuleIdsForNextStep, fromState, fieldIndex, task, arrayMembership,
                     subRuleContextGenerator);
@@ -152,8 +141,6 @@ class ACFinder {
         // are not all candidates as they may have required different values for previously evaluated fields.
         Set<SubRuleContext> subRuleIds = fromState.getNonTerminalSubRuleIdsForPattern(fromPattern);
 
-        // If no sub-rules used the matched pattern to transition to the next NameState, then there are no matches to be
-        // found by going further.
         if (subRuleIds == null) {
             return null;
         }
@@ -164,8 +151,6 @@ class ACFinder {
             return subRuleIds;
         }
 
-        // There are candidate sub-rules, so retain only those that used the matched pattern to transition to the next
-        // NameState.
         Set<SubRuleContext> candidateSubRuleIdsForNextStep = new HashSet<>();
         intersection(subRuleIds, currentCandidateSubRuleIds, candidateSubRuleIdsForNextStep);
         return candidateSubRuleIdsForNextStep;
@@ -174,7 +159,6 @@ class ACFinder {
     private static void addNameState(Set<SubRuleContext> candidateSubRuleIds, NameState nameState, Patterns pattern,
                                      ACTask task, int nextKeyIndex, final ArrayMembership arrayMembership,
                                      final SubRuleContext.Generator subRuleContextGenerator) {
-        // one of the matches might imply a rule match
         task.collectRules(candidateSubRuleIds, nameState, pattern, subRuleContextGenerator);
 
         moveFromWithPriorCandidates(candidateSubRuleIds, nameState, pattern, nextKeyIndex, task, arrayMembership,

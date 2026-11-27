@@ -28,10 +28,6 @@ import static software.amazon.event.ruler.SetOperations.intersection;
  *  generic type for rule names in GenericMachine for convenience and to avoid explicit type casts.
  */
 
-/**
- *  Uses a state machine created by software.amazon.event.ruler.Machine to process tokens
- *   representing key-value pairs in an event, and return any matching Rules.
- */
 @ThreadSafe
 class Finder {
 
@@ -67,14 +63,12 @@ class Finder {
 
     private static List<Object> find(final Task task, final SubRuleContext.Generator subRuleContextGenerator) {
 
-        // bootstrap the machine: Start state, first token
         NameState startState = task.startState();
         if (startState == null) {
             return Collections.emptyList();
         }
         moveFrom(null, startState, 0, task, subRuleContextGenerator);
 
-        // each iteration removes a Step and adds zero or more new ones
         while (task.stepsRemain()) {
             tryStep(task, subRuleContextGenerator);
         }
@@ -82,7 +76,6 @@ class Finder {
         return task.getMatchedRules();
     }
 
-    // Move from a state.  Give all the remaining tokens a chance to transition from it
     private static void moveFrom(final Set<SubRuleContext> candidateSubRuleIdsForNextStep, final NameState nameState,
                                  final int tokenIndex, final Task task,
                                  final SubRuleContext.Generator subRuleContextGenerator) {
@@ -103,7 +96,6 @@ class Finder {
          */
         tryNameMatching(candidateSubRuleIdsForNextStep, nameState, task, tokenIndex, subRuleContextGenerator);
 
-        // Add more steps using our new set of candidate sub-rules.
         for (int i = tokenIndex; i < task.event.length; i += 2) {
             if (task.isFieldUsed(task.event[i])) {
                 task.addStep(new Step(i, nameState, candidateSubRuleIdsForNextStep));
@@ -118,7 +110,6 @@ class Finder {
         Set<SubRuleContext> candidateSubRuleIdsForNextStep = calculateCandidateSubRuleIdsForNextStep(candidateSubRuleIds,
                 fromState, fromPattern);
 
-        // If there are no more candidate sub-rules, there is no need to proceed further.
         if (candidateSubRuleIdsForNextStep != null && !candidateSubRuleIdsForNextStep.isEmpty()) {
             moveFrom(candidateSubRuleIdsForNextStep, fromState, tokenIndex, task, subRuleContextGenerator);
         }
@@ -142,8 +133,6 @@ class Finder {
         // are not all candidates as they may have required different values for previously evaluated fields.
         Set<SubRuleContext> subRuleIds = fromState.getNonTerminalSubRuleIdsForPattern(fromPattern);
 
-        // If no sub-rules used the matched pattern to transition to the next NameState, then there are no matches to be
-        // found by going further.
         if (subRuleIds == null) {
             return null;
         }
@@ -154,14 +143,11 @@ class Finder {
             return subRuleIds;
         }
 
-        // There are candidate sub-rules, so retain only those that used the matched pattern to transition to the next
-        // NameState.
         Set<SubRuleContext> candidateSubRuleIdsForNextStep = new HashSet<>();
         intersection(subRuleIds, currentCandidateSubRuleIds, candidateSubRuleIdsForNextStep);
         return candidateSubRuleIdsForNextStep;
     }
 
-    // remove a step from the work queue and see if there's a transition
     private static void tryStep(final Task task, final SubRuleContext.Generator subRuleContextGenerator) {
         final Step step = task.nextStep();
 
@@ -180,12 +166,10 @@ class Finder {
             return;
         }
 
-        // if there are some possible value pattern matches for this key
         final ByteMachine valueMatcher = step.nameState.getTransitionOn(value);
         if (valueMatcher != null) {
             final int nextKeyIndex = step.keyIndex + 2;
 
-            // loop through the value pattern matches
             for (NameStateWithPattern nextNameStateWithPattern : valueMatcher.transitionOn(task.event[step.keyIndex + 1])) {
                 addNameState(step.candidateSubRuleIds, nextNameStateWithPattern.getNameState(),
                         nextNameStateWithPattern.getPattern(), task, nextKeyIndex, subRuleContextGenerator);
@@ -210,7 +194,6 @@ class Finder {
 
     private static void addNameState(Set<SubRuleContext> candidateSubRuleIds, NameState nameState, Patterns pattern, Task task,
                                      int nextKeyIndex, final SubRuleContext.Generator subRuleContextGenerator) {
-        // one of the matches might imply a rule match
         task.collectRules(candidateSubRuleIds, nameState, pattern, subRuleContextGenerator);
 
         moveFromWithPriorCandidates(candidateSubRuleIds, nameState, pattern, nextKeyIndex, task,

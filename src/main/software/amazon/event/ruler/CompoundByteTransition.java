@@ -14,24 +14,12 @@ import java.util.TreeSet;
  */
 public final class CompoundByteTransition extends ByteTransition {
 
-    /**
-     * The transitions that have all been simultaneously traversed.
-     */
     private final Set<SingleByteTransition> byteTransitions;
 
-    /**
-     * A view of byteTransitions containing just the shortcuts.
-     */
     private final Set<ShortcutTransition> shortcutTransitions;
 
-    /**
-     * A view of byteTransitions containing just the ones that can contain matches.
-     */
     private final Set<SingleByteTransition> matchableTransitions;
 
-    /**
-     * A ByteTransition representing all nextByteStates from byteTransitions.
-     */
     private final ByteTransition transitionForNextByteState;
 
     private CompoundByteTransition(Set<SingleByteTransition> byteTransitions) {
@@ -114,11 +102,6 @@ public final class CompoundByteTransition extends ByteTransition {
         return nextState;
     }
 
-    /**
-     * Get all transitions represented by this compound transition.
-     *
-     * @return A set of all transitions represented by this transition.
-     */
     @Override
     Set<SingleByteTransition> expand() {
         return byteTransitions;
@@ -170,7 +153,6 @@ public final class CompoundByteTransition extends ByteTransition {
 
     @Override
     public Set<ByteTransition> getTransitions() {
-        // Determine all unique ceilings held in the ByteMaps of all nextByteStates.
         Set<Integer> allCeilings = new TreeSet<>();
         for (SingleByteTransition transition : byteTransitions) {
             ByteState nextByteState = transition.getNextByteState();
@@ -179,8 +161,6 @@ public final class CompoundByteTransition extends ByteTransition {
             }
         }
 
-        // For each unique ceiling, determine all singular transitions accessible for that byte value, then add
-        // coalesced version to final result.
         Set<ByteTransition> result = new HashSet<>();
         for (Integer ceiling : allCeilings) {
             Set<SingleByteTransition> singles = new HashSet<>();

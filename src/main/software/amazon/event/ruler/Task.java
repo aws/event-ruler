@@ -11,19 +11,13 @@ import java.util.Set;
 
 import static software.amazon.event.ruler.SetOperations.intersection;
 
-/**
- * Represents the state of a rule-finding project.
- */
 @ThreadSafe
 class Task {
 
-    // What we're trying to match rules to
     public final String[] event;
 
-    // the rules that matched the event, if we find any
     private final Set<Object> matchingRules = new HashSet<>();
 
-    // Steps queued up for processing
     private final Queue<Step> stepQueue = new ArrayDeque<>();
 
     // Visiting the same Step multiple times will give the same outcome for all visits,
@@ -37,7 +31,6 @@ class Task {
     // c = number of distinct sets of candidate sub-rules
     private final Set<Step> seenSteps = new HashSet<>();
 
-    // the state machine
     private final GenericMachine<?> machine;
 
     Task(final List<String> event, final GenericMachine<?> machine) {
@@ -53,7 +46,6 @@ class Task {
         return machine.getStartState();
     }
 
-    // The field used means all steps in the field must be all used individually.
     boolean isFieldUsed(final String field) {
         if (field.contains(".")) {
             String[] steps = field.split("\\.");
