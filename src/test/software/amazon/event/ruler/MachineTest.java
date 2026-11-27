@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -35,6 +36,8 @@ import static org.junit.Assert.fail;
  *  more of a smoke/integration test.  But the coverage is quite good.
  */
 public class MachineTest {
+
+    private static final int FRESH_MACHINES_FOR_HASH_ORDER = 100;
 
     private String toIP(int ip) {
         String sb = String.valueOf((ip >> 24) & 0xFF) + '.' +
@@ -3367,5 +3370,278 @@ public class MachineTest {
         // The validators do not take the option: check() rejects the same input whatever a machine is configured to do.
         assertNotNull(JsonRuleCompiler.check(rule + "}"));
         assertNotNull(RuleCompiler.check(rule + "}"));
+    }
+
+    @Test
+    public void WHEN_RuleSharingValueIsDeletedWithEqualsIgnoreCaseRuleOnSameFirstByte_THEN_ItNoLongerMatches()
+            throws Exception {
+        assertDeleteOfRuleSharingValueWithIgnoreCaseRuleOnSameFirstByte(MachineTest::equalsIgnoreCasePattern, "r0");
+    }
+
+    @Test
+    public void WHEN_RuleSharingValueIsDeletedWithPrefixEqualsIgnoreCaseRuleOnSameFirstByte_THEN_ItNoLongerMatches()
+            throws Exception {
+        assertDeleteOfRuleSharingValueWithIgnoreCaseRuleOnSameFirstByte(MachineTest::prefixEqualsIgnoreCasePattern,
+                "r0", "r1");
+    }
+
+    @Test
+    public void WHEN_PrefixEqualsIgnoreCaseRuleSharingValueWithExactRuleIsDeleted_THEN_ItNoLongerMatches()
+            throws Exception {
+        for (final String sharedValue : new String[] { "次x", "1x" }) {
+            final List<NamedRule> rules = asList(
+                    new NamedRule("prefix", prefixEqualsIgnoreCasePattern(sharedValue)),
+                    new NamedRule("exact", exactPattern(sharedValue)));
+            assertDeleteOneRuleThenDeleteAll(rules, "prefix", sharedValue, "exact");
+        }
+    }
+
+    @Test
+    public void WHEN_RuleSharingValueIsDeletedWithoutIgnoreCaseRuleOnSameFirstByte_THEN_ItNoLongerMatches()
+            throws Exception {
+        assertDeleteOneRuleThenDeleteAll(asList(
+                new NamedRule("r0", exactPattern("éx")),
+                new NamedRule("r2", exactPattern("éx"))), "r2", "éx", "r0");
+        assertDeleteOneRuleThenDeleteAll(asList(
+                new NamedRule("r0", exactPattern("zz")),
+                new NamedRule("r1", equalsIgnoreCasePattern("é")),
+                new NamedRule("r2", exactPattern("zz"))), "r2", "zz", "r0");
+    }
+
+    @Test
+    public void WHEN_RuleSharingValueIsDeletedWithWildcardRuleOnSamePath_THEN_ItNoLongerMatches() throws Exception {
+        for (final String wildcard : new String[] { "a*", "*c", "ab*" }) {
+            final List<NamedRule> rules = asList(
+                    new NamedRule("r0", exactPattern("abc")),
+                    new NamedRule("w", wildcardPattern(wildcard)),
+                    new NamedRule("r2", exactPattern("abc")));
+            assertDeleteOneRuleThenDeleteAll(rules, "r2", "abc", "r0", "w");
+        }
+    }
+
+    @Test
+    public void WHEN_RuleSharingValueIsDeletedAfterRuleWentThroughShortcutByteBesideWildcard_THEN_ItNoLongerMatches()
+            throws Exception {
+        final List<NamedRule> rules = asList(
+                new NamedRule("r0", exactPattern("abc")),
+                new NamedRule("w", wildcardPattern("a*")),
+                new NamedRule("p", "{\"prefix\": \"abd\"}"),
+                new NamedRule("r2", exactPattern("abc")));
+        assertDeleteOneRuleThenDeleteAll(rules, "r2", "abc", "r0", "w");
+    }
+
+    @Test
+    public void WHEN_RuleSharingValueIsDeletedWithLeadingWildcardRule_THEN_ItNoLongerMatches() throws Exception {
+        assertDeleteOneRuleThenDeleteAll(asList(
+                new NamedRule("r0", exactPattern("10")),
+                new NamedRule("w", wildcardPattern("*10")),
+                new NamedRule("r2", exactPattern("10"))), "r2", "10", "r0", "w");
+        final List<NamedRule> rules = asList(
+                new NamedRule("r0", exactPattern("1x")),
+                new NamedRule("w", wildcardPattern("*x1")),
+                new NamedRule("r2", exactPattern("1x")));
+        assertDeleteOneRuleThenDeleteAll(rules, "r2", "1x", "r0");
+    }
+
+    @Test
+    public void WHEN_ExactRulesShareCaselessValueWithIgnoreCaseRuleOnSameFirstByte_THEN_EachExactRuleMatches()
+            throws Exception {
+        final Machine machine = new Machine();
+        for (final NamedRule rule : asList(
+                new NamedRule("x1", exactPattern("×")),
+                new NamedRule("ic", equalsIgnoreCasePattern("é")),
+                new NamedRule("x2", exactPattern("×")),
+                new NamedRule("e", exactPattern("é")))) {
+            machine.addRule(rule.name, rule.json);
+        }
+        assertEquals(new HashSet<>(asList("x1", "x2")), matches(machine, "×"));
+    }
+
+    @Test
+    public void WHEN_ExactRuleSharingCaselessValueWithIgnoreCaseRuleOnSameFirstByteIsDeleted_THEN_ItNoLongerMatches()
+            throws Exception {
+        assertDeleteOneRuleThenDeleteAll(asList(
+                new NamedRule("x1", exactPattern("×")),
+                new NamedRule("ic", equalsIgnoreCasePattern("é")),
+                new NamedRule("x2", exactPattern("×"))), "x2", "×", "x1");
+    }
+
+    @Test
+    public void WHEN_ExactRuleThatExtendsCaselessValueBesideIgnoreCaseRuleIsDeleted_THEN_ItNoLongerMatches()
+            throws Exception {
+        assertDeleteOneRuleThenDeleteAll(asList(
+                new NamedRule("x1", exactPattern("×")),
+                new NamedRule("ic", equalsIgnoreCasePattern("é")),
+                new NamedRule("x2", exactPattern("×y"))), "x2", "×y");
+    }
+
+    @Test
+    public void WHEN_RuleWithTwoPatternsOnOneFieldIsDeletedAndAddedAgain_THEN_ItMatchesThroughEachPattern()
+            throws Exception {
+        assertReAddOfRuleWithTwoPatterns("r2", suffixEqualsIgnoreCasePattern("e"), "{\"prefix\": \"ex\"}", "ee", "ex");
+        assertReAddOfRuleWithTwoPatterns("r2", exactPattern("a"), exactPattern("b"), "a", "b");
+    }
+
+    @Test
+    public void WHEN_RuleWithTwoPatternsOnOneFieldIsDeletedAndNewRuleAddsThem_THEN_DeletedRuleDoesNotMatch()
+            throws Exception {
+        assertReAddOfRuleWithTwoPatterns("r4", suffixEqualsIgnoreCasePattern("e"), "{\"prefix\": \"ex\"}", "ee", "ex");
+        assertReAddOfRuleWithTwoPatterns("r4", exactPattern("a"), exactPattern("b"), "a", "b");
+    }
+
+    @Test
+    public void WHEN_TwoFieldRuleWithTwoPatternsOnFirstFieldIsDeletedAndAddedAgain_THEN_ItMatchesThroughEachPattern()
+            throws Exception {
+        assertReAddOfTwoFieldRuleWithTwoPatterns("r2");
+    }
+
+    @Test
+    public void WHEN_TwoFieldRuleWithTwoPatternsOnFirstFieldIsDeletedAndNewRuleAddsThem_THEN_DeletedRuleDoesNotMatch()
+            throws Exception {
+        assertReAddOfTwoFieldRuleWithTwoPatterns("r4");
+    }
+
+    @Test
+    public void WHEN_FirstOfTwoExactRulesSharingValueWithWildcardRuleIsDeleted_THEN_SecondStillMatches()
+            throws Exception {
+        assertDeleteOneRuleThenDeleteAll(asList(
+                new NamedRule("r0", exactPattern("abc")),
+                new NamedRule("w", wildcardPattern("a*")),
+                new NamedRule("r2", exactPattern("abc"))), "r0", "abc", "r2", "w");
+    }
+
+    @Test
+    public void WHEN_ExactRuleSharingPrefixWithExactAndWildcardRuleIsDeleted_THEN_ItNoLongerMatches()
+            throws Exception {
+        assertDeleteOneRuleThenDeleteAll(asList(
+                new NamedRule("r0", exactPattern("abc")),
+                new NamedRule("w", wildcardPattern("a*")),
+                new NamedRule("r2", exactPattern("abd"))), "r2", "abd", "w");
+    }
+
+    @Test
+    public void WHEN_ExactRuleIsAddedBesideShortcutAndNumericRangeOnSameByte_THEN_EarlierExactRuleStillMatches()
+            throws Exception {
+        for (int i = 0; i < FRESH_MACHINES_FOR_HASH_ORDER; i++) {
+            final Machine machine = new Machine();
+            machine.addRule("e0", "{\"a\": [\"0\"]}");
+            machine.addRule("n", "{\"a\": [{\"numeric\": [\"<\", 1.5]}]}");
+            machine.addRule("e15", "{\"a\": [\"1.5\"]}");
+            assertEquals("machine " + i, Collections.singleton("e0"), matches(machine, "0"));
+        }
+    }
+
+    private static void assertReAddOfRuleWithTwoPatterns(final String reAddedRule, final String firstPattern,
+                                                         final String secondPattern, final String firstValue,
+                                                         final String secondValue) throws Exception {
+        final NamedRule first = new NamedRule("r1", firstPattern);
+        final NamedRule second = new NamedRule("r3", secondPattern);
+        final NamedRule both = new NamedRule("r2", firstPattern + ", " + secondPattern);
+        final NamedRule bothAgain = new NamedRule(reAddedRule, firstPattern + ", " + secondPattern);
+        final Machine machine = new Machine();
+        machine.addRule(first.name, first.json);
+        machine.addRule(second.name, second.json);
+        machine.addRule(both.name, both.json);
+        machine.deleteRule(both.name, both.json);
+        machine.deleteRule(second.name, second.json);
+        machine.addRule(bothAgain.name, bothAgain.json);
+
+        assertEquals(firstValue, new HashSet<>(asList("r1", reAddedRule)), matches(machine, firstValue));
+        assertEquals(secondValue, Collections.singleton(reAddedRule), matches(machine, secondValue));
+
+        machine.deleteRule(bothAgain.name, bothAgain.json);
+        machine.deleteRule(first.name, first.json);
+        assertTrue(machine.isEmpty());
+    }
+
+    private static void assertReAddOfTwoFieldRuleWithTwoPatterns(final String reAddedRule) throws Exception {
+        final String first = "{\"a\": [\"a\"], \"b\": [\"z\"]}";
+        final String second = "{\"a\": [\"b\"], \"b\": [\"z\"]}";
+        final String both = "{\"a\": [\"a\", \"b\"], \"b\": [\"z\"]}";
+        final Machine machine = new Machine();
+        machine.addRule("r1", first);
+        machine.addRule("r3", second);
+        machine.addRule("r2", both);
+        machine.deleteRule("r2", both);
+        machine.deleteRule("r3", second);
+        machine.addRule(reAddedRule, both);
+
+        assertEquals(new HashSet<>(asList("r1", reAddedRule)),
+                new HashSet<>(machine.rulesForJSONEvent("{\"a\": \"a\", \"b\": \"z\"}")));
+        assertEquals(Collections.singleton(reAddedRule),
+                new HashSet<>(machine.rulesForJSONEvent("{\"a\": \"b\", \"b\": \"z\"}")));
+
+        machine.deleteRule(reAddedRule, both);
+        machine.deleteRule("r1", first);
+        assertTrue(machine.isEmpty());
+    }
+
+    private static Set<String> matches(final Machine machine, final String value) throws Exception {
+        return new HashSet<>(machine.rulesForJSONEvent("{\"a\": \"" + value + "\"}"));
+    }
+
+    private static void assertDeleteOfRuleSharingValueWithIgnoreCaseRuleOnSameFirstByte(
+            final Function<String, String> ignoreCasePattern, final String... expectedRules) throws Exception {
+        final String[][] sharedAndFirstCharacterValues = { { "éx", "é" }, { "zx", "z" } };
+        for (final String[] values : sharedAndFirstCharacterValues) {
+            final String sharedValue = values[0];
+            final String firstCharacter = values[1];
+            final List<NamedRule> rules = asList(
+                    new NamedRule("r0", exactPattern(sharedValue)),
+                    new NamedRule("r1", ignoreCasePattern.apply(firstCharacter)),
+                    new NamedRule("r2", exactPattern(sharedValue)));
+            assertDeleteOneRuleThenDeleteAll(rules, "r2", sharedValue, expectedRules);
+        }
+    }
+
+    private static String wildcardPattern(final String value) {
+        return "{\"wildcard\": \"" + value + "\"}";
+    }
+
+    private static String exactPattern(final String value) {
+        return "\"" + value + "\"";
+    }
+
+    private static String equalsIgnoreCasePattern(final String value) {
+        return "{\"equals-ignore-case\": \"" + value + "\"}";
+    }
+
+    private static String prefixEqualsIgnoreCasePattern(final String value) {
+        return "{\"prefix\": {\"equals-ignore-case\": \"" + value + "\"}}";
+    }
+
+    private static String suffixEqualsIgnoreCasePattern(final String value) {
+        return "{\"suffix\": {\"equals-ignore-case\": \"" + value + "\"}}";
+    }
+
+    private static void assertDeleteOneRuleThenDeleteAll(final List<NamedRule> rules, final String deletedRule,
+                                                         final String value, final String... expectedRules)
+            throws Exception {
+        final Machine machine = new Machine();
+        for (final NamedRule rule : rules) {
+            machine.addRule(rule.name, rule.json);
+        }
+        for (final NamedRule rule : rules) {
+            if (rule.name.equals(deletedRule)) {
+                machine.deleteRule(rule.name, rule.json);
+            }
+        }
+        assertEquals(value, new HashSet<>(asList(expectedRules)), matches(machine, value));
+        for (final NamedRule rule : rules) {
+            if (!rule.name.equals(deletedRule)) {
+                machine.deleteRule(rule.name, rule.json);
+            }
+        }
+        assertTrue(value, machine.isEmpty());
+    }
+
+    private static final class NamedRule {
+        private final String name;
+        private final String json;
+
+        private NamedRule(final String name, final String pattern) {
+            this.name = name;
+            this.json = "{\"a\": [" + pattern + "]}";
+        }
     }
 }

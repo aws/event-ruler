@@ -11,10 +11,14 @@ final class ByteMatch extends SingleByteTransition  {
 
     private final Patterns pattern;
     private final NameState nextNameState;  // the next state in the higher-level name/value machine
+    // True when insertMatch put this match on all the members of a multi-byte set, for example x and X of an
+    // ignore-case rule. Then this one match is on more than one byte.
+    private final boolean onMultiByteSet;
 
-    ByteMatch(Patterns pattern, NameState nextNameState) {
+    ByteMatch(Patterns pattern, NameState nextNameState, boolean onMultiByteSet) {
         this.pattern = pattern;
         this.nextNameState = nextNameState;
+        this.onMultiByteSet = onMultiByteSet;
     }
 
     @Override
@@ -61,6 +65,10 @@ final class ByteMatch extends SingleByteTransition  {
         return pattern;
     }
     NameState getNextNameState() { return nextNameState; }
+
+    boolean isOnMultiByteSet() {
+        return onMultiByteSet;
+    }
 
     @Override
     boolean isMatchTrans() {

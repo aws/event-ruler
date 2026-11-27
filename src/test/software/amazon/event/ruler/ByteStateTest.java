@@ -60,7 +60,7 @@ public class ByteStateTest {
 
     @Test
     public void setMatchShouldReturnNewCompositeTransitionWhenGivenMatchIsNotNull() {
-        ByteMatch match = new ByteMatch(Patterns.exactMatch("xyz"), new NameState());
+        ByteMatch match = new ByteMatch(Patterns.exactMatch("xyz"), new NameState(), false);
 
         ByteTransition transition = state.setMatch(match);
 

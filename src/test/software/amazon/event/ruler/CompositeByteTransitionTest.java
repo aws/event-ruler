@@ -20,7 +20,7 @@ public class CompositeByteTransitionTest {
     @Before
     public void setUp() {
         nextState = new ByteState();
-        match = new ByteMatch(Patterns.exactMatch("abc"), new NameState());
+        match = new ByteMatch(Patterns.exactMatch("abc"), new NameState(), false);
         compositeTransition = new CompositeByteTransition(nextState, match);
     }
 
@@ -64,7 +64,7 @@ public class CompositeByteTransitionTest {
 
     @Test
     public void setMatchShouldReturnThisCompositeTransitionWhenGivenMatchIsNotNull() {
-        ByteMatch match = new ByteMatch(Patterns.exactMatch("xyz"), new NameState());
+        ByteMatch match = new ByteMatch(Patterns.exactMatch("xyz"), new NameState(), false);
 
         SingleByteTransition transition = compositeTransition.setMatch(match);
 
