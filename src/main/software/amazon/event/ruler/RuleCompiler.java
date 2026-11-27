@@ -24,10 +24,10 @@ import static software.amazon.event.ruler.input.DefaultParser.getParser;
 /**
  * Compiles Rules, expressed in JSON, for use in Ruler.
  * There are two flavors of compilation:
- * 1. Compile a JSON-based Rule into Map of String to List of Patterns which can be used in rulesForEvent,
+ * 1. Compile a JSON-based Rule into Map of String to List of Patterns which can be used in addPatternRule,
  *    and has a "check" variant that just checks rules for syntactic accuracy
- * 2. Starting in ListBasedRuleCompiler, does the same thing but expresses field names as List ofString
- *    rather than "."-separated strings for use in the Ruler class, which does not use state machines and
+ * 2. Starting in ListBasedRuleCompiler, does the same thing but expresses field names as List of String
+ *    rather than "."-separated strings for use in Ruler.matches, which does not use state machines and
  *    needs to step into the event field by field.
  *
  * Is public so clients can call the check() method to syntax-check filters
@@ -115,7 +115,7 @@ public final class RuleCompiler {
     }
 
     /**
-     * Compile a rule from its JSON form to a Map suitable for use by events.ruler.Ruler (elements are surrounded by quotes).
+     * Compile a rule from its JSON form to a Map suitable for use by Machine.addPatternRule.
      *
      * @param source rule, as a Reader
      * @return Map form of rule
@@ -130,7 +130,7 @@ public final class RuleCompiler {
     }
 
     /**
-     * Compile a rule from its JSON form to a Map suitable for use by events.ruler.Ruler (elements are surrounded by quotes).
+     * Compile a rule from its JSON form to a Map suitable for use by Machine.addPatternRule.
      *
      * @param source rule, as a String
      * @return Map form of rule
@@ -145,7 +145,7 @@ public final class RuleCompiler {
     }
 
     /**
-     * Compile a rule from its JSON form to a Map suitable for use by events.ruler.Ruler (elements are surrounded by quotes).
+     * Compile a rule from its JSON form to a Map suitable for use by Machine.addPatternRule.
      *
      * @param source rule, as a byte array
      * @return Map form of rule
@@ -160,7 +160,7 @@ public final class RuleCompiler {
     }
 
     /**
-     * Compile a rule from its JSON form to a Map suitable for use by events.ruler.Ruler (elements are surrounded by quotes).
+     * Compile a rule from its JSON form to a Map suitable for use by Machine.addPatternRule.
      *
      * @param source rule, as an InputStream
      * @return Map form of rule
@@ -174,9 +174,6 @@ public final class RuleCompiler {
         return compile(source, true);
     }
 
-    /*
-     * The compile entry points GenericMachine uses; ignoreTrailingContent as in JsonRuleCompiler.
-     */
     static Map<String, List<Patterns>> compile(final String source, final boolean withOverriding,
                                                final boolean ignoreTrailingContent) throws IOException {
         return doCompile(JSON_FACTORY.createParser(source), withOverriding, ignoreTrailingContent);
@@ -226,7 +223,6 @@ public final class RuleCompiler {
         while (parser.nextToken() != JsonToken.END_OBJECT) {
             fieldsPresent = true;
 
-            // field name
             final String stepName = parser.getCurrentName();
 
             switch (parser.nextToken()) {
@@ -281,8 +277,8 @@ public final class RuleCompiler {
                 /*
                  * If the rule specifies a match to a number, we'll insert matchers for both the
                  *  literal expression and the ComparableNumber form. But the number might not
-                 *  be representble as a ComparableNumber, for example an AWS account number,
-                 *  so make that condition survivable.
+                 *  be representable as a ComparableNumber, for example a number with more
+                 *  significant digits than a double keeps, so make that condition survivable.
                  */
                 try {
                     values.add(Patterns.numericEquals(parser.getText()));
@@ -341,7 +337,7 @@ public final class RuleCompiler {
             if (prefixToken != JsonToken.VALUE_STRING) {
                 barf(parser, "prefix match pattern must be a string");
             }
-            final Patterns pattern = Patterns.prefixMatch('"' + parser.getText()); // note no trailing quote
+            final Patterns pattern = Patterns.prefixMatch('"' + parser.getText());
             if (parser.nextToken() != JsonToken.END_OBJECT) {
                 barf(parser, "Only one key allowed in match expression");
             }
@@ -355,7 +351,7 @@ public final class RuleCompiler {
             if (suffixToken != JsonToken.VALUE_STRING) {
                 barf(parser, "suffix match pattern must be a string");
             }
-            final Patterns pattern = Patterns.suffixMatch(parser.getText() + '"'); // note no beginning quote
+            final Patterns pattern = Patterns.suffixMatch(parser.getText() + '"');
             if (parser.nextToken() != JsonToken.END_OBJECT) {
                 barf(parser, "Only one key allowed in match expression");
             }
@@ -376,7 +372,6 @@ public final class RuleCompiler {
             JsonToken anythingButExpressionToken = parser.nextToken();
             if (anythingButExpressionToken == JsonToken.START_OBJECT) {
 
-                // there are a limited set of things we can apply Anything-But to
                 final JsonToken anythingButObject = parser.nextToken();
                 if (anythingButObject != JsonToken.FIELD_NAME) {
                     barf(parser, "Anything-But expression name not found");
@@ -404,12 +399,11 @@ public final class RuleCompiler {
                         barf(parser, "Only one key allowed in match expression");
                     }
                     if(isPrefix) {
-                       return Patterns.anythingButPrefix('"' + text); // note no trailing quote
+                       return Patterns.anythingButPrefix('"' + text);
                     } else {
-                       return Patterns.anythingButSuffix(text + '"'); // note no leading quote
+                       return Patterns.anythingButSuffix(text + '"');
                     }
                 } else {
-                    // Step into the anything-but's ignore-case
                     anythingButExpressionToken = parser.nextToken();
                 }
 
@@ -441,8 +435,6 @@ public final class RuleCompiler {
             if (parser.nextToken() != JsonToken.END_OBJECT) {
                 tooManyElements(parser);
             }
-            // If its an ignore-case, we have another
-            // object end to consume...
             if(isIgnoreCase && parser.nextToken() != JsonToken.END_OBJECT) {
                 tooManyElements(parser);
             }
@@ -797,7 +789,6 @@ public final class RuleCompiler {
             while (parser.nextToken() != JsonToken.END_OBJECT) {
                 fieldsPresent = true;
 
-                // field name
                 final String stepName = parser.getCurrentName();
 
                 switch (parser.nextToken()) {

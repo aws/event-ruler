@@ -71,12 +71,6 @@ class ByteMap {
         map = newMap;
     }
 
-    /**
-     *  Updates one ceiling=>transition mapping and leaves the map in a consistent state. We go through the map and find
-     *  the entry that contains the byte value. If the new byte value is not at the bottom of the entry, we write a new
-     *  entry representing the part of the entry less than the byte value. Then we write a new entry for the byte value.
-     *  Then we merge entries mapping to the same transition.
-     */
     private void updateTransition(final byte utf8byte, final SingleByteTransition transition, Operation operation) {
         final int index = utf8byte & 0xFF;
         ByteTransition target =  map.higherEntry(index).getValue();
@@ -106,15 +100,9 @@ class ByteMap {
         }
         map.put(index + 1, coalesced);
 
-        // Merge adjacent mappings with the same transition.
         mergeAdjacentInMapIfNeeded(map);
     }
 
-    /**
-     * Merge adjacent entries with equal transitions in inputMap.
-     *
-     * @param inputMap The map on which we merge adjacent entries with equal transitions.
-     */
     private static void mergeAdjacentInMapIfNeeded(final NavigableMap<Integer, ByteTransition> inputMap) {
         Iterator<Map.Entry<Integer, ByteTransition>> iterator = inputMap.entrySet().iterator();
         while (iterator.hasNext()) {
@@ -192,11 +180,6 @@ class ByteMap {
         return coalesce(candidates);
     }
 
-    /**
-     * Get all transitions contained in this map, whether they are single or compound transitions.
-     *
-     * @return All transitions contained in this map.
-     */
     Set<ByteTransition> getTransitions() {
         Set<ByteTransition> result = new HashSet<>(map.values().size());
         for (ByteTransition transition : map.values()) {
@@ -207,20 +190,10 @@ class ByteMap {
         return result;
     }
 
-    /**
-     * Get the ceiling values contained in this map.
-     *
-     * @return Ceiling values.
-     */
     Set<Integer> getCeilings() {
         return map.keySet();
     }
 
-    /**
-     * Get all transitions contained in this map, with the compound transitions expanded to singular form.
-     *
-     * @return All transitions contained in this map, with the compound transitions expanded to singular form.
-     */
     private Set<SingleByteTransition> getSingleByteTransitions() {
         Set<SingleByteTransition> allTransitions = new HashSet<>();
         for (ByteTransition transition : map.values()) {

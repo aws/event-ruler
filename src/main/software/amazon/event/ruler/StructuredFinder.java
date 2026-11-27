@@ -60,10 +60,6 @@ class StructuredFinder {
         return new ArrayList<>(matched);
     }
 
-    /**
-     * Walk the state machine trie. Returns true if all rules have been matched
-     * (early-exit signal).
-     */
     private static boolean walk(final NameState state,
                                 final FieldIndex index,
                                 final Event event,
@@ -72,12 +68,10 @@ class StructuredFinder {
                                 final SubRuleContext.Generator gen,
                                 final Set<Object> matched,
                                 final int ruleCount) {
-        // Handle exists:false transitions
         if (handleAbsence(state, event, index, candidates, constraints, gen, matched, ruleCount)) {
             return true;
         }
 
-        // For each field name this state transitions on
         for (final String fieldName : state.getValueTransitionKeys()) {
             final List<IndexedValue> values = index.getConsistent(fieldName, constraints);
             if (values == null) {
@@ -86,27 +80,22 @@ class StructuredFinder {
 
             final ByteMachine valueMatcher = state.getTransitionOn(fieldName);
 
-            // For each value at this path
             for (final IndexedValue iv : values) {
-                // Check array consistency with current constraints
                 final ArrayMembership merged =
                         ArrayMembership.checkArrayConsistency(constraints, iv.membership);
                 if (merged == null) {
                     continue;
                 }
 
-                // Check if value matches any pattern
                 for (final NameStateWithPattern nsp : valueMatcher.transitionOn(iv.val)) {
                     final NameState nextState = nsp.getNameState();
                     final Patterns pattern = nsp.getPattern();
 
-                    // Collect terminal matches
                     collectRules(candidates, nextState, pattern, matched);
                     if (matched.size() >= ruleCount) {
                         return true;
                     }
 
-                    // Recurse for non-terminal matches
                     final Set<SubRuleContext> nextCandidates =
                             nextCandidates(candidates, nextState, pattern);
                     if (nextCandidates != null && !nextCandidates.isEmpty()) {
@@ -120,9 +109,6 @@ class StructuredFinder {
         return false;
     }
 
-    /**
-     * Handle exists:false transitions. Returns true if all rules matched (early-exit).
-     */
     private static boolean handleAbsence(final NameState state,
                                          final Event event,
                                          final FieldIndex index,

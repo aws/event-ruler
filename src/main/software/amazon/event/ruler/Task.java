@@ -11,31 +11,26 @@ import java.util.Set;
 
 import static software.amazon.event.ruler.SetOperations.intersection;
 
-/**
- * Represents the state of a rule-finding project.
- */
 @ThreadSafe
 class Task {
 
-    // What we're trying to match rules to
     public final String[] event;
 
-    // the rules that matched the event, if we find any
     private final Set<Object> matchingRules = new HashSet<>();
 
-    // Steps queued up for processing
     private final Queue<Step> stepQueue = new ArrayDeque<>();
 
     // Visiting the same Step multiple times will give the same outcome for all visits,
-    // as we are not mutating the state of Task nor Step nor GenericMachine as part of the visit.
+    // as we are not mutating the state of Step or GenericMachine as part of the visit.
     // To prevent explosion of complexity we need to prevent queueing up steps that are still
     // waiting in the stepQueue or we have already ran. We end up holding on to some amount
-    // of memory during Task evaluation to track this, but it has an upper bound that is O(n * m) where
+    // of memory during Task evaluation to track this, but the number of Steps kept has an
+    // upper bound that is O(n * m * c) where
     // n = number of values in input event
     // m = number of nodes in the compiled state machine
+    // c = number of distinct sets of candidate sub-rules
     private final Set<Step> seenSteps = new HashSet<>();
 
-    // the state machine
     private final GenericMachine<?> machine;
 
     Task(final List<String> event, final GenericMachine<?> machine) {
@@ -51,7 +46,6 @@ class Task {
         return machine.getStartState();
     }
 
-    // The field used means all steps in the field must be all used individually.
     boolean isFieldUsed(final String field) {
         if (field.contains(".")) {
             String[] steps = field.split("\\.");

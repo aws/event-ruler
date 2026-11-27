@@ -3,8 +3,8 @@ package software.amazon.event.ruler;
 import javax.annotation.Nonnull;
 
 /**
- * Matches the Keys in the flattened event with the { [ "exists" : false ] } pattern.
- * and returns the next state if the <b>key does not exist</b> in the event.
+ * Holds the next state for a key that a rule matches with the [ { "exists": false } ] pattern.
+ * The matcher does not read the event. NameState reads it.
  *
  * In the future, when we support multiple patterns, the matcher will return a set of
  * name states matched instead of a single name state.
@@ -43,7 +43,7 @@ public interface NameMatcher<R> {
     R findPattern(@Nonnull Patterns pattern);
 
     /**
-     * Gets the next state to transition to in case the NameMatcher matches the event.
+     * Gets the next state to transition to.
      */
     R getNextState();
 }

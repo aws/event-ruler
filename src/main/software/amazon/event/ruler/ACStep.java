@@ -2,9 +2,6 @@ package software.amazon.event.ruler;
 
 import java.util.Set;
 
-/**
- * Represents a suggestion of a state/token combo from which there might be a transition, in an array-consistent fashion.
- */
 class ACStep {
     final int fieldIndex;
     final NameState nameState;

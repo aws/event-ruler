@@ -36,6 +36,7 @@ To send us a pull request, please:
    2. If you also reformat all the code, it will be hard for us to focus on your change.
    3. Where possible stay consistent with the current code-style, patterns, and documentation language.
    4. Any changes (however minor, major, or ground-breaking) are welcomed, though reviewing them in isolation of any other changes helps us review them faster.
+   5. Follow [Comments](#comments) below: write no comment by default.
 3. Ensure local tests pass. Add new tests for any functionality you add / changed.
 4. Ensure there are no performance regressions. The easiest way is [`scripts/perf-compare.sh main HEAD`](https://github.com/aws/event-ruler/blob/main/scripts/perf-compare.sh) which runs the benchmark on both refs and prints a noise-aware delta table. See the [Performance section in the README](https://github.com/aws/event-ruler/blob/main/README.md#performance) for details and alternatives ([`Benchmarks.java`](https://github.com/aws/event-ruler/blob/main/src/test/software/amazon/event/ruler/Benchmarks.java) for quick single-shot runs, [`StableBenchmarks.java`](https://github.com/aws/event-ruler/blob/main/src/test/software/amazon/event/ruler/StableBenchmarks.java) when you want to invoke the averaged harness directly).
 5. Commit to your fork using clear commit messages. [PULL_REQUEST_TEMPLATE.md](https://github.com/aws/event-ruler/blob/main/.github/PULL_REQUEST_TEMPLATE.md) shows the template we follow.
@@ -44,6 +45,22 @@ To send us a pull request, please:
 
 GitHub provides additional document on [forking a repository](https://help.github.com/articles/fork-a-repo/) and
 [creating a pull request](https://help.github.com/articles/creating-a-pull-request/).
+
+
+## Comments
+
+Write no comment by default. A comment that repeats the code costs every reader time, and it can go wrong
+without notice when the code changes. Write a comment when it states what the code cannot show:
+
+* **The reason for a choice**, when the code would look wrong or removable without it.
+* **An invariant or an order** that another method depends on.
+* **A constraint from outside the code**: a measured figure, a specification.
+* **What a caller must know**, on a public class or method: what it does, what it requires, and what it
+  returns in each case.
+
+State the fact and stop: no history, no account of the change, no restatement of the line below. When you
+change code, fix or delete the comments on it in the same change. When a comment and the code disagree and
+you cannot tell which is wrong, keep both and raise it.
 
 
 ## Dependencies

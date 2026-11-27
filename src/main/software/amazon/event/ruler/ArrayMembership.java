@@ -1,9 +1,5 @@
 package software.amazon.event.ruler;
 
-/**
- * Represents which JSON arrays within an Event structure a particular field appears within, and at which position.
- *  The arrays are identified using integers.
- */
 class ArrayMembership {
     private static final IntIntMap EMPTY = new IntIntMap();
 
@@ -72,12 +68,10 @@ class ArrayMembership {
      */
     static ArrayMembership checkArrayConsistency(final ArrayMembership membershipSoFar, final ArrayMembership fieldMembership) {
 
-        // no existing memberships, so we'll take the ones from the field, if any
         if (membershipSoFar.isEmpty()) {
             return fieldMembership.isEmpty() ? membershipSoFar : new ArrayMembership(fieldMembership);
         }
 
-        // any change will come from memberships in the new field we're investigating. For each of its memberships
         ArrayMembership newMembership = null;
         for (IntIntMap.Entry arrayEntry : fieldMembership.membership.entries()) {
             final int array = arrayEntry.getKey();
@@ -86,8 +80,6 @@ class ArrayMembership {
 
             if (indexInThisArrayPreviouslyAppearingInMatch == IntIntMap.NO_VALUE) {
 
-                // if there's no membership so far, this is an acceptable delta. Update the new memberships, first
-                //  creating it if necessary
                 if (newMembership == null) {
                     newMembership = new ArrayMembership(membershipSoFar);
                 }
@@ -95,16 +87,12 @@ class ArrayMembership {
 
             } else {
 
-                // This field does appear within an index that has already appeared in the matching task so far.
-                //  If it's in the same element, fine, no updates. If it's a different entry, return null to
-                //  signal array-inconsistency.
                 if (indexInThisArrayOfThisField != indexInThisArrayPreviouslyAppearingInMatch) {
                     return null;
                 }
             }
         }
 
-        // we may have scanned all the fields and not added anything, in which case return the input
         return (newMembership == null) ? membershipSoFar : newMembership;
     }
 }

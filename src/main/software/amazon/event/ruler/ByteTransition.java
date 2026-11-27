@@ -2,9 +2,6 @@ package software.amazon.event.ruler;
 
 import java.util.Set;
 
-/**
- * Represents a transition (on a particular byte value) from a state to a state.
- */
 abstract class ByteTransition implements Cloneable {
 
     /**
@@ -15,13 +12,12 @@ abstract class ByteTransition implements Cloneable {
     abstract ByteState getNextByteState();
 
     /**
-     * Sets the next state. The method returns this or a new transition that contains the given next state if the
-     * next state is not {@code null}. Otherwise, the method returns {@code null} or a new transition that does not
-     * support transfer.
+     * Returns this or another transition that contains the given next state if the next state is not
+     * {@code null}. Otherwise, the method returns {@code null} or a transition that does not support transfer.
      *
      * @param nextState the next state
-     * @return this or a new transition that contains the given next state if the next state is not {@code null};
-     * otherwise, the method returns {@code null} or a new transition that does not support transfer
+     * @return this or another transition that contains the given next state if the next state is not {@code null};
+     * otherwise, the method returns {@code null} or a transition that does not support transfer
      */
     abstract SingleByteTransition setNextByteState(ByteState nextState);
 
@@ -41,8 +37,7 @@ abstract class ByteTransition implements Cloneable {
     abstract Iterable<ByteTransition> getTransitions();
 
     /**
-     * Returns matches that are triggered if this transition is made. This is a convenience function that traverses the
-     * linked list of matches and returns all of them in an Iterable.
+     * Returns matches that are triggered if this transition is made.
      *
      * @return matches that are triggered if this transition is made.
      */
@@ -69,11 +64,6 @@ abstract class ByteTransition implements Cloneable {
      */
     abstract ByteTransition getTransitionForNextByteStates();
 
-    /**
-     * Tell if current transition is a shortcut transition or not.
-     *
-     * @return True if and only if this is a shortcut transition.
-     */
     boolean isShortcutTrans() {
         return false;
     }
@@ -88,10 +78,6 @@ abstract class ByteTransition implements Cloneable {
         return false;
     }
 
-    /**
-     * Tell if current transition is empty which means doesn't has match nor next state.
-     * @return boolean
-     */
     boolean isEmpty() {
         return !getMatches().iterator().hasNext() && getNextByteState() == null;
     }
@@ -107,7 +93,7 @@ abstract class ByteTransition implements Cloneable {
     }
 
     public void gatherObjects(Set<Object> objectSet, int maxObjectCount) {
-        if (!objectSet.contains(this) && objectSet.size() < maxObjectCount) { // stops looping
+        if (!objectSet.contains(this) && objectSet.size() < maxObjectCount) {
             objectSet.add(this);
             for (ByteMatch match : getMatches()) {
                 match.gatherObjects(objectSet, maxObjectCount);

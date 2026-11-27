@@ -33,7 +33,7 @@ import java.util.List;
 class ComparableNumber {
 
     static final int MAX_LENGTH_IN_BYTES = 10;
-    static final int BASE_128_BITMASK = 0x7f; // 127 or 01111111
+    static final int BASE_128_BITMASK = 0x7f;
 
     private ComparableNumber() {}
 
@@ -50,7 +50,6 @@ class ComparableNumber {
         final BigDecimal bigDecimal = JavaBigDecimalParser.parseBigDecimal(str);
         final double doubleValue = bigDecimal.doubleValue();
 
-        // make sure we have the comparable numbers and haven't eaten up decimals values
         if(Double.isNaN(doubleValue) || Double.isInfinite(doubleValue) ||
                 BigDecimal.valueOf(doubleValue).compareTo(bigDecimal) != 0) {
             throw new IllegalArgumentException("Cannot compare number : " + str);
@@ -73,12 +72,8 @@ class ComparableNumber {
      * of bytes, where each byte encodes 7 bits of the original value. This allows for
      * efficient storage and transmission of large numbers.
      * <br/>
-     * The method first determines the number of trailing zero bytes in the input
-     * value by iterating over the bytes from the most significant byte to the least
-     * significant byte, and counting the number of consecutive zero bytes at the end.
-     * It then creates a byte array of fixed length {@code MAX_LENGTH_IN_BYTES} and
-     * populates it with the Base128 encoded bytes of the input value, starting from
-     * the least significant byte.
+     * The method creates a byte array of fixed length {@code MAX_LENGTH_IN_BYTES} and
+     * populates it with the Base128 encoded bytes of the input value.
      * <br/>
      * As shown in Quamina's numbits.go, it's possible to use variable length encoding
      * to reduce storage for simple (often common) numbers but it's not done here to
@@ -101,7 +96,6 @@ class ComparableNumber {
 
         byte[] result = new byte[MAX_LENGTH_IN_BYTES];
 
-        // Populate the byte array with the Base128 encoded bytes of the input value
         for(; index >= 0; index--) {
             result[index] = (byte)(value & BASE_128_BITMASK);
             value >>= 7;

@@ -41,14 +41,8 @@ public class GenericMachine<T> {
      */
     private static final int MAXIMUM_RULE_SIZE = 256;
 
-    /**
-     * Configuration for the Machine.
-     */
     private final GenericMachineConfiguration configuration;
 
-    /**
-     * The start state of matching and adding rules.
-     */
     private final NameState startState = new NameState();
 
     /**
@@ -60,9 +54,6 @@ public class GenericMachine<T> {
      */
     private final Map<String, Integer> fieldStepsUsedRefCount = new ConcurrentHashMap<>();
 
-    /**
-     * Generate context for a sub-rule that can be passed through relevant methods.
-     */
     private final SubRuleContext.Generator subRuleContextGenerator = new SubRuleContext.Generator();
 
     @Deprecated
@@ -75,8 +66,8 @@ public class GenericMachine<T> {
     }
 
     /**
-     * Return any rules that match the fields in the event in a way that is Array-Consistent (thus trailing "AC" on
-     *  names of implementing classes). Array-Consistent means that we reject matches where fields which are members
+     * Return any rules that match the fields in the event in a way that is Array-Consistent.
+     *  Array-Consistent means that we reject matches where fields which are members
      *  of different elements of the same JSON array in the event are matched.
      * @param jsonEvent The JSON representation of the event
      * @return list of rule names that match. The list may be empty but never null.
@@ -147,21 +138,10 @@ public class GenericMachine<T> {
         return (List<T>) Finder.rulesForEvent(event, this, subRuleContextGenerator);
     }
 
-    /**
-     * The root state for the machine
-     *
-     * @return the root state, null if the machine has no rules in it
-     */
     final NameState getStartState() {
         return startState;
     }
 
-    /**
-     * Check to see whether a field step name is actually used in any rule.
-     *
-     * @param stepName the field step name to check
-     * @return true if the field is used in any rule, false otherwise
-     */
     boolean isFieldStepUsed(final String stepName) {
         if (fieldStepsUsedRefCount.get(stepName) != null) {
             return true;
@@ -183,15 +163,16 @@ public class GenericMachine<T> {
     /**
      * Add a rule to the machine.  A rule is a set of names, each of which is associated with one or more values.
      *
-     * "synchronized" here is to ensure that only one thread is updating the machine at any point in time.
-     * This method relies on the caller not changing the arguments while it is exiting - but once it has completed,
-     *  this library has no dependence on those structures.
+     * The rule is added in a block synchronized on this machine, so only one thread is updating the machine at any
+     *  point in time.
+     * This method relies on the caller not changing the arguments while it is executing - but once it has completed,
+     *  this library has no dependence on namevals.
      * Multiple rules with the same name may be incrementally added, producing an "or" relationship with
-     *  relationship with previous namevals added for that name. E.g.
+     *  previous namevals added for that name. E.g.
      *   addRule r1  with namevalue {a,[1]}, then call again with r1 {a,[2]}, it will have same effect call addRule with
      *   r1 {a, [1,2]}
      *
-     * @param name ARN of the rule
+     * @param name name of the rule
      * @param namevals names and values which make up the rule
      */
     public void addRule(final T name, final Map<String, List<String>> namevals) {
@@ -208,7 +189,7 @@ public class GenericMachine<T> {
      * is associated with one or more value-patterns. These can be simple values (like "1", "a", "true")
      * or more sophisticated (like {anything-but : "1", range: { ... } })
      *
-     * @param name ARN of the rule4
+     * @param name name of the rule
      * @param namevals names and values which make up the rule
      */
     public void addPatternRule(final T name, final Map<String, List<Patterns>> namevals) {
@@ -217,7 +198,6 @@ public class GenericMachine<T> {
             throw new RuntimeException("Size of rule '" + name + "' exceeds max value of " + MAXIMUM_RULE_SIZE);
         }
 
-        // clone namevals for ruler use.
         Map<String, List<Patterns>> namePatterns = new HashMap<>();
         for (final Map.Entry<String, List<Patterns>> nameVal : namevals.entrySet()) {
             namePatterns.put(nameVal.getKey(), nameVal.getValue().stream().map(p -> (Patterns)(p.clone())).
@@ -234,8 +214,7 @@ public class GenericMachine<T> {
     /**
      * Delete rule from the machine.  The rule is a set of name/values.
      * "synchronized" here is to ensure that only one thread is updating the machine at any point in time.
-     * This method relies on the caller not changing the arguments while it is exiting - but once it has completed,
-     *  this library has no dependence on those structures.
+     * This method relies on the caller not changing the arguments while it is executing.
      * As with addRule, multiple name/val patterns attached to a rule name may be removed all at once or
      *  one by one.
      * Machine will only remove a rule which both matches the name/vals and the provided rule name:
@@ -254,7 +233,7 @@ public class GenericMachine<T> {
      *  Values within a key are order-independent; values that reach no rule are skipped while later values are
      *  still considered.
      *
-     * @param name ARN of the rule
+     * @param name name of the rule
      * @param namevals names and values which make up the rule
      */
     public void deletePatternRule(final T name, final Map<String, List<Patterns>> namevals) {
@@ -267,7 +246,6 @@ public class GenericMachine<T> {
             final List<String> deletedKeys =  new ArrayList<>();
             final Set<SubRuleContext> candidateSubRuleIds = new HashSet<>();
             deleteStep(getStartState(), keys, 0, namevals, name, deletedKeys, candidateSubRuleIds);
-            // check and delete the key from filedUsed ...
             checkAndDeleteUsedFields(deletedKeys);
         }
 
@@ -295,7 +273,6 @@ public class GenericMachine<T> {
         ByteMachine byteMachine = state.getTransitionOn(key);
         NameMatcher<NameState> nameMatcher = state.getKeyTransitionOn(key);
 
-        // matchers are null, we have nothing to delete.
         if (byteMachine == null && nameMatcher == null) {
             return deletedSubRuleIds;
         }
@@ -338,12 +315,9 @@ public class GenericMachine<T> {
                                         final NameState nextNameState,
                                         final Set<SubRuleContext> deletedSubRuleIds,
                                         final Set<NameState> nextNameStates) {
-        // If this was the last step, then reaching the last state means the rule matched, and we should delete
-        // the rule from the next NameState.
         final int nextKeyIndex = keyIndex + 1;
         boolean isTerminal = nextKeyIndex == keys.size();
 
-        // Trim the candidate sub-rule ID set to contain only the sub-rule IDs present in the next NameState.
         Set<SubRuleContext> nextNameStateSubRuleIds = isTerminal ?
                 nextNameState.getTerminalSubRuleIdsForPattern(pattern) :
                 nextNameState.getNonTerminalSubRuleIdsForPattern(pattern);
@@ -359,7 +333,6 @@ public class GenericMachine<T> {
                     candidateSubRuleIds.add(nextNameStateSubRuleId);
                 }
             }
-            // Have already initialized candidate set. Just retain the candidates present in the next NameState.
         } else {
             candidateSubRuleIds.retainAll(nextNameStateSubRuleIds);
         }
@@ -374,7 +347,6 @@ public class GenericMachine<T> {
                         candidateSubRuleId.getRuleName(), candidateSubRuleId,
                         pattern, true)) {
                     deletedSubRuleIds.add(candidateSubRuleId);
-                    // Only delete the pattern if no NameState the pattern leads to still references it.
                     if (noNameStateContainsPattern(nextNameStates, pattern) &&
                             deletePattern(state, key, pattern)) {
                         deletedKeys.add(key);
@@ -391,8 +363,6 @@ public class GenericMachine<T> {
                         deletedSubRuleId, pattern, false);
             }
 
-            // Unwinding the key recursion, so we aren't on a rule match. Only delete the pattern if no NameState the
-            // pattern leads to still references it.
             if (noNameStateContainsPattern(nextNameStates, pattern) && deletePattern(state, key, pattern)) {
                 deletedKeys.add(key);
                 state.removeNextNameState(key);
@@ -414,15 +384,6 @@ public class GenericMachine<T> {
                 nameState.getNonTerminalPatterns().contains(pattern);
     }
 
-    /**
-     * Delete given pattern from either NameMatcher or ByteMachine. Remove the parent NameState's transition to
-     * NameMatcher or ByteMachine if empty after pattern deletion.
-     *
-     * @param parentNameState The NameState transitioning to the NameMatcher or ByteMachine.
-     * @param key The key we transition on.
-     * @param pattern The pattern to delete.
-     * @return True if and only if transition from parent NameState was removed.
-     */
     private boolean deletePattern(final NameState parentNameState, final String key, Patterns pattern) {
         if (isNamePattern(pattern)) {
             NameMatcher<NameState> nameMatcher = parentNameState.getKeyTransitionOn(key);
@@ -446,7 +407,7 @@ public class GenericMachine<T> {
      * Add a rule to the machine.  A rule is a set of names, each of which
      * is associated with one or more values.
      *
-     * @param name ARN of the rule
+     * @param name name of the rule
      * @param json the JSON form of the rule
      */
     public void addRule(final T name, final String json) throws IOException {
@@ -461,7 +422,7 @@ public class GenericMachine<T> {
      * Add a rule to the machine.  A rule is a set of names, each of which
      * is associated with one or more values.
      *
-     * @param name ARN of the rule
+     * @param name name of the rule
      * @param json the JSON form of the rule
      */
     public void addRule(final T name, final Reader json) throws IOException {
@@ -473,10 +434,10 @@ public class GenericMachine<T> {
     }
 
     /**
-     * Add a rule from the machine.  A rule is a set of names, each of which
+     * Add a rule to the machine.  A rule is a set of names, each of which
      * is associated with one or more values.
      *
-     * @param name ARN of the rule
+     * @param name name of the rule
      * @param json the JSON form of the rule
      */
     public void addRule(final T name, final InputStream json) throws IOException {
@@ -491,7 +452,7 @@ public class GenericMachine<T> {
      * Add a rule to the machine.  A rule is a set of names, each of which
      * is associated with one or more values.
      *
-     * @param name ARN of the rule
+     * @param name name of the rule
      * @param json the JSON form of the rule
      */
     public void addRule(final T name, final byte[] json) throws IOException {
@@ -506,7 +467,7 @@ public class GenericMachine<T> {
      * Delete a rule from the machine.  A rule is a set of names, each of which
      * is associated with one or more values.
      *
-     * @param name ARN of the rule
+     * @param name name of the rule
      * @param json the JSON form of the rule
      */
     public void deleteRule(final T name, final String json) throws IOException {
@@ -521,7 +482,7 @@ public class GenericMachine<T> {
      * Delete a rule from the machine.  A rule is a set of names, each of which
      * is associated with one or more values.
      *
-     * @param name ARN of the rule
+     * @param name name of the rule
      * @param json the JSON form of the rule
      */
     public void deleteRule(final T name, final Reader json) throws IOException {
@@ -533,10 +494,10 @@ public class GenericMachine<T> {
     }
 
     /**
-     * Delete a rule to the machine.  A rule is a set of names, each of which
+     * Delete a rule from the machine.  A rule is a set of names, each of which
      * is associated with one or more values.
      *
-     * @param name ARN of the rule
+     * @param name name of the rule
      * @param json the JSON form of the rule
      */
     public void deleteRule(final T name, final InputStream json) throws IOException {
@@ -603,8 +564,6 @@ public class GenericMachine<T> {
             state.addKeyTransition(key, nameMatcher);
             addedKeys.add(key);
         }
-        // for each pattern, we'll provisionally add it to the BMC, which may already have it.  Pass the states
-        // list in in case the BMC doesn't already have a next-step for this pattern and needs to make a new one
         NameState lastNextState = null;
 
         if (configuration.isAdditionalNameStateReuse()) {
@@ -629,19 +588,12 @@ public class GenericMachine<T> {
             nameStatesForEachKey[keyIndex].add(lastNextState);
         }
 
-        // Determine if we are adding a new rule or not. If we are not yet at the terminal key, go deeper recursively.
-        // If we are at the terminal key, unwind recursion stack. Any sub-rule IDs that have previously added the
-        // rule+pattern for the given key are returned up the recursion stack as our "candidates". At each level of the
-        // stack, we remove any candidates if they did not have the same rule+pattern for that level's key. If our
-        // candidate set becomes empty, we know we are adding a new rule.
         Set<SubRuleContext> candidateSubRuleIds = null;
         Set<SubRuleContext> candidateSubRuleIdsForThisKey = null;
         final int nextKeyIndex = keyIndex + 1;
         boolean isTerminal = nextKeyIndex == keys.size();
         for (NameState nameState : nameStates) {
 
-            // At the terminal key, we initialize the candidate IDs to the previously-added sub-rules with the same rule
-            // name and pattern for this key.
             if (isTerminal) {
                 candidateSubRuleIds = new HashSet<>();
                 for (Patterns pattern : patterns.get(key)) {
@@ -651,8 +603,6 @@ public class GenericMachine<T> {
                         intersection(subRuleIdsForPattern, subRuleIdsForName, candidateSubRuleIds);
                     }
                 }
-
-            // At all non-terminal keys, we gather the sub-rule IDs for the key that use the same pattern.
             } else {
                 candidateSubRuleIds = addStep(nameState, keys, nextKeyIndex, patterns, ruleName,
                         addedKeys, nameStatesForEachKey);
@@ -679,7 +629,6 @@ public class GenericMachine<T> {
             }
         }
 
-        // At all non-terminal keys, remove candidates that are not present for this key.
         if (!isTerminal) {
             if (candidateSubRuleIdsForThisKey == null) {
                 candidateSubRuleIds.clear();
@@ -688,7 +637,6 @@ public class GenericMachine<T> {
             }
         }
 
-        // Return remaining candidates up the stack.
         return candidateSubRuleIds;
     }
 

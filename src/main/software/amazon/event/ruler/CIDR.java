@@ -10,16 +10,8 @@ import static software.amazon.event.ruler.Constants.HEX_DIGITS;
  */
 public class CIDR {
 
-    /**
-     * Binary representation of these bytes is 1's followed by all 0's. The number of 0's is equal to the array index.
-     * So the binary values are: 11111111, 11111110, 11111100, 11111000, 11110000, 11100000, 11000000, 10000000, 00000000
-     */
     private final static byte[] LEADING_MIN_BITS = { (byte) 0xff, (byte) 0xfe, (byte) 0xfc, (byte) 0xf8, (byte) 0xf0, (byte) 0xe0, (byte) 0xc0, (byte) 0x80, 0x00 };
 
-    /**
-     * Binary representation of these bytes is 0's followed by all 1's. The number of 1's is equal to the array index.
-     * So the binary values are: 00000000, 00000001, 00000011, 00000111, 00001111, 00011111, 00111111, 01111111, 11111111
-     */
     private final static byte[] TRAILING_MAX_BITS = { 0x0, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f, (byte) 0xff };
 
     private CIDR() { }
@@ -57,10 +49,10 @@ public class CIDR {
     }
 
     /**
-     * Converts a string to an IP address literal if this is possible.  If not
+     * Converts an IP address literal into a hexadecimal string if this is possible.  If not
      *  possible, returns the original string.
      * @param ip String that might be an IP address literal
-     * @return Hexadecimal form of the input if it was an IP address literal.
+     * @return Hexadecimal form of the input, or the original string.
      */
     static String ipToStringIfPossible(final String ip) {
         if (!isIPv4OrIPv6(ip)) {
@@ -96,7 +88,7 @@ public class CIDR {
                 openBottom = true;
                 openTop = false;
             } else {
-                if (lastByte != HEX_DIGITS[9]) { // 9
+                if (lastByte != HEX_DIGITS[9]) {
                     top[top.length - 1] = (byte) (lastByte + 1);
                 } else {
                     top[top.length - 1] = HEX_DIGITS[10];
@@ -164,24 +156,15 @@ public class CIDR {
 
         int variableBits = computeVariableBits(baseBytes, maskBits);
 
-        // Calculate the byte representation of the lowest IP address covered by the provided CIDR.
-        // Iterate from the least significant byte (right hand side) back to the most significant byte (left hand side).
         byte[] minBytes = new byte[baseBytes.length];
         for (int i = baseBytes.length - 1; i >= 0; i--) {
 
-            // This is the case where some or all of the byte is variable. So the min byte value possible is equal to
-            // the original IP address's bits for the leading non-variable bits and equal to all 0's for the trailing
-            // variable bits.
             if (variableBits > 0) {
                 minBytes[i] = (byte) (baseBytes[i] & LEADING_MIN_BITS[Math.min(8, variableBits)]);
-
-                // There is no variable component to this byte. Thus, it must equal the byte from the original IP address in
-                // the provided CIDR.
             } else {
                 minBytes[i] = baseBytes[i];
             }
 
-            // Subtract 8 variable bits. We're effectively chopping off the least significant byte for next iteration.
             variableBits -= 8;
         }
 
@@ -199,24 +182,15 @@ public class CIDR {
 
         int variableBits = computeVariableBits(baseBytes, maskBits);
 
-        // Calculate the byte representation of the highest IP address covered by the provided CIDR.
-        // Iterate from the least significant byte (right hand side) back to the most significant byte (left hand side).
         byte[] maxBytes = new byte[baseBytes.length];
         for (int i = baseBytes.length - 1; i >= 0; i--) {
 
-            // This is the case where some or all of the byte is variable. So the max byte value possible is equal to
-            // the original IP address's bits for the leading non-variable bits and equal to all 1's for the trailing
-            // variable bits.
             if (variableBits > 0) {
                 maxBytes[i] = (byte) (baseBytes[i] | TRAILING_MAX_BITS[Math.min(8, variableBits)]);
-
-                // There is no variable component to this byte. Thus, it must equal the byte from the original IP address in
-                // the provided CIDR.
             } else {
                 maxBytes[i] = baseBytes[i];
             }
 
-            // Subtract 8 variable bits. We're effectively chopping off the least significant byte for next iteration.
             variableBits -= 8;
         }
 

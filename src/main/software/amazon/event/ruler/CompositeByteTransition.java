@@ -4,27 +4,12 @@ import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.Set;
 
-/**
- * Represents a composite transition that has a next state and a match.
- */
 final class CompositeByteTransition extends SingleByteTransition {
 
-    /**
-     * The state to transfer to.
-     */
     private volatile ByteState nextState;
 
-    /**
-     * The first match of a linked list of matches that are triggered if this transition is made.
-     */
     private volatile ByteMatch match;
 
-    /**
-     * Constructs a {@code CompositeByteTransition} instance with the given next state and the given match.
-     *
-     * @param nextState the next state
-     * @param match     the match
-     */
     CompositeByteTransition(@Nonnull ByteState nextState, @Nonnull ByteMatch match) {
         this.nextState = nextState;
         this.match = match;

@@ -7,15 +7,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.concurrent.ThreadSafe;
 
-/**
- * Represents a state in the machine.
- *
- * The "valueTransitions" map is keyed by field name and yields a ByteMachine
- * that is used to match values.
- *
- * The "keyTransitions" map is keyed by field name and yields a NameMatcher
- * that is used to match keys for [ { exists: false } ].
- */
 @ThreadSafe
 class NameState {
 
@@ -33,33 +24,24 @@ class NameState {
     // Only used when Configuration is set for additionalNameStateReuse.
     private final Map<String, NameState> keyToNextNameState = new ConcurrentHashMap<>();
 
-    // All rules, both terminal and non-terminal, keyed by pattern, that led to this NameState.
     private final Map<Patterns, Set<Object>> patternToRules = new ConcurrentHashMap<>();
 
-    // All terminal sub-rule IDs, keyed by pattern, that led to this NameState.
     private final Map<Patterns, Set<SubRuleContext>> patternToTerminalSubRuleIds = new ConcurrentHashMap<>();
 
-    // All non-terminal sub-rule IDs, keyed by pattern, that led to this NameState.
     private final Map<Patterns, Set<SubRuleContext>> patternToNonTerminalSubRuleIds = new ConcurrentHashMap<>();
 
-    // All sub-rule IDs mapped to the number of times that sub-rule has been added to this NameState.
     private final Map<SubRuleContext, Integer> subRuleIdToCount = new ConcurrentHashMap<>();
 
     ByteMachine getTransitionOn(final String token) {
         return valueTransitions.get(token);
     }
 
-    /**
-     * Get all field names that have value transitions from this state.
-     * Used by ACFinder to iterate only relevant fields in moveFrom().
-     */
     Set<String> getValueTransitionKeys() {
         return valueTransitions.keySet();
     }
 
     /**
-     * Get all the terminal patterns that have led to this NameState. "Terminal" means the pattern was used by the last
-     * field of a rule to lead to this NameState, and thus, the rule's matching criteria have been fully satisfied.
+     * Get all the terminal patterns. "Terminal" means the pattern was used by the last field of a sub-rule.
      *
      * NOTE: This function returns the raw key set from one of NameState's internal maps. Mutating it will corrupt the
      * state of NameState. Although standard coding practice would warrant returning a copy of the set, or wrapping it
@@ -73,8 +55,7 @@ class NameState {
     }
 
     /**
-     * Get all the non-terminal patterns that have led to this NameState. "Terminal" means the pattern was used by the
-     * last field of a rule to lead to this NameState, and thus, the rule's matching criteria have been fully satisfied.
+     * Get all the non-terminal patterns. "Terminal" means the pattern was used by the last field of a sub-rule.
      *
      * NOTE: This function returns the raw key set from one of NameState's internal maps. Mutating it will corrupt the
      * state of NameState. Although standard coding practice would warrant returning a copy of the set, or wrapping it
@@ -88,15 +69,14 @@ class NameState {
     }
 
     /**
-     * Get all the terminal sub-rule IDs that used a given pattern to lead to this NameState. "Terminal" means the last
-     * field of the sub-rule led to this NameState, and thus, the sub-rule's matching criteria have been satisfied.
+     * Get all the terminal sub-rule IDs that used a given pattern.
      *
-     * NOTE: This function returns the raw key set from one of NameState's internal maps. Mutating it will corrupt the
+     * NOTE: This function returns the raw set from one of NameState's internal maps. Mutating it will corrupt the
      * state of NameState. Although standard coding practice would warrant returning a copy of the set, or wrapping it
-     * to be immutable, we instead return the raw key set as a performance optimization since this is called repeatedly
+     * to be immutable, we instead return the raw set as a performance optimization since this is called repeatedly
      * on the critical matching path. This avoids creating new data structures and/or copying elements between them.
      *
-     * @param pattern The pattern that the rules must use to get to this NameState.
+     * @param pattern The pattern that the rules must use.
      * @return The sub-rules, could be null if none for pattern.
      */
     Set<SubRuleContext> getTerminalSubRuleIdsForPattern(Patterns pattern) {
@@ -104,14 +84,14 @@ class NameState {
     }
 
     /**
-     * Get all the non-terminal sub-rule IDs that used a given pattern to lead to this NameState.
+     * Get all the non-terminal sub-rule IDs that used a given pattern.
      *
-     * NOTE: This function returns the raw key set from one of NameState's internal maps. Mutating it will corrupt the
+     * NOTE: This function returns the raw set from one of NameState's internal maps. Mutating it will corrupt the
      * state of NameState. Although standard coding practice would warrant returning a copy of the set, or wrapping it
-     * to be immutable, we instead return the raw key set as a performance optimization since this is called repeatedly
+     * to be immutable, we instead return the raw set as a performance optimization since this is called repeatedly
      * on the critical matching path. This avoids creating new data structures and/or copying elements between them.
      *
-     * @param pattern The pattern that the rules must use to get to this NameState.
+     * @param pattern The pattern that the rules must use.
      * @return The sub-rule IDs, could be null if none for pattern.
      */
     Set<SubRuleContext> getNonTerminalSubRuleIdsForPattern(Patterns pattern) {
@@ -200,13 +180,6 @@ class NameState {
         return ((Set) map.get(pattern)).add(setElement);
     }
 
-    /**
-     * Determines whether this NameState contains the provided rule accessible via the provided pattern.
-     *
-     * @param rule The rule, which may have multiple sub-rules.
-     * @param pattern The pattern used by the rule to transition to this NameState.
-     * @return True indicates that this NameState the provided rule for the provided pattern.
-     */
     boolean containsRule(final Object rule, final Patterns pattern) {
         Set<Object> rules = patternToRules.get(pattern);
         return rules != null && rules.contains(rule);
@@ -326,7 +299,7 @@ class NameState {
     }
 
     public void gatherObjects(Set<Object> objectSet, int maxObjectCount) {
-        if (!objectSet.contains(this) && objectSet.size() < maxObjectCount) { // stops looping
+        if (!objectSet.contains(this) && objectSet.size() < maxObjectCount) {
             objectSet.add(this);
             for (ByteMachine byteMachine : valueTransitions.values()) {
                 byteMachine.gatherObjects(objectSet, maxObjectCount);

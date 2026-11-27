@@ -24,9 +24,6 @@ public class MachineComplexityEvaluator {
     private static final Set<MatchType> MATCH_TYPES_WITH_COMPLEXITY = Collections.unmodifiableSet(
             new HashSet<>(Arrays.asList(WILDCARD, ANYTHING_BUT_WILDCARD)));
 
-    /**
-     * Cap evaluation of complexity at this threshold.
-     */
     private final int maxComplexity;
 
     /**
@@ -94,7 +91,6 @@ public class MachineComplexityEvaluator {
      * @return The lesser of maxComplexity and the maximum possible number of wildcard rule prefixes from any machines.
      */
     int evaluate(ByteState state) {
-        // Upfront cost: generate the map of all matches accessible from every state in the machine.
         Map<SingleByteTransition, Set<ByteMatch>> matchesAccessibleFromEachTransition =
                 getMatchesAccessibleFromEachTransition(state);
 
@@ -102,7 +98,6 @@ public class MachineComplexityEvaluator {
         visited.add(state);
         int maxSize = 0;
 
-        // We'll do a breadth-first-search but it shouldn't matter.
         Queue<ByteTransition> transitions = new LinkedList<>();
         state.getTransitions().forEach(trans -> transitions.add(trans));
         while (!transitions.isEmpty()) {
@@ -146,8 +141,6 @@ public class MachineComplexityEvaluator {
             }
         }
 
-        // Now that we have a maxSize for this ByteMachine, let's recursively get the maxSize for each next NameState
-        // accessible via any of this ByteMachine's matches. We will return the maximum maxSize.
         return Math.max(maxSize, evaluateNextNameStates(matchesAccessibleFromEachTransition.values()));
     }
 
@@ -179,14 +172,6 @@ public class MachineComplexityEvaluator {
         return maxSizeFromNextNameStates;
     }
 
-    /**
-     * Generates a map of SingleByteTransition to all the matches accessible from the SingleByteTransition. The map
-     * includes all SingleByteTransitions accessible from ByteState state. This function is O(N), where N is the number
-     * of states accessible from ByteState state.
-     *
-     * @param state Starting state.
-     * @return A map of SingleByteTransition to all the matches accessible from the SingleByteTransition
-     */
     private Map<SingleByteTransition, Set<ByteMatch>> getMatchesAccessibleFromEachTransition(ByteState state) {
         Map<SingleByteTransition, Set<ByteMatch>> result = new HashMap<>();
         Set<SingleByteTransition> visited = new HashSet<>();
@@ -196,16 +181,12 @@ public class MachineComplexityEvaluator {
         // We'll do a depth-first-search as a state's matches can only be computed once the computation is complete for
         // all deeper states. Let's avoid recursion, which is prone to stack overflow.
         while (!stack.isEmpty()) {
-            // Peek instead of pop. Need this transition to remain on stack so we can compute its matches once all
-            // deeper states are complete.
             SingleByteTransition transition = stack.peek();
             if (!result.containsKey(transition)) {
                 result.put(transition, new HashSet<>());
             }
             Set<ByteMatch> matches = result.get(transition);
 
-            // Visited means we have already processed this transition once (via peeking) and have since computed the
-            // matches for all deeper states. Time to compute this transition's matches then pop it from the stack.
             if (visited.contains(transition)) {
                 ByteState nextState = transition.getNextByteState();
                 if (nextState != null) {
@@ -221,11 +202,8 @@ public class MachineComplexityEvaluator {
 
             visited.add(transition);
 
-            // Add all matches directly accessible from this transition.
             transition.getMatches().forEach(match -> matches.add(match));
 
-            // Push the next round of deeper states into the stack. By the time we return back to the current transition
-            // on the stack, all matches for deeper states will have been computed.
             ByteState nextState = transition.getNextByteState();
             if (nextState != null) {
                 for (ByteTransition eachTransition : nextState.getTransitions()) {
