@@ -104,10 +104,9 @@ class Finder {
         tryNameMatching(candidateSubRuleIdsForNextStep, nameState, task, tokenIndex, subRuleContextGenerator);
 
         // Add more steps using our new set of candidate sub-rules.
-        for (int i = tokenIndex; i < task.event.length; i += 2) {
-            if (task.isFieldUsed(task.event[i])) {
-                task.addStep(new Step(i, nameState, candidateSubRuleIdsForNextStep));
-            }
+        // Only fields used by some rule can transition, so skip straight from one used field to the next.
+        for (int i = task.nextUsedKeyIndex(tokenIndex); i < task.event.length; i = task.nextUsedKeyIndex(i + 2)) {
+            task.addStep(new Step(i, nameState, candidateSubRuleIdsForNextStep));
         }
     }
 
@@ -176,7 +175,7 @@ class Finder {
 
         String value = task.event[step.keyIndex];
 
-        if (!task.isFieldUsed(value)) {
+        if (!task.isFieldUsed(step.keyIndex)) {
             return;
         }
 
