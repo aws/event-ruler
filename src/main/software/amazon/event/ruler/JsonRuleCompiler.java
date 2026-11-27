@@ -59,7 +59,7 @@ public class JsonRuleCompiler {
 
     /**
      * Verify the syntax of a rule
-     * @param source rule, as a String
+     * @param source rule, as a Reader
      * @return null if the rule is valid, otherwise an error message
      */
     public static String check(final Reader source, final boolean withOverriding) {
@@ -115,10 +115,10 @@ public class JsonRuleCompiler {
     }
 
     /**
-     * Compile a rule from its JSON form to a Map suitable for use by event.ruler.Ruler (elements are surrounded by quotes).
+     * Compile a rule from its JSON form to a List of Maps suitable for use by Machine.addPatternRule.
      *
-     * @param source rule, as a String
-     * @return List of Sub rule which represented as Map
+     * @param source rule, as a Reader
+     * @return List of sub-rules, each represented as a Map
      * @throws IOException if the rule isn't syntactically valid
      */
     public static List<Map<String, List<Patterns>>> compile(final Reader source, boolean withOverriding)
@@ -396,8 +396,8 @@ public class JsonRuleCompiler {
                 /*
                  * If the rule specifies a match to a number, we'll insert matchers for both the
                  *  literal expression and the ComparableNumber form. But the number might not
-                 *  be representable as a ComparableNumber, for example an AWS account number,
-                 *  so make that condition survivable.
+                 *  be representable as a ComparableNumber, for example a number with more
+                 *  significant digits than a double keeps, so make that condition survivable.
                  */
                 try {
                     values.add(Patterns.numericEquals(parser.getText()));

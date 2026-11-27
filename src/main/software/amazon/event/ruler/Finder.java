@@ -11,11 +11,11 @@ import static software.amazon.event.ruler.SetOperations.intersection;
 /*
  * Notes on the implementation:
  *
- * This is finite-automaton based. The state machine matches field names exactly using a <String, String>
+ * This is finite-automaton based. The state machine matches field names exactly using a <String, ByteMachine>
  *  map in the NameState class.  The value matching uses the "ByteMachine" class which, as its name suggests,
  *  runs a different kind of state machine over the bytes in the String-valued fields.
  *
- * Trying to make moveTo() faster by keeping unused Step structs around turns out to make it
+ * Trying to make moveFrom() faster by keeping unused Step structs around turns out to make it
  *  run slower. Let Java manage its memory.
  *
  * The Step processing could be done in parallel rather than sequentially; the use of a Queue for
@@ -131,7 +131,7 @@ class Finder {
      * @param currentCandidateSubRuleIds The candidate sub-rule IDs for the current step. Use null to indicate that we
      *                                   are on first step and so there are not yet any candidate sub-rules.
      * @param fromState The NameState we are transitioning from.
-     * @param fromPattern The pattern we used to transition from fromState.
+     * @param fromPattern The pattern we used to transition to fromState.
      * @return The set of candidate sub-rule IDs for the next step. Null means there are no candidates and thus, there
      *         is no point to evaluating subsequent steps.
      */

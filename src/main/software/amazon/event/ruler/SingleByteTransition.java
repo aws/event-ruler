@@ -19,19 +19,18 @@ abstract class SingleByteTransition extends ByteTransition implements Iterable {
     abstract ByteMatch getMatch();
 
     /**
-     * Sets the match. The method returns this or a new transition that contains the given match if the match is not
-     * {@code null}. Otherwise, the method returns {@code null} or a new transition that does not
-     * support matching.
+     * Returns this or another transition that contains the given match if the match is not {@code null}.
+     * Otherwise, the method returns {@code null} or a transition that does not support matching.
      *
      * @param match the match
-     * @return this or a new transition that contains the given match if the match is not {@code null}; otherwise,
-     * {@code null} or a new transition that does not support matching
+     * @return this or another transition that contains the given match if the match is not {@code null}; otherwise,
+     * {@code null} or a transition that does not support matching
      */
     abstract SingleByteTransition setMatch(ByteMatch match);
 
     /**
      * Get the transition that all bytes lead to. Could be compound if all bytes lead to more than one single
-     * transition, or could be the empty transition if there are no transitions that all bytes lead to.
+     * transition, or could be the empty transition or {@code null} if there are no transitions that all bytes lead to.
      *
      * @return The transition that all bytes lead to.
      */

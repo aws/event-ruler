@@ -5,9 +5,10 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Represents denylist like rule: any value matches if it's *not* in the anything-but set.
+ * Represents a denylist-like rule: any value matches if *no* member of the anything-but set matches it.
  * It supports lists whose members must be all strings.
- * This can be used for anything-but-equals-ignore-case, anything-but-prefix, and anything-but-suffix.
+ * This can be used for anything-but-equals-ignore-case, anything-but-prefix, anything-but-suffix,
+ * and anything-but-wildcard.
  */
 public class AnythingButValuesSet extends Patterns {
 

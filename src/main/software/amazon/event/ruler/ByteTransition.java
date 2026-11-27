@@ -15,13 +15,12 @@ abstract class ByteTransition implements Cloneable {
     abstract ByteState getNextByteState();
 
     /**
-     * Sets the next state. The method returns this or a new transition that contains the given next state if the
-     * next state is not {@code null}. Otherwise, the method returns {@code null} or a new transition that does not
-     * support transfer.
+     * Returns this or another transition that contains the given next state if the next state is not
+     * {@code null}. Otherwise, the method returns {@code null} or a transition that does not support transfer.
      *
      * @param nextState the next state
-     * @return this or a new transition that contains the given next state if the next state is not {@code null};
-     * otherwise, the method returns {@code null} or a new transition that does not support transfer
+     * @return this or another transition that contains the given next state if the next state is not {@code null};
+     * otherwise, the method returns {@code null} or a transition that does not support transfer
      */
     abstract SingleByteTransition setNextByteState(ByteState nextState);
 
@@ -41,8 +40,7 @@ abstract class ByteTransition implements Cloneable {
     abstract Iterable<ByteTransition> getTransitions();
 
     /**
-     * Returns matches that are triggered if this transition is made. This is a convenience function that traverses the
-     * linked list of matches and returns all of them in an Iterable.
+     * Returns matches that are triggered if this transition is made.
      *
      * @return matches that are triggered if this transition is made.
      */

@@ -49,17 +49,12 @@ class NameState {
         return valueTransitions.get(token);
     }
 
-    /**
-     * Get all field names that have value transitions from this state.
-     * Used by ACFinder to iterate only relevant fields in moveFrom().
-     */
     Set<String> getValueTransitionKeys() {
         return valueTransitions.keySet();
     }
 
     /**
-     * Get all the terminal patterns that have led to this NameState. "Terminal" means the pattern was used by the last
-     * field of a rule to lead to this NameState, and thus, the rule's matching criteria have been fully satisfied.
+     * Get all the terminal patterns. "Terminal" means the pattern was used by the last field of a sub-rule.
      *
      * NOTE: This function returns the raw key set from one of NameState's internal maps. Mutating it will corrupt the
      * state of NameState. Although standard coding practice would warrant returning a copy of the set, or wrapping it
@@ -73,8 +68,7 @@ class NameState {
     }
 
     /**
-     * Get all the non-terminal patterns that have led to this NameState. "Terminal" means the pattern was used by the
-     * last field of a rule to lead to this NameState, and thus, the rule's matching criteria have been fully satisfied.
+     * Get all the non-terminal patterns. "Terminal" means the pattern was used by the last field of a sub-rule.
      *
      * NOTE: This function returns the raw key set from one of NameState's internal maps. Mutating it will corrupt the
      * state of NameState. Although standard coding practice would warrant returning a copy of the set, or wrapping it
@@ -88,15 +82,14 @@ class NameState {
     }
 
     /**
-     * Get all the terminal sub-rule IDs that used a given pattern to lead to this NameState. "Terminal" means the last
-     * field of the sub-rule led to this NameState, and thus, the sub-rule's matching criteria have been satisfied.
+     * Get all the terminal sub-rule IDs that used a given pattern.
      *
-     * NOTE: This function returns the raw key set from one of NameState's internal maps. Mutating it will corrupt the
+     * NOTE: This function returns the raw set from one of NameState's internal maps. Mutating it will corrupt the
      * state of NameState. Although standard coding practice would warrant returning a copy of the set, or wrapping it
-     * to be immutable, we instead return the raw key set as a performance optimization since this is called repeatedly
+     * to be immutable, we instead return the raw set as a performance optimization since this is called repeatedly
      * on the critical matching path. This avoids creating new data structures and/or copying elements between them.
      *
-     * @param pattern The pattern that the rules must use to get to this NameState.
+     * @param pattern The pattern that the rules must use.
      * @return The sub-rules, could be null if none for pattern.
      */
     Set<SubRuleContext> getTerminalSubRuleIdsForPattern(Patterns pattern) {
@@ -104,14 +97,14 @@ class NameState {
     }
 
     /**
-     * Get all the non-terminal sub-rule IDs that used a given pattern to lead to this NameState.
+     * Get all the non-terminal sub-rule IDs that used a given pattern.
      *
-     * NOTE: This function returns the raw key set from one of NameState's internal maps. Mutating it will corrupt the
+     * NOTE: This function returns the raw set from one of NameState's internal maps. Mutating it will corrupt the
      * state of NameState. Although standard coding practice would warrant returning a copy of the set, or wrapping it
-     * to be immutable, we instead return the raw key set as a performance optimization since this is called repeatedly
+     * to be immutable, we instead return the raw set as a performance optimization since this is called repeatedly
      * on the critical matching path. This avoids creating new data structures and/or copying elements between them.
      *
-     * @param pattern The pattern that the rules must use to get to this NameState.
+     * @param pattern The pattern that the rules must use.
      * @return The sub-rule IDs, could be null if none for pattern.
      */
     Set<SubRuleContext> getNonTerminalSubRuleIdsForPattern(Patterns pattern) {

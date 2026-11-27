@@ -3,8 +3,8 @@ package software.amazon.event.ruler;
 import javax.annotation.Nonnull;
 
 /**
- * Implements the { [ "exists" : false] } pattern by performing a binary search
- * of the key in the event keys.
+ * Implements NameMatcher for the [ { "exists": false } ] pattern by keeping
+ * the one next state that the pattern leads to.
  */
 public class SingleStateNameMatcher implements NameMatcher<NameState> {
 

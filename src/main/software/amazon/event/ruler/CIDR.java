@@ -57,10 +57,10 @@ public class CIDR {
     }
 
     /**
-     * Converts a string to an IP address literal if this is possible.  If not
+     * Converts an IP address literal into a hexadecimal string if this is possible.  If not
      *  possible, returns the original string.
      * @param ip String that might be an IP address literal
-     * @return Hexadecimal form of the input if it was an IP address literal.
+     * @return Hexadecimal form of the input, or the original string.
      */
     static String ipToStringIfPossible(final String ip) {
         if (!isIPv4OrIPv6(ip)) {

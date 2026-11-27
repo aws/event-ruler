@@ -16,10 +16,9 @@ import java.util.Map;
  *  achieved by compiling the rules into an automaton, at some up-front cost for compilation and memory use. There
  *  are some users who are unable to persist the compiled automaton but still like the "Event Pattern" idiom and want
  *  to match events with those semantics.
- * The memory cost is proportional to the product of the number of possible values provided in the rule and can
- *  grow surprisingly large
- * This class matches a single rule to a single event without any precompilation, using brute-force techniques, but
- *  with no up-front compute or memory cost.
+ * This class matches a single rule to a single event. {@code matchesRule()} compiles the rule into a new machine on
+ *  every call. The deprecated {@code matches()} matches them without any precompilation, using brute-force
+ *  techniques.
  */
 @ThreadSafe
 @Immutable
@@ -46,12 +45,11 @@ public class Ruler {
     /**
      * Return true if an event matches the provided rule.
      * <p>
-     * This method is deprecated. You should use `Ruler.match` instead in all but one cases:
+     * This method is deprecated. You should use `Ruler.matchesRule` instead in all but one cases:
      * this method will return false for ` {"detail" : { "state": { "state": "running" } } }` with
-     * `{ "detail" : { "state.state": "running" } }` while `Ruler.matchesRule(...)` will return true. When this gap
-     * has been addressed, we will remove this method as it doesn't handle many of the new matchers
-     * and is not able to perform array consistency checks like rest of Ruler. This method also is
-     * slower.
+     * `{ "detail" : { "state.state": [ "running" ] } }` while `Ruler.matchesRule(...)` will return true. When this
+     * gap has been addressed, we will remove this method as it doesn't handle some of the new matchers
+     * and is not able to perform array consistency checks like rest of Ruler.
      *
      * @param event The event, in JSON form
      * @param rule The rule, in JSON form

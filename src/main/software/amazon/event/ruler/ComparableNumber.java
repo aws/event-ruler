@@ -73,12 +73,8 @@ class ComparableNumber {
      * of bytes, where each byte encodes 7 bits of the original value. This allows for
      * efficient storage and transmission of large numbers.
      * <br/>
-     * The method first determines the number of trailing zero bytes in the input
-     * value by iterating over the bytes from the most significant byte to the least
-     * significant byte, and counting the number of consecutive zero bytes at the end.
-     * It then creates a byte array of fixed length {@code MAX_LENGTH_IN_BYTES} and
-     * populates it with the Base128 encoded bytes of the input value, starting from
-     * the least significant byte.
+     * The method creates a byte array of fixed length {@code MAX_LENGTH_IN_BYTES} and
+     * populates it with the Base128 encoded bytes of the input value.
      * <br/>
      * As shown in Quamina's numbits.go, it's possible to use variable length encoding
      * to reduce storage for simple (often common) numbers but it's not done here to

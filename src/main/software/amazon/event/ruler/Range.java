@@ -13,8 +13,9 @@ import static software.amazon.event.ruler.Constants.MIN_NUM_DIGIT;
 
 /**
  * Represents a range of numeric values to match against.
- * "Numeric" means that the character repertoire is "digits"; initially, either 0-9 or 0-9a-f. In the current
- *  implementation, the number of digits in the top and bottom of the range is the same.
+ * "Numeric" means that the character repertoire is "digits": the byte values 0-127 for a range of numbers, or
+ *  0-9 and A-F for a range of IP addresses. The top and bottom of the range
+ *  must have the same number of digits.
  */
 public final class Range extends Patterns {
     private static final byte[] MIN_RANGE_BYTES = doubleToComparableBytes(-Double.MAX_VALUE);
@@ -121,9 +122,10 @@ public final class Range extends Patterns {
      *  in the case where the numbers represent IP addresses, they are hex digits.  So we need to be able to say
      *  "for all digits between '3' and 'C'". This is for that.
      *
-     * @param first Start one digit higher than this, for example '4'
-     * @param last Stop one digit lower than this, for example 'B'
-     * @return The digit list, for example [ '4', '5', '6', '7', '8', '9', '9', 'A' ] (with 'B' for longDigitSequence)
+     * @param first Start at this digit if includeFirst is true or if this is the highest digit. Otherwise start
+     *              one digit higher, for example '4'
+     * @param last Stop at this digit if includeLast is true. Otherwise stop one digit lower, for example 'B'
+     * @return The digit list, for example [ '4', '5', '6', '7', '8', '9', 'A', 'B' ]
      */
     static byte[] digitSequence(byte first, byte last, boolean includeFirst, boolean includeLast, boolean isCIDR) {
         return isCIDR ?

@@ -6,13 +6,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * The Patterns deal pre-processing of rules for the eventual matching against events.
- * It has subclasses for different match types (like ValuePatterns, Ranges, AnythingBut, etc).
- * This class also acts as the factory for to build patterns which is useful if you have
+ * The Patterns deal with pre-processing of rules for the eventual matching against events.
+ * It has subclasses for different match types (like ValuePatterns, Range, AnythingBut, etc).
+ * This class also acts as the factory to build patterns which is useful if you have
  * key value pairs and would like to build your rules for them directly instead of using the fancy
- * JSON query language (and its compiler). Once you build rules, you can add them via `Machine.addRule()`.
+ * JSON query language (and its compiler). Once you build rules, you can add them via `Machine.addPatternRule()`.
  *
- * NOTE: The subclasses have additional builders that are only needed by JSON rule compilier and are
+ * NOTE: The subclasses have additional builders that are only needed by JSON rule compiler and are
  * left out of here intentionally for now.
  */
 public class Patterns implements Cloneable  {
@@ -62,7 +62,7 @@ public class Patterns implements Cloneable  {
         return new AnythingBut(Collections.singleton(anythingBut), false);
     }
 
-    /** use anythingButMatch(String) instead */
+    /** use anythingButNumberMatch(String) instead */
     @Deprecated
     public static AnythingBut anythingButMatch(final double anythingBut) {
         return anythingButNumberMatch(Double.toString(anythingBut));

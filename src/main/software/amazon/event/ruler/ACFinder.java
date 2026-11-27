@@ -141,7 +141,7 @@ class ACFinder {
      * @param currentCandidateSubRuleIds The candidate sub-rule IDs for the current step. Use null to indicate that we
      *                                   are on first step and so there are not yet any candidate sub-rules.
      * @param fromState The NameState we are transitioning from.
-     * @param fromPattern The pattern we used to transition from fromState.
+     * @param fromPattern The pattern we used to transition to fromState.
      * @return The set of candidate sub-rule IDs for the next step. Null means there are no candidates and thus, there
      *         is no point to evaluating subsequent steps.
      */

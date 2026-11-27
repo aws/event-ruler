@@ -75,8 +75,8 @@ public class GenericMachine<T> {
     }
 
     /**
-     * Return any rules that match the fields in the event in a way that is Array-Consistent (thus trailing "AC" on
-     *  names of implementing classes). Array-Consistent means that we reject matches where fields which are members
+     * Return any rules that match the fields in the event in a way that is Array-Consistent.
+     *  Array-Consistent means that we reject matches where fields which are members
      *  of different elements of the same JSON array in the event are matched.
      * @param jsonEvent The JSON representation of the event
      * @return list of rule names that match. The list may be empty but never null.
@@ -147,11 +147,6 @@ public class GenericMachine<T> {
         return (List<T>) Finder.rulesForEvent(event, this, subRuleContextGenerator);
     }
 
-    /**
-     * The root state for the machine
-     *
-     * @return the root state, null if the machine has no rules in it
-     */
     final NameState getStartState() {
         return startState;
     }
@@ -183,15 +178,16 @@ public class GenericMachine<T> {
     /**
      * Add a rule to the machine.  A rule is a set of names, each of which is associated with one or more values.
      *
-     * "synchronized" here is to ensure that only one thread is updating the machine at any point in time.
-     * This method relies on the caller not changing the arguments while it is exiting - but once it has completed,
-     *  this library has no dependence on those structures.
+     * The rule is added in a block synchronized on this machine, so only one thread is updating the machine at any
+     *  point in time.
+     * This method relies on the caller not changing the arguments while it is executing - but once it has completed,
+     *  this library has no dependence on namevals.
      * Multiple rules with the same name may be incrementally added, producing an "or" relationship with
-     *  relationship with previous namevals added for that name. E.g.
+     *  previous namevals added for that name. E.g.
      *   addRule r1  with namevalue {a,[1]}, then call again with r1 {a,[2]}, it will have same effect call addRule with
      *   r1 {a, [1,2]}
      *
-     * @param name ARN of the rule
+     * @param name name of the rule
      * @param namevals names and values which make up the rule
      */
     public void addRule(final T name, final Map<String, List<String>> namevals) {
@@ -208,7 +204,7 @@ public class GenericMachine<T> {
      * is associated with one or more value-patterns. These can be simple values (like "1", "a", "true")
      * or more sophisticated (like {anything-but : "1", range: { ... } })
      *
-     * @param name ARN of the rule4
+     * @param name name of the rule
      * @param namevals names and values which make up the rule
      */
     public void addPatternRule(final T name, final Map<String, List<Patterns>> namevals) {
@@ -234,8 +230,7 @@ public class GenericMachine<T> {
     /**
      * Delete rule from the machine.  The rule is a set of name/values.
      * "synchronized" here is to ensure that only one thread is updating the machine at any point in time.
-     * This method relies on the caller not changing the arguments while it is exiting - but once it has completed,
-     *  this library has no dependence on those structures.
+     * This method relies on the caller not changing the arguments while it is executing.
      * As with addRule, multiple name/val patterns attached to a rule name may be removed all at once or
      *  one by one.
      * Machine will only remove a rule which both matches the name/vals and the provided rule name:
@@ -254,7 +249,7 @@ public class GenericMachine<T> {
      *  Values within a key are order-independent; values that reach no rule are skipped while later values are
      *  still considered.
      *
-     * @param name ARN of the rule
+     * @param name name of the rule
      * @param namevals names and values which make up the rule
      */
     public void deletePatternRule(final T name, final Map<String, List<Patterns>> namevals) {
@@ -446,7 +441,7 @@ public class GenericMachine<T> {
      * Add a rule to the machine.  A rule is a set of names, each of which
      * is associated with one or more values.
      *
-     * @param name ARN of the rule
+     * @param name name of the rule
      * @param json the JSON form of the rule
      */
     public void addRule(final T name, final String json) throws IOException {
@@ -461,7 +456,7 @@ public class GenericMachine<T> {
      * Add a rule to the machine.  A rule is a set of names, each of which
      * is associated with one or more values.
      *
-     * @param name ARN of the rule
+     * @param name name of the rule
      * @param json the JSON form of the rule
      */
     public void addRule(final T name, final Reader json) throws IOException {
@@ -473,10 +468,10 @@ public class GenericMachine<T> {
     }
 
     /**
-     * Add a rule from the machine.  A rule is a set of names, each of which
+     * Add a rule to the machine.  A rule is a set of names, each of which
      * is associated with one or more values.
      *
-     * @param name ARN of the rule
+     * @param name name of the rule
      * @param json the JSON form of the rule
      */
     public void addRule(final T name, final InputStream json) throws IOException {
@@ -491,7 +486,7 @@ public class GenericMachine<T> {
      * Add a rule to the machine.  A rule is a set of names, each of which
      * is associated with one or more values.
      *
-     * @param name ARN of the rule
+     * @param name name of the rule
      * @param json the JSON form of the rule
      */
     public void addRule(final T name, final byte[] json) throws IOException {
@@ -506,7 +501,7 @@ public class GenericMachine<T> {
      * Delete a rule from the machine.  A rule is a set of names, each of which
      * is associated with one or more values.
      *
-     * @param name ARN of the rule
+     * @param name name of the rule
      * @param json the JSON form of the rule
      */
     public void deleteRule(final T name, final String json) throws IOException {
@@ -521,7 +516,7 @@ public class GenericMachine<T> {
      * Delete a rule from the machine.  A rule is a set of names, each of which
      * is associated with one or more values.
      *
-     * @param name ARN of the rule
+     * @param name name of the rule
      * @param json the JSON form of the rule
      */
     public void deleteRule(final T name, final Reader json) throws IOException {
@@ -533,10 +528,10 @@ public class GenericMachine<T> {
     }
 
     /**
-     * Delete a rule to the machine.  A rule is a set of names, each of which
+     * Delete a rule from the machine.  A rule is a set of names, each of which
      * is associated with one or more values.
      *
-     * @param name ARN of the rule
+     * @param name name of the rule
      * @param json the JSON form of the rule
      */
     public void deleteRule(final T name, final InputStream json) throws IOException {

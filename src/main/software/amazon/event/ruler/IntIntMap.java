@@ -5,7 +5,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
- * A fast primitive int-int map implementation. Keys and values may only be positive.
+ * A fast primitive int-int map implementation. Keys and values may only be non-negative.
  */
 final class IntIntMap implements Cloneable {
 
@@ -100,9 +100,9 @@ final class IntIntMap implements Cloneable {
     }
 
     /**
-     * Puts {@code value} in {@code key}. {@code key} is restricted to positive integers to avoid an
-     * unresolvable collision with {@link #EMPTY_CELL}, while {@code value} is restricted to
-     * positive integers to avoid an unresolvable collision with {@link #NO_VALUE}.
+     * Puts {@code value} in {@code key}. {@code key} is restricted to non-negative integers to
+     * avoid an unresolvable collision with {@link #EMPTY_CELL}, while {@code value} is restricted
+     * to non-negative integers to avoid an unresolvable collision with {@link #NO_VALUE}.
      *
      * @param key
      *            the non-negative key
@@ -111,7 +111,7 @@ final class IntIntMap implements Cloneable {
      * @return the value that was previously set for {@code key}, or {@link #NO_VALUE} if none was
      *         present.
      * @throws IllegalArgumentException
-     *             if {@code key} is negative
+     *             if {@code key} or {@code value} is negative
      */
     int put(final int key, final int value) {
         if (key < 0) {
@@ -145,15 +145,6 @@ final class IntIntMap implements Cloneable {
         } while (true);
     }
 
-    /**
-     * Removes {@code key}.
-     *
-     * @param key
-     *            the non-negative key
-     * @return the removed value, or {@link #NO_VALUE} if none was present.
-     * @throws IllegalArgumentException
-     *             if {@code key} is negative
-     */
     int remove(final int key) {
         int idx = getStartIndex(key);
         do {

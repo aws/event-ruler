@@ -140,7 +140,7 @@ class ByteState extends SingleByteTransition {
      * Associates the given transition with all possible byte values in this state. If the state previously contained
      * any transitions for any of the byte values, the old transitions are replaced by the given transition.
      *
-     * @param transition the transition to be associated with the given byte value
+     * @param transition the transition to be associated with all possible byte values
      */
     void putTransitionForAllBytes(@Nonnull SingleByteTransition transition) {
         ByteMap map = new ByteMap();

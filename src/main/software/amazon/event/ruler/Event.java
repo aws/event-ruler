@@ -28,19 +28,19 @@ import java.util.TreeMap;
  *
  * There is the flatten() entry point, which generates a list of strings that alternately represent the fields
  *  and values in an event, i.e. s[0] = name of first field, s[1] is value of that field, s[2] is name of 2nd field,
- *  and so on.  They are sorted in order of field name.  Its chief tools are the flattenObject and FlattenArray methods.
- *  This method cannot support array-consistent matching and is called only from the now-deprecated
- *  rulesForEvent(String json) method.
+ *  and so on.  They are sorted in order of field name.  Its chief tools are the flattenObject and flattenArray methods.
+ *  This method cannot support array-consistent matching and is called only from the deprecated
+ *  rulesForEvent(String) and rulesForEvent(JsonNode) methods.
  *
- * There are two Event constructors, both called from the rulesForJSONEvent method in GenericMachine.
- *  Both generates a list of Field objects sorted by field name and equipped for matching with
+ * There are two Event constructors.
+ *  Both generate a list of Field objects sorted by field name and equipped for matching with
  *  array consistency
  *
  * One takes a parsed version of the JSON event, presumably constructed by ObjectMapper. Its chief tools are the
  *  loadObject and loadArray methods.
  *
  * The constructor which takes a JSON string as argument uses the JsonParser's nextToken() method to traverse the
- *  structure without parsing it into a tree, and is thus several times faster.  Its chief tools are the
+ *  structure without parsing it into a tree.  Its chief tools are the
  *  traverseObject and traverseArray methods.
  */
 // TODO: Improve unit-test coverage, there are surprising gaps
@@ -202,7 +202,7 @@ final class Event {
     static List<String> flatten(@Nonnull final JsonNode eventRoot) throws IllegalArgumentException {
         try {
             return doFlatten(eventRoot);
-        } catch (Throwable e) { // should be IOException, but the @Nonnull annotation doesn't work in some scenarios
+        } catch (Throwable e) { // the @Nonnull annotation doesn't work in some scenarios
                                 // catch all throwable exceptions
             throw new IllegalArgumentException(e);
         }

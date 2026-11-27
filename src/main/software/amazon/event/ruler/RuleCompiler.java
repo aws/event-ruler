@@ -24,10 +24,10 @@ import static software.amazon.event.ruler.input.DefaultParser.getParser;
 /**
  * Compiles Rules, expressed in JSON, for use in Ruler.
  * There are two flavors of compilation:
- * 1. Compile a JSON-based Rule into Map of String to List of Patterns which can be used in rulesForEvent,
+ * 1. Compile a JSON-based Rule into Map of String to List of Patterns which can be used in addPatternRule,
  *    and has a "check" variant that just checks rules for syntactic accuracy
- * 2. Starting in ListBasedRuleCompiler, does the same thing but expresses field names as List ofString
- *    rather than "."-separated strings for use in the Ruler class, which does not use state machines and
+ * 2. Starting in ListBasedRuleCompiler, does the same thing but expresses field names as List of String
+ *    rather than "."-separated strings for use in Ruler.matches, which does not use state machines and
  *    needs to step into the event field by field.
  *
  * Is public so clients can call the check() method to syntax-check filters
@@ -115,7 +115,7 @@ public final class RuleCompiler {
     }
 
     /**
-     * Compile a rule from its JSON form to a Map suitable for use by events.ruler.Ruler (elements are surrounded by quotes).
+     * Compile a rule from its JSON form to a Map suitable for use by Machine.addPatternRule.
      *
      * @param source rule, as a Reader
      * @return Map form of rule
@@ -130,7 +130,7 @@ public final class RuleCompiler {
     }
 
     /**
-     * Compile a rule from its JSON form to a Map suitable for use by events.ruler.Ruler (elements are surrounded by quotes).
+     * Compile a rule from its JSON form to a Map suitable for use by Machine.addPatternRule.
      *
      * @param source rule, as a String
      * @return Map form of rule
@@ -145,7 +145,7 @@ public final class RuleCompiler {
     }
 
     /**
-     * Compile a rule from its JSON form to a Map suitable for use by events.ruler.Ruler (elements are surrounded by quotes).
+     * Compile a rule from its JSON form to a Map suitable for use by Machine.addPatternRule.
      *
      * @param source rule, as a byte array
      * @return Map form of rule
@@ -160,7 +160,7 @@ public final class RuleCompiler {
     }
 
     /**
-     * Compile a rule from its JSON form to a Map suitable for use by events.ruler.Ruler (elements are surrounded by quotes).
+     * Compile a rule from its JSON form to a Map suitable for use by Machine.addPatternRule.
      *
      * @param source rule, as an InputStream
      * @return Map form of rule
@@ -281,8 +281,8 @@ public final class RuleCompiler {
                 /*
                  * If the rule specifies a match to a number, we'll insert matchers for both the
                  *  literal expression and the ComparableNumber form. But the number might not
-                 *  be representble as a ComparableNumber, for example an AWS account number,
-                 *  so make that condition survivable.
+                 *  be representable as a ComparableNumber, for example a number with more
+                 *  significant digits than a double keeps, so make that condition survivable.
                  */
                 try {
                     values.add(Patterns.numericEquals(parser.getText()));
