@@ -7,11 +7,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.IntFunction;
 
 import org.junit.Assume;
 import org.junit.Test;
@@ -56,7 +58,7 @@ import static software.amazon.event.ruler.Benchmarks.readCityLots2;
  * <p>Gated off by default. Flip it on with {@code -Druler.perf.run=true}:
  *
  * <pre>
- *   # Full run, all 15 rule types, default 3 warmup + 5 measure
+ *   # Full run, all rule types, default 3 warmup + 5 measure
  *   mvn test -Dtest=StableBenchmarks -Druler.perf.run=true
  *
  *   # Tighter error bars (slower, ~6 min)
@@ -113,14 +115,19 @@ import static software.amazon.event.ruler.Benchmarks.readCityLots2;
  *
  * <h2>Scope</h2>
  *
- * <p>Covers the same fourteen rule types as
- * {@link Benchmarks#CL2Benchmark}, plus {@code MULTI_BYTE_WILDCARD_EIC}: one
+ * <p>Covers the citylots2 rule types of {@link Benchmarks#CL2Benchmark}
+ * (not its combined rule sets), plus {@code MULTI_BYTE_WILDCARD_EIC}: one
  * {@code "*é"} wildcard rule and 2,000 {@code "éx<k>"} equals-ignore-case
  * rules in one machine on one field, scanned with synthetic events. No
  * citylots2 rule bank puts a wildcard rule and equals-ignore-case rules in the
- * same machine. Not a replacement for the JMH benchmarks in
- * {@code jmh/} — those are the right tool for publication numbers. This is
- * the right tool for <em>"did my change regress anything?"</em> during CR.
+ * same machine. Also {@code PREFIX_EIC_THEN_EXACT}: for each of 2,000 values
+ * {@code "<kkkk>x"}, a prefix equals-ignore-case rule and then an exact rule on
+ * the same value, in one machine on one field, scanned with synthetic events
+ * that match both rules. There the exact rule continues past the byte that
+ * holds the ignore-case match of {@code x} and {@code X}. Not a replacement
+ * for the JMH benchmarks in {@code jmh/} — those are the right tool for
+ * publication numbers. This is the right tool for <em>"did my change regress
+ * anything?"</em> during CR.
  */
 public class StableBenchmarks {
 
@@ -151,11 +158,15 @@ public class StableBenchmarks {
     private static final int[] ANYTHING_BUT_WILDCARD_MATCHES = { 212578, 212355, 213025, 210528, 213067 };
     private static final int[] COMPLEX_ARRAYS_MATCHES = { 218, 1, 149446, 64368, 127485 };
 
-    private static final int MULTI_BYTE_EIC_RULE_COUNT = 2000;
-    private static final int MULTI_BYTE_EVENT_REPEATS = 50;
+    private static final int SYNTHETIC_VALUE_COUNT = 2000;
+    private static final int SYNTHETIC_EVENT_REPEATS = 50;
     private static final String[] MULTI_BYTE_WILDCARD_EIC_RULES = multiByteWildcardEicRules();
     private static final int[] MULTI_BYTE_WILDCARD_EIC_MATCHES = multiByteWildcardEicMatches();
     private static final List<String> MULTI_BYTE_WILDCARD_EIC_EVENTS = multiByteWildcardEicEvents();
+
+    private static final String[] PREFIX_EIC_THEN_EXACT_RULES = prefixEicThenExactRules();
+    private static final int[] PREFIX_EIC_THEN_EXACT_MATCHES = prefixEicThenExactMatches();
+    private static final List<String> PREFIX_EIC_THEN_EXACT_EVENTS = prefixEicThenExactEvents();
 
     private final List<String> citylots2 = new ArrayList<>();
 
@@ -213,6 +224,9 @@ public class StableBenchmarks {
         maybeRun("MULTI_BYTE_WILDCARD_EIC",
                 MULTI_BYTE_WILDCARD_EIC_RULES, MULTI_BYTE_WILDCARD_EIC_MATCHES,
                 MULTI_BYTE_WILDCARD_EIC_EVENTS, only, warmup, measure, verbose);
+        maybeRun("PREFIX_EIC_THEN_EXACT",
+                PREFIX_EIC_THEN_EXACT_RULES, PREFIX_EIC_THEN_EXACT_MATCHES,
+                PREFIX_EIC_THEN_EXACT_EVENTS, only, warmup, measure, verbose);
 
         maybeWriteCsv();
     }
@@ -339,30 +353,58 @@ public class StableBenchmarks {
     }
 
     private static String[] multiByteWildcardEicRules() {
-        String[] rules = new String[MULTI_BYTE_EIC_RULE_COUNT + 1];
+        String[] rules = new String[SYNTHETIC_VALUE_COUNT + 1];
         rules[0] = "{\"a\": [{\"wildcard\": \"*é\"}]}";
-        for (int k = 0; k < MULTI_BYTE_EIC_RULE_COUNT; k++) {
+        for (int k = 0; k < SYNTHETIC_VALUE_COUNT; k++) {
             rules[k + 1] = "{\"a\": [{\"equals-ignore-case\": \"éx" + k + "\"}]}";
         }
         return rules;
     }
 
     private static int[] multiByteWildcardEicMatches() {
-        int[] matches = new int[MULTI_BYTE_EIC_RULE_COUNT + 1];
-        for (int k = 0; k < MULTI_BYTE_EIC_RULE_COUNT; k++) {
-            matches[k + 1] = MULTI_BYTE_EVENT_REPEATS;
+        int[] matches = new int[SYNTHETIC_VALUE_COUNT + 1];
+        for (int k = 0; k < SYNTHETIC_VALUE_COUNT; k++) {
+            matches[k + 1] = SYNTHETIC_EVENT_REPEATS;
         }
         return matches;
     }
 
     private static List<String> multiByteWildcardEicEvents() {
-        List<String> events = new ArrayList<>(MULTI_BYTE_EIC_RULE_COUNT * MULTI_BYTE_EVENT_REPEATS);
-        for (int repeat = 0; repeat < MULTI_BYTE_EVENT_REPEATS; repeat++) {
-            for (int k = 0; k < MULTI_BYTE_EIC_RULE_COUNT; k++) {
-                events.add("{\"a\": \"éx" + k + "\"}");
+        return syntheticEvents(k -> "éx" + k);
+    }
+
+    private static List<String> syntheticEvents(IntFunction<String> valueForIndex) {
+        List<String> events = new ArrayList<>(SYNTHETIC_VALUE_COUNT * SYNTHETIC_EVENT_REPEATS);
+        for (int repeat = 0; repeat < SYNTHETIC_EVENT_REPEATS; repeat++) {
+            for (int k = 0; k < SYNTHETIC_VALUE_COUNT; k++) {
+                events.add("{\"a\": \"" + valueForIndex.apply(k) + "\"}");
             }
         }
         return events;
+    }
+
+    private static String prefixEicThenExactValue(int k) {
+        return String.format(Locale.ROOT, "%04dx", k);
+    }
+
+    private static String[] prefixEicThenExactRules() {
+        String[] rules = new String[2 * SYNTHETIC_VALUE_COUNT];
+        for (int k = 0; k < SYNTHETIC_VALUE_COUNT; k++) {
+            String value = prefixEicThenExactValue(k);
+            rules[2 * k] = "{\"a\": [{\"prefix\": {\"equals-ignore-case\": \"" + value + "\"}}]}";
+            rules[2 * k + 1] = "{\"a\": [\"" + value + "\"]}";
+        }
+        return rules;
+    }
+
+    private static int[] prefixEicThenExactMatches() {
+        int[] matches = new int[2 * SYNTHETIC_VALUE_COUNT];
+        Arrays.fill(matches, SYNTHETIC_EVENT_REPEATS);
+        return matches;
+    }
+
+    private static List<String> prefixEicThenExactEvents() {
+        return syntheticEvents(StableBenchmarks::prefixEicThenExactValue);
     }
 
     // --- CSV output ----------------------------------------------------

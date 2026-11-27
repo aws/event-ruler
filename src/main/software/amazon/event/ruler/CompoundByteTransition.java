@@ -25,9 +25,9 @@ public final class CompoundByteTransition extends ByteTransition {
     private final Set<ShortcutTransition> shortcutTransitions;
 
     /**
-     * A view of byteTransitions containing just the ones that can contain matches.
+     * The matches of the byteTransitions that can contain matches. Shortcuts are not among them.
      */
-    private final Set<SingleByteTransition> matchableTransitions;
+    private final Set<ByteMatch> matches;
 
     /**
      * A ByteTransition representing all nextByteStates from byteTransitions.
@@ -38,7 +38,7 @@ public final class CompoundByteTransition extends ByteTransition {
         this.byteTransitions = Collections.unmodifiableSet(byteTransitions);
 
         Set<ShortcutTransition> shortcutTransitions = new HashSet<>();
-        Set<SingleByteTransition> matchableTransitions = new HashSet<>();
+        Set<ByteMatch> matches = new HashSet<>();
         Set<SingleByteTransition> nextByteStates = new HashSet<>();
 
         this.byteTransitions.forEach(t -> {
@@ -46,7 +46,7 @@ public final class CompoundByteTransition extends ByteTransition {
                 shortcutTransitions.add((ShortcutTransition) t);
             }
             if (t.isMatchTrans()) {
-                matchableTransitions.add(t);
+                t.getMatches().forEach(match -> matches.add(match));
             }
             ByteState nextByteState = t.getNextByteState();
             if (nextByteState != null) {
@@ -54,12 +54,24 @@ public final class CompoundByteTransition extends ByteTransition {
             }
         });
 
-        this.shortcutTransitions = Collections.unmodifiableSet(shortcutTransitions);
-        this.matchableTransitions = Collections.unmodifiableSet(matchableTransitions);
+        this.shortcutTransitions = immutable(shortcutTransitions);
+        this.matches = immutable(matches);
         if (nextByteStates.equals(byteTransitions)) {
             this.transitionForNextByteState = this;
         } else {
             this.transitionForNextByteState = coalesce(nextByteStates);
+        }
+    }
+
+    // The match path reads these sets for each byte. An empty or a one-element set needs no HashSet iterator.
+    private static <T> Set<T> immutable(final Set<T> set) {
+        switch (set.size()) {
+            case 0:
+                return Collections.emptySet();
+            case 1:
+                return Collections.singleton(set.iterator().next());
+            default:
+                return Collections.unmodifiableSet(set);
         }
     }
 
@@ -138,10 +150,6 @@ public final class CompoundByteTransition extends ByteTransition {
      */
     @Override
     public Set<ByteMatch> getMatches() {
-        Set<ByteMatch> matches = new HashSet<>();
-        for (SingleByteTransition single : matchableTransitions) {
-            single.getMatches().forEach(match -> matches.add(match));
-        }
         return matches;
     }
 

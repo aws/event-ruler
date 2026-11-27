@@ -111,11 +111,11 @@ public class CompoundByteTransitionTest {
 
     @Test
     public void testGetMatches() {
-        ByteMatch match1 = new ByteMatch(Patterns.exactMatch("a"), new NameState());
-        ByteMatch match2 = new ByteMatch(Patterns.exactMatch("b"), new NameState());
-        ByteMatch match3 = new ByteMatch(Patterns.exactMatch("c"), new NameState());
-        ByteMatch match4 = new ByteMatch(Patterns.exactMatch("d"), new NameState());
-        ByteMatch match5 = new ByteMatch(Patterns.exactMatch("d"), new NameState());
+        ByteMatch match1 = new ByteMatch(Patterns.exactMatch("a"), new NameState(), false);
+        ByteMatch match2 = new ByteMatch(Patterns.exactMatch("b"), new NameState(), false);
+        ByteMatch match3 = new ByteMatch(Patterns.exactMatch("c"), new NameState(), false);
+        ByteMatch match4 = new ByteMatch(Patterns.exactMatch("d"), new NameState(), false);
+        ByteMatch match5 = new ByteMatch(Patterns.exactMatch("d"), new NameState(), false);
 
         // The shortcut gets match3. Expect this one to be excluded from CompoundByteTransition's getMatches.
         ShortcutTransition shortcut = new ShortcutTransition();
@@ -131,6 +131,7 @@ public class CompoundByteTransitionTest {
                 match1, match2, shortcut, state, composite, match5)));
         assertTrue(result instanceof CompoundByteTransition);
         assertEquals(new HashSet<>(Arrays.asList(match1, match2, match4, match5)), result.getMatches());
+        assertSame(result.getMatches(), result.getMatches());
     }
 
     @Test
@@ -139,6 +140,35 @@ public class CompoundByteTransitionTest {
         ShortcutTransition shortcut = new ShortcutTransition();
         assertEquals(new HashSet<>(Collections.singletonList(shortcut)),
                 coalesce(new HashSet<>(Arrays.asList(state, shortcut))).getShortcuts());
+    }
+
+    @Test
+    public void testGetMatchesWithoutMatch() {
+        final ByteTransition compound = coalesce(new HashSet<>(Arrays.asList(new ByteState(), new ByteState())));
+        assertEquals(Collections.emptySet(), compound.getMatches());
+        assertSame(compound.getMatches(), compound.getMatches());
+    }
+
+    @Test
+    public void testGetMatchesWithOneMatch() {
+        final ByteMatch match = new ByteMatch(Patterns.exactMatch("a"), new NameState(), false);
+        final ByteTransition compound = coalesce(new HashSet<>(Arrays.asList(new ByteState(), match)));
+        assertEquals(Collections.singleton(match), compound.getMatches());
+        assertSame(compound.getMatches(), compound.getMatches());
+    }
+
+    @Test
+    public void testGetShortcutsWithoutShortcut() {
+        assertEquals(Collections.emptySet(),
+                coalesce(new HashSet<>(Arrays.asList(new ByteState(), new ByteState()))).getShortcuts());
+    }
+
+    @Test
+    public void testGetShortcutsWithTwoShortcuts() {
+        final ShortcutTransition shortcut1 = new ShortcutTransition();
+        final ShortcutTransition shortcut2 = new ShortcutTransition();
+        assertEquals(new HashSet<>(Arrays.asList(shortcut1, shortcut2)),
+                coalesce(new HashSet<>(Arrays.asList(new ByteState(), shortcut1, shortcut2))).getShortcuts());
     }
 
     @Test
@@ -171,7 +201,7 @@ public class CompoundByteTransitionTest {
         SingleByteTransition state = new ByteState();
         ByteState compositeState = new ByteState();
         SingleByteTransition composite = new CompositeByteTransition(compositeState,
-                new ByteMatch(Patterns.exactMatch("a"), new NameState()));
+                new ByteMatch(Patterns.exactMatch("a"), new NameState(), false));
         assertEquals(coalesce(new HashSet<>(Arrays.asList(state, compositeState))),
                 coalesce(new HashSet<>(Arrays.asList(state, composite))).getTransitionForNextByteStates());
     }

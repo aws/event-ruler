@@ -551,15 +551,14 @@ public class GenericMachine<T> {
                          final Map<String, List<Patterns>> patterns,
                          final T ruleName) {
         List<String> addedKeys = new ArrayList<>();
-        Set<NameState>[] nameStates = new Set[keys.size()];
+        Set<NameStateWithPattern>[] nameStates = new Set[keys.size()];
         if (addStep(getStartState(), keys, 0, patterns, ruleName, addedKeys, nameStates).isEmpty()) {
             SubRuleContext context = subRuleContextGenerator.generate(ruleName);
             for (int i = 0; i < keys.size(); i++) {
                 boolean isTerminal = i + 1 == keys.size();
-                for (Patterns pattern : patterns.get(keys.get(i))) {
-                    for (NameState nameState : nameStates[i]) {
-                        nameState.addSubRule(ruleName, context, pattern, isTerminal);
-                    }
+                for (NameStateWithPattern nameStateWithPattern : nameStates[i]) {
+                    nameStateWithPattern.getNameState().addSubRule(ruleName, context,
+                            nameStateWithPattern.getPattern(), isTerminal);
                 }
             }
         }
@@ -575,7 +574,8 @@ public class GenericMachine<T> {
      * @param patterns Map of key to patterns.
      * @param ruleName Name of the rule.
      * @param addedKeys Pass in an empty list - this tracks keys that have been added.
-     * @param nameStatesForEachKey Pass in array of length keys.size() - this tracks NameStates accessible by each key.
+     * @param nameStatesForEachKey Pass in array of length keys.size() - this tracks NameStates, with the pattern that
+     *                             leads to each, for each key.
      * @return The IDs of sub-rules that used the same rule name and added the same patterns for the same keys at
      *         keyIndex and greater. If keyIndex==0 and the returned set is empty, then the keys and patterns being
      *         added represent a new sub-rule.
@@ -586,7 +586,7 @@ public class GenericMachine<T> {
                                 final Map<String, List<Patterns>> patterns,
                                 final T ruleName,
                                 List<String> addedKeys,
-                                final Set<NameState>[] nameStatesForEachKey) {
+                                final Set<NameStateWithPattern>[] nameStatesForEachKey) {
 
         final String key = keys.get(keyIndex);
         ByteMachine byteMachine = state.getTransitionOn(key);
@@ -626,7 +626,7 @@ public class GenericMachine<T> {
                 lastNextState = byteMachine.addPattern(pattern, lastNextState);
             }
             nameStates.add(lastNextState);
-            nameStatesForEachKey[keyIndex].add(lastNextState);
+            nameStatesForEachKey[keyIndex].add(new NameStateWithPattern(lastNextState, pattern));
         }
 
         // Determine if we are adding a new rule or not. If we are not yet at the terminal key, go deeper recursively.

@@ -983,7 +983,7 @@ Events are processed at over 220K/second except for:
 
 ### Running the benchmarks
 
-Two matching-throughput harnesses are available; both operate on the same `citylots2` dataset and the same fourteen rule types. The complexity evaluator has its own pair of classes, described at the end of this section.
+Two matching-throughput harnesses are available. Both run the same `citylots2` rule types against the `citylots2` dataset. `Benchmarks` also runs combined rule sets (`PARTIAL_COMBO`, `COMBO`). `StableBenchmarks` also runs synthetic rule sets on synthetic events (`MULTI_BYTE_WILDCARD_EIC`, `PREFIX_EIC_THEN_EXACT`), which build machine shapes that no `citylots2` rule set builds. The complexity evaluator has its own pair of classes, described at the end of this section.
 
 **[`Benchmarks.java`](src/test/software/amazon/event/ruler/Benchmarks.java)** — single-shot per rule type. Fast, but JVM warmup cost makes single-pass variance between runs of the same code routinely hit 10-20%. Good for eyeballing a large change; not reliable for detecting small regressions.
 
@@ -1031,7 +1031,7 @@ The wrapper requires a clean working tree (it checks out both refs). Restores yo
 #### Running `StableBenchmarks` directly — advanced
 
 ```
-# Default: 3 warmup + 5 measure passes per rule type, all 14 rule types (~4 min)
+# Default: 3 warmup + 5 measure passes per rule type, all rule types (~4 min)
 mvn test -Dtest=StableBenchmarks -Druler.perf.run=true
 
 # Tighter error bars (~6 minutes)
@@ -1049,6 +1049,8 @@ mvn test -Dtest=StableBenchmarks -Druler.perf.run=true -Druler.perf.verbose=true
 mvn test -Dtest=StableBenchmarks -Druler.perf.run=true \
     -Druler.perf.csv=/tmp/ruler-perf.csv
 ```
+
+To run only `PREFIX_EIC_THEN_EXACT`, use `-Druler.perf.only=then_exact`. `only=exact` and `only=prefix` also select it.
 
 `StableBenchmarks` is gated off by default (`-Druler.perf.run=true` required) so it doesn't run in CI. For publication-grade numbers, use the [JMH benchmarks in `src/test/.../jmh/`](src/test/software/amazon/event/ruler/jmh) — those measure steady-state throughput under a full JMH harness.
 
