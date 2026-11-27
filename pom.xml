@@ -159,7 +159,28 @@
                 <argument>org.openjdk.jmh.Main</argument>
                 <argument>-gc</argument>
                 <argument>true</argument>
+                <!-- Run on demand with the execution below; it adds about 30 minutes. -->
+                <argument>-e</argument>
+                <argument>CityLots2RulesForEventJmhBenchmarks</argument>
                 <argument>.*</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>run-rules-for-event-benchmarks</id>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <classpathScope>test</classpathScope>
+              <executable>java</executable>
+              <arguments>
+                <argument>-classpath</argument>
+                <classpath/>
+                <argument>org.openjdk.jmh.Main</argument>
+                <argument>-gc</argument>
+                <argument>true</argument>
+                <argument>CityLots2RulesForEventJmhBenchmarks</argument>
               </arguments>
             </configuration>
           </execution>
